@@ -30,4 +30,5 @@ app.get('/api/health', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📱 Mobile access: http://192.168.0.24:${PORT}`);
 });
