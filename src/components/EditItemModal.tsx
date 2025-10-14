@@ -95,7 +95,7 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               required
             />
           </div>
@@ -110,7 +110,7 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
               value={displayAmount}
               onChange={(e) => handleAmountChange(e.target.value)}
               placeholder="R$ 0,00"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               required
             />
             {item.is_installment && (
@@ -128,7 +128,7 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             >
               <option value="">Sem categoria</option>
               {categories.map((cat) => (
@@ -147,7 +147,7 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
             <select
               value={authorId}
               onChange={(e) => setAuthorId(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               required
             >
               {authors.map((author) => (
@@ -167,7 +167,7 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
               type="date"
               value={purchaseDate}
               onChange={(e) => setPurchaseDate(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
@@ -183,7 +183,7 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Save className="w-5 h-5" />
               {isLoading ? 'Salvando...' : 'Salvar'}

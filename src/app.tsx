@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import AddCard from './pages/AddCard';
 import CardDetails from './pages/CardDetails';
 import AddItem from './pages/AddItem';
+import Settings from './pages/Settings';
 
 function App() {
   const { isAuthenticated, verifyAuth } = useAuthStore();
@@ -44,6 +45,10 @@ function App() {
         <Route
           path="/cards/:cardId/items/new"
           element={isAuthenticated ? <AddItem /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/settings"
+          element={isAuthenticated ? <Settings /> : <Navigate to="/login" />}
         />
 
         {/* Default redirect */}

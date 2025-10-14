@@ -127,7 +127,7 @@ export default function AddCard() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ex: Nubank, Itaú, C6..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 required
               />
             </div>
@@ -146,7 +146,7 @@ export default function AddCard() {
                 placeholder="Ex: 5000.00"
                 step="0.01"
                 min="0"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 required
               />
             </div>
@@ -166,7 +166,7 @@ export default function AddCard() {
                   placeholder="Ex: 15"
                   min="1"
                   max="31"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   required
                 />
                 <p className="mt-1 text-xs text-gray-500">Dia 1 a 31</p>
@@ -185,7 +185,7 @@ export default function AddCard() {
                   placeholder="Ex: 25"
                   min="1"
                   max="31"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   required
                 />
                 <p className="mt-1 text-xs text-gray-500">Dia 1 a 31</p>
@@ -258,7 +258,7 @@ export default function AddCard() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Salvando...' : 'Adicionar Cartão'}
               </button>

@@ -218,7 +218,7 @@ export default function AddItem() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Ex: Compras no supermercado"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 required
               />
             </div>
@@ -236,7 +236,7 @@ export default function AddItem() {
                   value={displayAmount}
                   onChange={(e) => handleAmountChange(e.target.value)}
                   placeholder="R$ 0,00"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   required
                 />
               </div>
@@ -261,7 +261,7 @@ export default function AddItem() {
                     }}
                     min="1"
                     max="24"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
                 {isInstallment && (
@@ -286,7 +286,7 @@ export default function AddItem() {
                   onChange={(e) => setCurrentInstallment(e.target.value)}
                   min="1"
                   max={installments}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Será criada a partir da parcela {currentInstallment} até a {installments} ({Number(installments) - Number(currentInstallment) + 1} parcela{Number(installments) - Number(currentInstallment) + 1 !== 1 ? 's' : ''})
@@ -304,7 +304,7 @@ export default function AddItem() {
                 id="category"
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">Sem categoria</option>
                 {categories.map((cat) => (
@@ -328,7 +328,7 @@ export default function AddItem() {
                     id="author"
                     value={authorId}
                     onChange={(e) => setAuthorId(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                     <option value="">Selecione...</option>
                     {authors.map((author) => (
@@ -340,7 +340,7 @@ export default function AddItem() {
                   <button
                     type="button"
                     onClick={() => setShowNewAuthor(true)}
-                    className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                    className="mt-2 text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
                   >
                     <Plus className="w-4 h-4" />
                     Adicionar nova pessoa
@@ -353,7 +353,7 @@ export default function AddItem() {
                     value={newAuthorName}
                     onChange={(e) => setNewAuthorName(e.target.value)}
                     placeholder="Nome da pessoa"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                   <button
                     type="button"
@@ -380,7 +380,7 @@ export default function AddItem() {
                 id="date"
                 value={purchaseDate}
                 onChange={(e) => setPurchaseDate(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
@@ -396,7 +396,7 @@ export default function AddItem() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Salvando...' : 'Adicionar'}
               </button>
