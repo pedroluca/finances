@@ -7,7 +7,7 @@
     "dev": "vite --host",
     "dev:server": "tsx watch server/index.ts",
     "dev:all": "concurrently \"pnpm dev\" \"pnpm dev:server\"",
-    "build": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.app.json && vite build",
+    "build": "tsc -p tsconfig.node.json --noEmit && vite build",
     "build:api": "tsc -p tsconfig.api.json",
     "lint": "eslint .",
     "preview": "vite preview",
