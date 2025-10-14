@@ -1,7 +1,10 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 // Detecta se está em produção (Vercel) ou desenvolvimento (localhost)
-export const isProduction = API_URL.includes('vercel') || API_URL.includes('pedroluca.dev.br');
+export const isProduction =
+  API_URL.includes('vercel') ||
+  API_URL.includes('pedroluca.dev.br') ||
+  API_URL.startsWith('/api');
 
 class ApiClient {
   private baseUrl: string;
