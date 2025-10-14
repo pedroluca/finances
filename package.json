@@ -4,14 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
-    "dev:server": "tsx watch server/index.ts",
-    "dev:all": "concurrently \"pnpm dev\" \"pnpm dev:server\"",
+    "dev": "vite",
     "build": "tsc -p tsconfig.node.json --noEmit && vite build",
-    "build:api": "tsc -p tsconfig.api.json",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "vercel-build": "pnpm build"
+    "vercel-build": "pnpm build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
