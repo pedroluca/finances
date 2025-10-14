@@ -16,6 +16,8 @@ import {
   Circle,
   Edit,
   Check,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import type { InvoiceItemWithDetails } from '../types/database';
 
@@ -32,9 +34,17 @@ export default function CardDetails() {
   const [editingItem, setEditingItem] = useState<InvoiceItemWithDetails | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
+  // Estado para controlar o mês/ano visualizado
+  const currentDate = new Date();
+  const [viewingMonth, setViewingMonth] = useState(currentDate.getMonth() + 1);
+  const [viewingYear, setViewingYear] = useState(currentDate.getFullYear());
+
   const card = cards.find((c) => c.id === Number(cardId));
-  const currentMonth = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
+  const currentMonth = currentDate.getMonth() + 1;
+  const currentYear = currentDate.getFullYear();
+  
+  // Verifica se está visualizando o mês atual
+  const isCurrentMonth = viewingMonth === currentMonth && viewingYear === currentYear;
 
   useEffect(() => {
     const loadInvoiceData = async () => {
@@ -43,18 +53,21 @@ export default function CardDetails() {
       try {
         setIsLoading(true);
 
-        // Buscar ou criar fatura do mês atual
-        const currentInvoice = await InvoiceService.getOrCreateInvoice(
+        // Buscar ou criar fatura do mês visualizado
+        const invoice = await InvoiceService.getOrCreateInvoice(
           card.id,
-          currentMonth,
-          currentYear
+          viewingMonth,
+          viewingYear
         );
 
-        if (currentInvoice) {
+        if (invoice) {
           // Buscar itens da fatura
-          const invoiceItems = await ItemService.getInvoiceItems(currentInvoice.id);
+          const invoiceItems = await ItemService.getInvoiceItems(invoice.id);
           setItems(invoiceItems);
         }
+        
+        // Limpar seleção ao trocar de mês
+        setSelectedItems(new Set());
       } catch (error) {
         console.error('Erro ao carregar fatura:', error);
       } finally {
@@ -63,7 +76,31 @@ export default function CardDetails() {
     };
 
     loadInvoiceData();
-  }, [card, user, currentMonth, currentYear]);
+  }, [card, user, viewingMonth, viewingYear]);
+
+  // Funções de navegação entre meses
+  const goToPreviousMonth = () => {
+    if (viewingMonth === 1) {
+      setViewingMonth(12);
+      setViewingYear(viewingYear - 1);
+    } else {
+      setViewingMonth(viewingMonth - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    if (viewingMonth === 12) {
+      setViewingMonth(1);
+      setViewingYear(viewingYear + 1);
+    } else {
+      setViewingMonth(viewingMonth + 1);
+    }
+  };
+
+  const goToCurrentMonth = () => {
+    setViewingMonth(currentMonth);
+    setViewingYear(currentYear);
+  };
 
   const handleDeleteCard = async () => {
     if (!card || !user) return;
@@ -79,6 +116,9 @@ export default function CardDetails() {
   };
 
   const toggleSelectItem = (itemId: number) => {
+    // Só permite seleção no mês atual
+    if (!isCurrentMonth) return;
+    
     setSelectedItems((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(itemId)) {
@@ -134,6 +174,9 @@ export default function CardDetails() {
   };
 
   const openEditModal = (item: InvoiceItemWithDetails) => {
+    // Só permite edição no mês atual
+    if (!isCurrentMonth) return;
+    
     setEditingItem(item);
     setShowEditModal(true);
   };
@@ -184,34 +227,74 @@ export default function CardDetails() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{card.name}</h1>
-              <p className="text-sm text-gray-600">
-                Fatura de {new Date(currentYear, currentMonth - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-              </p>
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{card.name}</h1>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate(`/cards/${cardId}/edit`)}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <Edit className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Navegação de Meses */}
+          <div className="flex items-center justify-between">
             <button
-              onClick={() => navigate(`/cards/${cardId}/edit`)}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={goToPreviousMonth}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <Edit className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5" />
+              Mês Anterior
             </button>
+
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-900 capitalize">
+                {new Date(viewingYear, viewingMonth - 1).toLocaleDateString('pt-BR', { 
+                  month: 'long', 
+                  year: 'numeric' 
+                })}
+              </p>
+              {!isCurrentMonth && (
+                <button
+                  onClick={goToCurrentMonth}
+                  className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  Voltar para mês atual
+                </button>
+              )}
+              {!isCurrentMonth && (
+                <p className="text-xs text-amber-600 mt-1">
+                  📌 Visualização apenas - Edição desabilitada
+                </p>
+              )}
+            </div>
+
             <button
-              onClick={() => setShowDeleteModal(true)}
-              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              onClick={goToNextMonth}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <Trash2 className="w-5 h-5" />
+              Próximo Mês
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -271,7 +354,7 @@ export default function CardDetails() {
               Itens da Fatura ({items.length})
             </h2>
             <div className="flex items-center gap-2">
-              {selectedItems.size > 0 && (
+              {selectedItems.size > 0 && isCurrentMonth && (
                 <>
                   <button
                     onClick={markSelectedAsPaid}
@@ -289,13 +372,15 @@ export default function CardDetails() {
                   </button>
                 </>
               )}
-              <button
-                onClick={() => navigate(`/cards/${cardId}/items/new`)}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Adicionar Item</span>
-              </button>
+              {isCurrentMonth && (
+                <button
+                  onClick={() => navigate(`/cards/${cardId}/items/new`)}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span>Adicionar Item</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -312,20 +397,31 @@ export default function CardDetails() {
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-4 p-4 border-2 rounded-lg transition cursor-pointer ${
+                  className={`flex items-center gap-4 p-4 border-2 rounded-lg transition ${
+                    isCurrentMonth ? 'cursor-pointer' : 'cursor-default opacity-75'
+                  } ${
                     selectedItems.has(item.id)
                       ? 'border-indigo-500 bg-indigo-50'
                       : 'border-gray-200 hover:bg-gray-50'
                   }`}
-                  onClick={() => toggleSelectItem(item.id)}
+                  onClick={() => isCurrentMonth && toggleSelectItem(item.id)}
                 >
                   <div className="flex-shrink-0">
-                    {selectedItems.has(item.id) ? (
-                      <CheckCircle className="w-6 h-6 text-indigo-600" />
-                    ) : item.is_paid ? (
-                      <CheckCircle className="w-6 h-6 text-green-500" />
+                    {isCurrentMonth ? (
+                      selectedItems.has(item.id) ? (
+                        <CheckCircle className="w-6 h-6 text-indigo-600" />
+                      ) : item.is_paid ? (
+                        <CheckCircle className="w-6 h-6 text-green-500" />
+                      ) : (
+                        <Circle className="w-6 h-6 text-gray-300" />
+                      )
                     ) : (
-                      <Circle className="w-6 h-6 text-gray-300" />
+                      // Ícone fixo para visualização apenas
+                      item.is_paid ? (
+                        <CheckCircle className="w-6 h-6 text-green-500" />
+                      ) : (
+                        <Circle className="w-6 h-6 text-gray-400" />
+                      )
                     )}
                   </div>
 
