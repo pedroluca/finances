@@ -1,6 +1,3 @@
-# Local server (não usado em produção)
-server/
-
 # Development
 node_modules/
 .env
