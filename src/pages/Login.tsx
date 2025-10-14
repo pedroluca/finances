@@ -114,10 +114,6 @@ export default function Login() {
                 </button>
               </div>
             </div>
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
 
             <button
               type="submit"
