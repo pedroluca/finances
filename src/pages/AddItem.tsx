@@ -2,9 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useAppStore } from '../store/app.store';
-import { ItemService } from '../services/item.api';
-import { InvoiceService } from '../services/invoice.api';
-import { AuthorService } from '../services/author.api';
+import { phpApiRequest } from '../lib/api';
 import { ArrowLeft, DollarSign, FileText, Calendar, Tag, User, Plus } from 'lucide-react';
 
 export default function AddItem() {
@@ -80,25 +78,21 @@ export default function AddItem() {
     if (showNewAuthor && newAuthorName.trim()) {
       try {
         setIsLoading(true);
-        const newAuthor = await AuthorService.createAuthor({
-          user_id: user.id,
-          name: newAuthorName.trim(),
-          is_owner: false,
+        const newAuthor = await phpApiRequest('authors.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newAuthorName.trim() })
         });
-        
-        if (newAuthor) {
+        if (newAuthor && newAuthor.id) {
           addAuthor(newAuthor);
           selectedAuthorId = newAuthor.id;
         } else {
-          // Se não conseguiu criar, usa o autor padrão (você)
-          console.warn('Não foi possível criar novo autor, usando autor padrão');
           selectedAuthorId = defaultAuthor?.id;
           setShowNewAuthor(false);
         }
         setIsLoading(false);
       } catch (err) {
         console.error('Erro ao criar autor:', err);
-        // Em caso de erro, usa o autor padrão (você)
         selectedAuthorId = defaultAuthor?.id;
         setShowNewAuthor(false);
         setIsLoading(false);
@@ -117,44 +111,54 @@ export default function AddItem() {
       const currentMonth = currentDate.getMonth() + 1;
       const currentYear = currentDate.getFullYear();
 
-      // Buscar ou criar fatura do mês atual
-      const invoice = await InvoiceService.getOrCreateInvoice(
-        card.id,
-        currentMonth,
-        currentYear
-      );
-
+      // Buscar ou criar fatura do mês atual (simulado: só pega a primeira fatura do cartão)
+      const invoices = await phpApiRequest('invoices.php', { method: 'GET' });
+  let invoice = invoices.find((inv: { cardId: number; month: number; year: number; id: number }) => inv.cardId === card.id && inv.month === currentMonth && inv.year === currentYear);
       if (!invoice) {
-        setError('Erro ao buscar fatura');
+        // Cria nova fatura
+        invoice = await phpApiRequest('invoices.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cardId: card.id, month: currentMonth, year: currentYear })
+        });
+      }
+      if (!invoice || !invoice.id) {
+        setError('Erro ao buscar/criar fatura');
         return;
       }
 
       if (isInstallment && Number(installments) > 1) {
-        // Calcular quantas parcelas faltam criar
-        const currentInstallmentNum = Number(currentInstallment);
-        
-        // Criar item parcelado a partir da parcela atual
-        await ItemService.createInstallment({
-          card_id: card.id,
-          description: description.trim(),
-          total_amount: amountValue,
-          total_installments: Number(installments),
-          author_id: selectedAuthorId,
-          category_id: categoryId ? Number(categoryId) : undefined,
-          purchase_date: new Date(purchaseDate),
-          start_month: currentMonth,
-          start_year: currentYear,
-          current_installment: currentInstallmentNum,
+        // Criar item parcelado
+        await phpApiRequest('items.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            card_id: card.id,
+            description: description.trim(),
+            total_amount: amountValue,
+            total_installments: Number(installments),
+            author_id: selectedAuthorId,
+            category_id: categoryId ? Number(categoryId) : undefined,
+            purchase_date: purchaseDate,
+            start_month: currentMonth,
+            start_year: currentYear,
+            current_installment: Number(currentInstallment),
+            invoice_id: invoice.id
+          })
         });
       } else {
         // Criar item único
-        await ItemService.createItem({
-          invoice_id: invoice.id,
-          description: description.trim(),
-          amount: amountValue,
-          author_id: selectedAuthorId,
-          category_id: categoryId ? Number(categoryId) : undefined,
-          purchase_date: new Date(purchaseDate),
+        await phpApiRequest('items.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            invoice_id: invoice.id,
+            description: description.trim(),
+            amount: amountValue,
+            author_id: selectedAuthorId,
+            category_id: categoryId ? Number(categoryId) : undefined,
+            purchase_date: purchaseDate
+          })
         });
       }
 

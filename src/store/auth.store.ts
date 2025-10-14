@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '../types/database';
-import { AuthService } from '../services/auth.api';
-import { apiClient } from '../lib/api';
+import { phpApiRequest } from '../lib/api';
 
 interface AuthState {
   user: Omit<User, 'password_hash'> | null;
@@ -29,10 +28,12 @@ export const useAuthStore = create<AuthState>()(
       login: async (email, password) => {
         set({ isLoading: true });
         try {
-          const response = await AuthService.login({ email, password });
-          
+          const response = await phpApiRequest('auth.php?action=login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
           if (response.success && response.user && response.token) {
-            apiClient.setToken(response.token);
             set({
               user: response.user,
               token: response.token,
@@ -41,11 +42,10 @@ export const useAuthStore = create<AuthState>()(
             });
             return { success: true };
           }
-
           set({ isLoading: false });
           return {
             success: false,
-            message: 'Erro ao fazer login',
+            message: response.message || 'Erro ao fazer login',
           };
         } catch {
           set({ isLoading: false });
@@ -59,10 +59,12 @@ export const useAuthStore = create<AuthState>()(
       register: async (name, email, password, confirmPassword) => {
         set({ isLoading: true });
         try {
-          const response = await AuthService.register({ name, email, password, confirmPassword });
-          
+          const response = await phpApiRequest('auth.php?action=register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password, confirmPassword })
+          });
           if (response.success && response.user && response.token) {
-            apiClient.setToken(response.token);
             set({
               user: response.user,
               token: response.token,
@@ -71,7 +73,6 @@ export const useAuthStore = create<AuthState>()(
             });
             return { success: true };
           }
-
           set({ isLoading: false });
           return {
             success: false,
@@ -96,25 +97,18 @@ export const useAuthStore = create<AuthState>()(
 
       verifyAuth: async () => {
         const { token } = get();
-        
         if (!token) {
           set({ isAuthenticated: false, user: null });
           return;
         }
-
         try {
-          apiClient.setToken(token);
-          const user = await AuthService.verifyToken(token);
-          
-          if (user) {
+          const response = await phpApiRequest('auth.php?action=verify', {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.success && response.user) {
             set({
-              user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                created_at: user.created_at,
-                updated_at: user.updated_at,
-              },
+              user: response.user,
               isAuthenticated: true,
             });
           } else {

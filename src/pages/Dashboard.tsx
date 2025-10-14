@@ -11,10 +11,7 @@ import {
   DollarSign,
   Settings,
 } from 'lucide-react';
-import { CardService } from '../services/card.api';
-import { InvoiceService } from '../services/invoice.api';
-import { CategoryService } from '../services/category.api';
-import { AuthorService } from '../services/author.api';
+import { phpApiRequest } from '../lib/api';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -47,31 +44,26 @@ export default function Dashboard() {
       try {
         setIsLoading(true);
 
-        // Carregar dados em paralelo
-        const [cardsData, categoriesData, authorsData, totalsData, invoicesData] =
-          await Promise.all([
-            CardService.getUserCards(user.id),
-            CategoryService.getUserCategories(user.id),
-            AuthorService.getUserAuthors(user.id),
-            InvoiceService.getMonthlyTotals(user.id, 6),
-            InvoiceService.getUserInvoices(user.id),
-          ]);
+        // Carregar dados em paralelo da nova API PHP
+        const [cardsData, categoriesData, authorsData, invoicesData] = await Promise.all([
+          phpApiRequest('cards.php', { method: 'GET' }),
+          phpApiRequest('categories.php', { method: 'GET' }),
+          phpApiRequest('authors.php', { method: 'GET' }),
+          phpApiRequest('invoices.php', { method: 'GET' }),
+        ]);
 
         setCards(cardsData);
         setCategories(categoriesData);
         setAuthors(authorsData);
-        setMonthlyTotals(totalsData);
 
-        // Calcular total de faturas por cartão
+        // Calcular total de faturas por cartão (simples)
         const totals: Record<number, number> = {};
-        invoicesData.forEach((invoice) => {
-          console.log('Invoice:', invoice.card_id, 'Mês:', invoice.reference_month, 'Valor:', invoice.total_amount);
-          if (!totals[invoice.card_id]) {
-            totals[invoice.card_id] = 0;
+        invoicesData.forEach((invoice: { cardId: number; total?: number; value?: number }) => {
+          if (!totals[invoice.cardId]) {
+            totals[invoice.cardId] = 0;
           }
-          totals[invoice.card_id] += Number(invoice.total_amount);
+          totals[invoice.cardId] += Number(invoice.total || invoice.value || 0);
         });
-        console.log('Totais calculados:', totals);
         setCardInvoiceTotals(totals);
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
