@@ -24,5 +24,10 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "src/services/**/*.service.ts",
+    "src/lib/db.ts",
+    "server/**/*"
+  ]
 }
