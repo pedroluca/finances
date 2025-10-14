@@ -1,0 +1,28 @@
+# Local server (não usado em produção)
+server/
+
+# Development
+node_modules/
+.env
+.env.local
+
+# Build
+dist/
+dist-ssr/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs (opcional - remova essas linhas se quiser os docs na produção)
+# DEPLOY.md
+# LOCAL_VS_PROD.md
+# QUICKSTART.md
