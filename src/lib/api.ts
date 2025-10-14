@@ -30,11 +30,14 @@ class ApiClient {
       headers,
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Retorna a mensagem de erro do backend se existir
+      throw new Error(data.message || data.error || `Erro HTTP ${response.status}`);
     }
 
-    return response.json();
+    return data;
   }
 
   async get<T>(endpoint: string): Promise<T> {

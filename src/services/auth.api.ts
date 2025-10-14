@@ -10,11 +10,49 @@ export interface AuthResponse {
 
 export class AuthService {
   static async register(data: RegisterDTO): Promise<AuthResponse> {
-    return apiClient.post<AuthResponse>('/auth/register', data);
+    try {
+      return await apiClient.post<AuthResponse>('/auth/register', data);
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Erro ao registrar usuário'
+      };
+    }
   }
 
   static async login(data: LoginDTO): Promise<AuthResponse> {
-    return apiClient.post<AuthResponse>('/auth/login', data);
+    try {
+      return await apiClient.post<AuthResponse>('/auth/login', data);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erro ao fazer login';
+      
+      // Mensagens mais amigáveis
+      if (message.includes('401') || message.toLowerCase().includes('credenciais')) {
+        return {
+          success: false,
+          message: 'Email ou senha incorretos'
+        };
+      }
+      
+      if (message.includes('404') || message.toLowerCase().includes('não encontrado')) {
+        return {
+          success: false,
+          message: 'Usuário não encontrado'
+        };
+      }
+      
+      if (message.includes('timeout') || message.includes('network')) {
+        return {
+          success: false,
+          message: 'Erro de conexão. Verifique sua internet'
+        };
+      }
+      
+      return {
+        success: false,
+        message: message || 'Erro ao fazer login. Tente novamente'
+      };
+    }
   }
 
   static async verifyToken(token: string): Promise<User | null> {
