@@ -227,48 +227,49 @@ export default function CardDetails() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
+        <div className="max-w-6xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{card.name}</h1>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{card.name}</h1>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
                 onClick={() => navigate(`/cards/${cardId}/edit`)}
-                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <Edit className="w-5 h-5" />
+                <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               >
-                <Trash2 className="w-5 h-5" />
+                <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>
 
           {/* Navegação de Meses */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <button
               onClick={goToPreviousMonth}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm sm:text-base"
             >
-              <ChevronLeft className="w-5 h-5" />
-              Mês Anterior
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Mês Anterior</span>
+              <span className="sm:hidden">Anterior</span>
             </button>
 
-            <div className="text-center">
-              <p className="text-lg font-semibold text-gray-900 capitalize">
+            <div className="text-center flex-1 min-w-0">
+              <p className="text-sm sm:text-lg font-semibold text-gray-900 capitalize truncate">
                 {new Date(viewingYear, viewingMonth - 1).toLocaleDateString('pt-BR', { 
                   month: 'long', 
                   year: 'numeric' 
@@ -277,13 +278,13 @@ export default function CardDetails() {
               {!isCurrentMonth && (
                 <button
                   onClick={goToCurrentMonth}
-                  className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                  className="text-xs sm:text-sm text-indigo-600 hover:text-indigo-700 font-medium"
                 >
-                  Voltar para mês atual
+                  Voltar para atual
                 </button>
               )}
               {!isCurrentMonth && (
-                <p className="text-xs text-amber-600 mt-1">
+                <p className="text-xs text-amber-600 mt-1 hidden sm:block">
                   📌 Visualização apenas - Edição desabilitada
                 </p>
               )}
@@ -291,51 +292,52 @@ export default function CardDetails() {
 
             <button
               onClick={goToNextMonth}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm sm:text-base"
             >
-              Próximo Mês
-              <ChevronRight className="w-5 h-5" />
+              <span className="hidden sm:inline">Próximo Mês</span>
+              <span className="sm:hidden">Próximo</span>
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
         {/* Card Info */}
         <div
-          className="rounded-xl shadow-lg p-6 text-white mb-8"
+          className="rounded-xl shadow-lg p-4 sm:p-6 text-white mb-4 sm:mb-8"
           style={{ backgroundColor: card.color }}
         >
-          <div className="flex justify-between items-start mb-8">
+          <div className="flex justify-between items-start mb-4 sm:mb-8">
             <div>
-              <p className="text-sm opacity-80">Limite Total</p>
-              <p className="text-3xl font-bold">
+              <p className="text-xs sm:text-sm opacity-80">Limite Total</p>
+              <p className="text-xl sm:text-3xl font-bold">
                 R$ {Number(card.card_limit).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
-            <CreditCard className="w-12 h-12 opacity-80" />
+            <CreditCard className="w-8 h-8 sm:w-12 sm:h-12 opacity-80" />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
             <div>
               <p className="text-xs opacity-80">Total Fatura</p>
-              <p className="text-lg font-semibold">
+              <p className="text-sm sm:text-lg font-semibold">
                 R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
             <div>
               <p className="text-xs opacity-80">Pago</p>
-              <p className="text-lg font-semibold text-green-200">
+              <p className="text-sm sm:text-lg font-semibold text-green-200">
                 R$ {paidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
             <div>
               <p className="text-xs opacity-80">Restante</p>
-              <p className="text-lg font-semibold text-yellow-200">
+              <p className="text-sm sm:text-lg font-semibold text-yellow-200">
                 R$ {remainingAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
           </div>
-          <div className="mt-6 flex gap-4 text-sm">
+          <div className="mt-4 sm:mt-6 flex gap-3 sm:gap-4 text-xs sm:text-sm">
             <div>
               <span className="opacity-80">Fecha dia</span>{' '}
               <span className="font-semibold">{card.closing_day}</span>
@@ -348,56 +350,59 @@ export default function CardDetails() {
         </div>
 
         {/* Items List */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">
+        <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
               Itens da Fatura ({items.length})
             </h2>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               {selectedItems.size > 0 && isCurrentMonth && (
                 <>
                   <button
                     onClick={markSelectedAsPaid}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2 text-sm"
+                    className="px-2 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                   >
-                    <Check className="w-4 h-4" />
-                    Marcar {selectedItems.size} como pago
+                    <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Marcar {selectedItems.size} como pago</span>
+                    <span className="sm:hidden">Pagar ({selectedItems.size})</span>
                   </button>
                   <button
                     onClick={deleteSelectedItems}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 text-sm"
+                    className="px-2 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                   >
-                    <Trash2 className="w-4 h-4" />
-                    Excluir {selectedItems.size}
+                    <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Excluir {selectedItems.size}</span>
+                    <span className="sm:hidden">Del ({selectedItems.size})</span>
                   </button>
                 </>
               )}
               {isCurrentMonth && (
                 <button
                   onClick={() => navigate(`/cards/${cardId}/items/new`)}
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-xs sm:text-base"
                 >
-                  <Plus className="w-5 h-5" />
-                  <span>Adicionar Item</span>
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="hidden sm:inline">Adicionar Item</span>
+                  <span className="sm:hidden">Novo</span>
                 </button>
               )}
             </div>
           </div>
 
           {items.length === 0 ? (
-            <div className="text-center py-12">
-              <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600 mb-2">Nenhum item nesta fatura</p>
-              <p className="text-sm text-gray-500">
+            <div className="text-center py-8 sm:py-12">
+              <Calendar className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-sm sm:text-base text-gray-600 mb-2">Nenhum item nesta fatura</p>
+              <p className="text-xs sm:text-sm text-gray-500">
                 Clique em "Adicionar Item" para começar
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-4 p-4 border-2 rounded-lg transition ${
+                  className={`flex items-start sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 border-2 rounded-lg transition ${
                     isCurrentMonth ? 'cursor-pointer' : 'cursor-default opacity-75'
                   } ${
                     selectedItems.has(item.id)
@@ -406,52 +411,52 @@ export default function CardDetails() {
                   }`}
                   onClick={() => isCurrentMonth && toggleSelectItem(item.id)}
                 >
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 mt-0.5 sm:mt-0">
                     {isCurrentMonth ? (
                       selectedItems.has(item.id) ? (
-                        <CheckCircle className="w-6 h-6 text-indigo-600" />
+                        <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
                       ) : item.is_paid ? (
-                        <CheckCircle className="w-6 h-6 text-green-500" />
+                        <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
                       ) : (
-                        <Circle className="w-6 h-6 text-gray-300" />
+                        <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
                       )
                     ) : (
                       // Ícone fixo para visualização apenas
                       item.is_paid ? (
-                        <CheckCircle className="w-6 h-6 text-green-500" />
+                        <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
                       ) : (
-                        <Circle className="w-6 h-6 text-gray-400" />
+                        <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
                       )
                     )}
                   </div>
 
                   <div
-                    className="flex-1"
+                    className="flex-1 min-w-0"
                     onClick={(e) => {
                       e.stopPropagation();
                       openEditModal(item);
                     }}
                   >
-                    <p className={`font-medium ${item.is_paid ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                    <p className={`font-medium text-sm sm:text-base truncate ${item.is_paid ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
                       {item.description}
                     </p>
-                    <div className="flex gap-3 mt-1 text-sm text-gray-500">
+                    <div className="flex flex-wrap gap-2 sm:gap-3 mt-1 text-xs sm:text-sm text-gray-500">
                       {item.category_name && (
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 truncate">
                           {item.category_icon} {item.category_name}
                         </span>
                       )}
-                      <span>{item.author_name}</span>
+                      <span className="truncate">{item.author_name}</span>
                       {item.purchase_date && (
-                        <span>
+                        <span className="hidden sm:inline">
                           {new Date(item.purchase_date).toLocaleDateString('pt-BR')}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <p className={`text-lg font-semibold ${item.is_paid ? 'text-gray-400' : 'text-gray-900'}`}>
+                  <div className="text-right flex-shrink-0">
+                    <p className={`text-sm sm:text-lg font-semibold ${item.is_paid ? 'text-gray-400' : 'text-gray-900'}`}>
                       R$ {Number(item.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     {item.installment_number && (
