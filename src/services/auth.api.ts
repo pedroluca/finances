@@ -1,4 +1,4 @@
-import { apiClient } from '../lib/api';
+import { apiClient, isProduction } from '../lib/api';
 import type { User, RegisterDTO, LoginDTO } from '../types/database';
 
 export interface AuthResponse {
@@ -11,7 +11,9 @@ export interface AuthResponse {
 export class AuthService {
   static async register(data: RegisterDTO): Promise<AuthResponse> {
     try {
-      return await apiClient.post<AuthResponse>('/auth/register', data);
+      // Usa query param para Vercel, path para Express local
+      const endpoint = isProduction ? '/auth?action=register' : '/auth/register';
+      return await apiClient.post<AuthResponse>(endpoint, data);
     } catch (error) {
       return {
         success: false,
@@ -22,7 +24,9 @@ export class AuthService {
 
   static async login(data: LoginDTO): Promise<AuthResponse> {
     try {
-      return await apiClient.post<AuthResponse>('/auth/login', data);
+      // Usa query param para Vercel, path para Express local
+      const endpoint = isProduction ? '/auth?action=login' : '/auth/login';
+      return await apiClient.post<AuthResponse>(endpoint, data);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro ao fazer login';
       
@@ -58,7 +62,9 @@ export class AuthService {
   static async verifyToken(token: string): Promise<User | null> {
     try {
       apiClient.setToken(token);
-      const response = await apiClient.get<{ success: boolean; user: User }>('/auth/verify');
+      // Usa query param para Vercel, path para Express local
+      const endpoint = isProduction ? '/auth?action=verify' : '/auth/verify';
+      const response = await apiClient.get<{ success: boolean; user: User }>(endpoint);
       return response.success ? response.user : null;
     } catch {
       return null;
