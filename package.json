@@ -7,7 +7,8 @@
     "dev": "vite",
     "dev:server": "tsx watch server/index.ts",
     "dev:all": "concurrently \"pnpm dev\" \"pnpm dev:server\"",
-    "build": "tsc -b && vite build",
+    "build": "tsc -p tsconfig.app.json && vite build",
+    "build:api": "tsc -p tsconfig.api.json",
     "lint": "eslint .",
     "preview": "vite preview",
     "vercel-build": "pnpm build"
