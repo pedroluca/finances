@@ -9,24 +9,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Simulação de autores
-$authors = [
-    ["id" => 1, "name" => "Pedro"],
-    ["id" => 2, "name" => "Lucas"]
-];
+
+require_once __DIR__ . '/config.php';
 
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'GET':
-        echo json_encode($authors);
+        // Aceita ?user_id= para filtrar autores de um usuário
+        $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
+        try {
+            if ($user_id) {
+                $stmt = $pdo->prepare('SELECT * FROM authors WHERE user_id = :user_id');
+                $stmt->execute(['user_id' => $user_id]);
+            } else {
+                $stmt = $pdo->query('SELECT * FROM authors');
+            }
+            $authors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode($authors);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Erro ao buscar autores', 'error' => $e->getMessage()]);
+        }
         exit();
     case 'POST':
         $input = json_decode(file_get_contents('php://input'), true);
-        $newAuthor = [
-            'id' => count($authors) + 1,
-            'name' => $input['name'] ?? 'Novo Autor'
-        ];
-        // Simule adicionar
-        echo json_encode($newAuthor);
+        $user_id = $input['user_id'] ?? null;
+        $name = $input['name'] ?? null;
+        $is_owner = isset($input['is_owner']) ? (bool)$input['is_owner'] : false;
+        if (!$user_id || !$name) {
+            echo json_encode(['success' => false, 'message' => 'user_id e name são obrigatórios']);
+            exit();
+        }
+        try {
+            $stmt = $pdo->prepare('INSERT INTO authors (user_id, name, is_owner) VALUES (:user_id, :name, :is_owner)');
+            $stmt->execute([
+                'user_id' => $user_id,
+                'name' => $name,
+                'is_owner' => $is_owner
+            ]);
+            $id = $pdo->lastInsertId();
+            $stmt = $pdo->prepare('SELECT * FROM authors WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            $author = $stmt->fetch(PDO::FETCH_ASSOC);
+            echo json_encode($author);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Erro ao criar autor', 'error' => $e->getMessage()]);
+        }
         exit();
     default:
         echo json_encode(['success' => false, 'message' => 'Método não permitido']);

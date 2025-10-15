@@ -9,20 +9,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-$action = $_GET['action'] ?? '';
 
-// Simulação de banco de dados (substitua por conexão real depois)
-$users = [
-    ["id" => 1, "email" => "user@teste.com", "password" => "123456", "name" => "Usuário Teste"]
-];
+require_once __DIR__ . '/config.php';
+$action = $_GET['action'] ?? '';
 
 switch ($action) {
     case 'login':
         $input = json_decode(file_get_contents('php://input'), true);
         $email = $input['email'] ?? '';
         $password = $input['password'] ?? '';
-        foreach ($users as $user) {
-            if ($user['email'] === $email && $user['password'] === $password) {
+        if (!$email || !$password) {
+            echo json_encode(['success' => false, 'message' => 'Email e senha são obrigatórios']);
+            exit();
+        }
+        try {
+            $stmt = $pdo->prepare('SELECT id, email, name, password_hash FROM users WHERE email = :email LIMIT 1');
+            $stmt->execute(['email' => $email]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($user && password_verify($password, $user['password_hash'])) {
                 echo json_encode([
                     'success' => true,
                     'user' => [
@@ -33,20 +37,58 @@ switch ($action) {
                     'token' => 'fake-jwt-token'
                 ]);
                 exit();
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Email ou senha incorretos']);
+                exit();
             }
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Erro ao consultar usuário', 'error' => $e->getMessage()]);
+            exit();
         }
-        echo json_encode(['success' => false, 'message' => 'Email ou senha incorretos']);
-        exit();
     case 'register':
-        // Simule cadastro
-        echo json_encode(['success' => true, 'message' => 'Usuário registrado (simulado)']);
+        $input = json_decode(file_get_contents('php://input'), true);
+        $name = $input['name'] ?? '';
+        $email = $input['email'] ?? '';
+        $password = $input['password'] ?? '';
+        if (!$name || !$email || !$password) {
+            echo json_encode(['success' => false, 'message' => 'Nome, email e senha são obrigatórios']);
+            exit();
+        }
+        try {
+            $stmt = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
+            $stmt->execute(['email' => $email]);
+            if ($stmt->fetch()) {
+                echo json_encode(['success' => false, 'message' => 'Email já cadastrado']);
+                exit();
+            }
+            $password_hash = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare('INSERT INTO users (name, email, password_hash) VALUES (:name, :email, :password_hash)');
+            $stmt->execute([
+                'name' => $name,
+                'email' => $email,
+                'password_hash' => $password_hash
+            ]);
+            $id = $pdo->lastInsertId();
+            echo json_encode(['success' => true, 'message' => 'Usuário registrado', 'user_id' => $id]);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Erro ao registrar usuário', 'error' => $e->getMessage()]);
+        }
         exit();
     case 'verify':
-        // Simule verificação de token
+        // Simulação de verificação de token (ajuste para JWT real se desejar)
         $headers = getallheaders();
         $token = $headers['Authorization'] ?? '';
         if ($token === 'Bearer fake-jwt-token') {
-            echo json_encode(['success' => true, 'user' => $users[0]]);
+            // Busca o primeiro usuário só para exemplo
+            $stmt = $pdo->query('SELECT id, email, name FROM users LIMIT 1');
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($user) {
+                echo json_encode(['success' => true, 'user' => $user]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Usuário não encontrado']);
+            }
         } else {
             echo json_encode(['success' => false, 'message' => 'Token inválido']);
         }

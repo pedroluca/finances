@@ -9,19 +9,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-
 require_once __DIR__ . '/config.php';
 
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'GET':
-        // Usa a view invoice_item_details para trazer detalhes completos dos itens
+        // ?invoice_id= para filtrar itens de uma fatura
         $invoice_id = isset($_GET['invoice_id']) ? intval($_GET['invoice_id']) : null;
         try {
             if ($invoice_id) {
-                $stmt = $pdo->prepare('SELECT * FROM invoice_item_details WHERE invoice_id = :invoice_id');
+                $stmt = $pdo->prepare('SELECT * FROM invoice_items WHERE invoice_id = :invoice_id');
                 $stmt->execute(['invoice_id' => $invoice_id]);
             } else {
-                $stmt = $pdo->query('SELECT * FROM invoice_item_details');
+                $stmt = $pdo->query('SELECT * FROM invoice_items');
             }
             $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
             echo json_encode($items);
@@ -72,6 +71,54 @@ switch ($_SERVER['REQUEST_METHOD']) {
         } catch (PDOException $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Erro ao criar item', 'error' => $e->getMessage()]);
+        }
+        exit();
+    case 'PUT':
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = $input['id'] ?? null;
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'ID do item é obrigatório']);
+            exit();
+        }
+        $fields = [];
+        $params = ['id' => $id];
+        foreach (['description','amount','category_id','author_id','is_paid','is_installment','installment_number','total_installments','installment_group_id','purchase_date','notes'] as $field) {
+            if (isset($input[$field])) {
+                $fields[] = "$field = :$field";
+                $params[$field] = $input[$field];
+            }
+        }
+        if (empty($fields)) {
+            echo json_encode(['success' => false, 'message' => 'Nenhum campo para atualizar']);
+            exit();
+        }
+        try {
+            $sql = 'UPDATE invoice_items SET ' . implode(', ', $fields) . ' WHERE id = :id';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $stmt = $pdo->prepare('SELECT * FROM invoice_items WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            $item = $stmt->fetch(PDO::FETCH_ASSOC);
+            echo json_encode($item);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Erro ao atualizar item', 'error' => $e->getMessage()]);
+        }
+        exit();
+    case 'DELETE':
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = $input['id'] ?? null;
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'ID do item é obrigatório']);
+            exit();
+        }
+        try {
+            $stmt = $pdo->prepare('DELETE FROM invoice_items WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            echo json_encode(['success' => true]);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Erro ao remover item', 'error' => $e->getMessage()]);
         }
         exit();
     default:

@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useAppStore } from '../store/app.store';
-import { CardService } from '../services/card.api';
-import { InvoiceService } from '../services/invoice.api';
-import { ItemService } from '../services/item.api';
+import { phpApiRequest } from '../lib/api';
 import EditItemModal from '../components/EditItemModal';
 import {
   ArrowLeft,
@@ -60,16 +58,14 @@ export default function CardDetails() {
 
       try {
         setIsLoading(true);
-
         // Buscar ou criar fatura do mês atual
-        const invoice = await InvoiceService.getOrCreateInvoice(
-          card.id,
-          viewingMonth,
-          viewingYear
+        const invoice = await phpApiRequest(
+          `invoices.php?action=getOrCreate&card_id=${card.id}&month=${viewingMonth}&year=${viewingYear}`
         );
-
-        if (invoice) {
-          const invoiceItems = await ItemService.getInvoiceItems(invoice.id);
+        if (invoice && invoice.id) {
+          const invoiceItems = await phpApiRequest(
+            `items.php?action=getByInvoice&invoice_id=${invoice.id}`
+          );
           setItems(invoiceItems);
         }
       } catch (error) {
@@ -94,19 +90,16 @@ export default function CardDetails() {
 
       try {
         setIsLoadingItems(true);
-
         // Buscar ou criar fatura do mês visualizado
-        const invoice = await InvoiceService.getOrCreateInvoice(
-          card.id,
-          viewingMonth,
-          viewingYear
+        const invoice = await phpApiRequest(
+          `invoices.php?action=getOrCreate&card_id=${card.id}&month=${viewingMonth}&year=${viewingYear}`
         );
-
-        if (invoice) {
-          const invoiceItems = await ItemService.getInvoiceItems(invoice.id);
+        if (invoice && invoice.id) {
+          const invoiceItems = await phpApiRequest(
+            `items.php?action=getByInvoice&invoice_id=${invoice.id}`
+          );
           setItems(invoiceItems);
         }
-        
         // Limpar seleção ao trocar de mês
         setSelectedItems(new Set());
       } catch (error) {
@@ -169,7 +162,14 @@ export default function CardDetails() {
     if (!card || !user) return;
 
     try {
-      await CardService.deactivateCard(card.id, user.id);
+      await phpApiRequest(
+        `cards.php?action=deactivate`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ card_id: card.id, user_id: user.id })
+        }
+      );
       removeCard(card.id);
       navigate('/dashboard');
     } catch (error) {
@@ -199,10 +199,16 @@ export default function CardDetails() {
     try {
       await Promise.all(
         Array.from(selectedItems).map((itemId) =>
-          ItemService.togglePaidStatus(itemId, user.id)
+          phpApiRequest(
+            `items.php?action=togglePaidStatus`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ item_id: itemId, user_id: user.id })
+            }
+          )
         )
       );
-      
       setItems((prev) =>
         prev.map((item) =>
           selectedItems.has(item.id) ? { ...item, is_paid: true } : item
@@ -224,10 +230,16 @@ export default function CardDetails() {
     try {
       await Promise.all(
         Array.from(selectedItems).map((itemId) =>
-          ItemService.deleteItem(itemId)
+          phpApiRequest(
+            `items.php?action=delete`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ item_id: itemId })
+            }
+          )
         )
       );
-      
       setItems((prev) => prev.filter((item) => !selectedItems.has(item.id)));
       setSelectedItems(new Set());
     } catch (error) {
@@ -248,8 +260,14 @@ export default function CardDetails() {
     if (!editingItem || !user) return;
 
     try {
-      await ItemService.updateItem(editingItem.id, user.id, updatedItem);
-
+      await phpApiRequest(
+        `items.php?action=update`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ item_id: editingItem.id, user_id: user.id, ...updatedItem })
+        }
+      );
       setItems((prev) =>
         prev.map((item) =>
           item.id === editingItem.id ? { ...item, ...updatedItem } : item
