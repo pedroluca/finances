@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useAppStore } from '../store/app.store';
+import type { CardWithBalance } from '../types/database';
 import { phpApiRequest } from '../lib/api';
 import EditItemModal from '../components/EditItemModal';
 import {
@@ -20,7 +21,7 @@ import {
   X,
   User,
 } from 'lucide-react';
-import type { InvoiceItemWithDetails } from '../types/database';
+import type { InvoiceItemWithDetails, InvoiceWithCard } from '../types/database';
 
 export default function CardDetails() {
   const navigate = useNavigate();
@@ -44,7 +45,8 @@ export default function CardDetails() {
   const [viewingMonth, setViewingMonth] = useState(currentDate.getMonth() + 1);
   const [viewingYear, setViewingYear] = useState(currentDate.getFullYear());
 
-  const card = cards.find((c) => c.id === Number(cardId));
+  // cards agora vem da view card_available_balance
+  const card = (cards as CardWithBalance[]).find((c) => (c.card_id ?? c.id) === Number(cardId));
   const currentMonth = currentDate.getMonth() + 1;
   const currentYear = currentDate.getFullYear();
   
@@ -58,16 +60,13 @@ export default function CardDetails() {
 
       try {
         setIsLoading(true);
-        // Buscar ou criar fatura do mês atual
-        const invoice = await phpApiRequest(
-          `invoices.php?action=getOrCreate&card_id=${card.id}&month=${viewingMonth}&year=${viewingYear}`
+        // Buscar faturas do cartão (com itens)
+        const invoices: (InvoiceWithCard & { items: InvoiceItemWithDetails[] })[] = await phpApiRequest(`invoices.php?card_id=${card.card_id ?? card.id}`);
+        // Encontrar a fatura do mês/ano visualizado
+        const invoice = invoices.find((inv) =>
+          inv.reference_month === viewingMonth && inv.reference_year === viewingYear
         );
-        if (invoice && invoice.id) {
-          const invoiceItems = await phpApiRequest(
-            `items.php?action=getByInvoice&invoice_id=${invoice.id}`
-          );
-          setItems(invoiceItems);
-        }
+        setItems(invoice?.items || []);
       } catch (error) {
         console.error('Erro ao carregar dados iniciais:', error);
       } finally {
@@ -78,7 +77,7 @@ export default function CardDetails() {
 
     loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [card?.id, user?.id]); // Só executa uma vez no mount
+  }, [card?.card_id, user?.id]); // Só executa uma vez no mount
 
   // Carregamento de itens quando o mês muda (APÓS carregamento inicial)
   useEffect(() => {
@@ -90,17 +89,13 @@ export default function CardDetails() {
 
       try {
         setIsLoadingItems(true);
-        // Buscar ou criar fatura do mês visualizado
-        const invoice = await phpApiRequest(
-          `invoices.php?action=getOrCreate&card_id=${card.id}&month=${viewingMonth}&year=${viewingYear}`
+        // Buscar faturas do cartão (com itens)
+        const invoices: (InvoiceWithCard & { items: InvoiceItemWithDetails[] })[] = await phpApiRequest(`invoices.php?card_id=${card.card_id ?? card.id}`);
+        // Encontrar a fatura do mês/ano visualizado
+        const invoice = invoices.find((inv) =>
+          inv.reference_month === viewingMonth && inv.reference_year === viewingYear
         );
-        if (invoice && invoice.id) {
-          const invoiceItems = await phpApiRequest(
-            `items.php?action=getByInvoice&invoice_id=${invoice.id}`
-          );
-          setItems(invoiceItems);
-        }
-        // Limpar seleção ao trocar de mês
+        setItems(invoice?.items || []);
         setSelectedItems(new Set());
       } catch (error) {
         console.error('Erro ao carregar itens:', error);
@@ -167,10 +162,10 @@ export default function CardDetails() {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ card_id: card.id, user_id: user.id })
+          body: JSON.stringify({ card_id: card.card_id ?? card.id, user_id: user.id })
         }
       );
-      removeCard(card.id);
+      removeCard(card.card_id ?? card.id);
       navigate('/dashboard');
     } catch (error) {
       console.error('Erro ao excluir cartão:', error);
@@ -318,7 +313,7 @@ export default function CardDetails() {
                 <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-300" />
               </button>
               <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">{card.name}</h1>
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">{card.card_name ?? card.name}</h1>
               </div>
             </div>
 
@@ -382,7 +377,7 @@ export default function CardDetails() {
           key={`${viewingMonth}-${viewingYear}`}
           className="rounded-xl shadow-lg p-4 sm:p-6 text-white mb-4 sm:mb-8"
           style={{ 
-            backgroundColor: card.color,
+            backgroundColor: card.color ?? '#6366f1',
             animation: 'slideInFromTop 0.25s ease-out'
           }}
         >
@@ -390,7 +385,7 @@ export default function CardDetails() {
             <div>
               <p className="text-xs sm:text-sm opacity-80">Limite Total</p>
               <p className="text-xl sm:text-3xl font-bold">
-                R$ {Number(card.card_limit).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                R$ {Number(card.card_limit ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
             <CreditCard className="w-8 h-8 sm:w-12 sm:h-12 opacity-80" />
@@ -418,11 +413,11 @@ export default function CardDetails() {
           <div className="mt-4 sm:mt-6 flex gap-3 sm:gap-4 text-xs sm:text-sm">
             <div>
               <span className="opacity-80">Fecha dia</span>{' '}
-              <span className="font-semibold">{card.closing_day}</span>
+              <span className="font-semibold">{card.closing_day ?? ''}</span>
             </div>
             <div>
               <span className="opacity-80">Vence dia</span>{' '}
-              <span className="font-semibold">{card.due_day}</span>
+              <span className="font-semibold">{card.due_day ?? ''}</span>
             </div>
           </div>
         </div>

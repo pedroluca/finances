@@ -24,6 +24,14 @@ switch ($_SERVER['REQUEST_METHOD']) {
                 $stmt = $pdo->query('SELECT * FROM invoice_details');
             }
             $invoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Buscar itens de cada fatura e adicionar ao array
+            foreach ($invoices as &$invoice) {
+                $stmtItems = $pdo->prepare('SELECT * FROM invoice_item_details WHERE invoice_id = :invoice_id');
+                $stmtItems->execute(['invoice_id' => $invoice['id']]);
+                $invoice['items'] = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
+            }
+
             echo json_encode($invoices);
         } catch (PDOException $e) {
             http_response_code(500);

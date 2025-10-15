@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useAppStore } from '../store/app.store';
+import type { CardWithBalance } from '../types/database';
 import {
   CreditCard,
   Plus,
   LogOut,
   Calendar,
-  TrendingUp,
-  DollarSign,
   Settings,
+  DollarSign,
+  TrendingUp,
 } from 'lucide-react';
 import { phpApiRequest } from '../lib/api';
 
@@ -21,16 +22,18 @@ export default function Dashboard() {
     setCards,
     setCategories,
     setAuthors,
-    monthlyTotals,
-    setMonthlyTotals,
     selectedMonth,
     selectedYear,
     setSelectedMonth,
     setSelectedYear,
   } = useAppStore();
+  const { monthlyTotals, setMonthlyTotals } = useAppStore();
 
   const [isLoading, setIsLoading] = useState(true);
-  const [cardInvoiceTotals, setCardInvoiceTotals] = useState<Record<number, number>>({});
+  // cards agora vem da view card_available_balance
+  const activeCards = (cards as CardWithBalance[]); // todos já são ativos na view
+
+  const totalLimit = activeCards.reduce((sum, card) => sum + Number(card.card_limit ?? 0), 0);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -40,31 +43,28 @@ export default function Dashboard() {
 
     const loadInitialData = async () => {
       if (!user) return;
-
       try {
         setIsLoading(true);
-
         // Carregar dados em paralelo da nova API PHP
-        const [cardsData, categoriesData, authorsData, invoicesData] = await Promise.all([
+        const [cardsData, categoriesData, authorsData, monthlyTotalsData] = await Promise.all([
           phpApiRequest('cards.php', { method: 'GET' }),
           phpApiRequest('categories.php', { method: 'GET' }),
           phpApiRequest('authors.php', { method: 'GET' }),
-          phpApiRequest('invoices.php', { method: 'GET' }),
+          phpApiRequest('invoices.php?action=monthlyTotals', { method: 'GET' }),
         ]);
-
         setCards(cardsData);
         setCategories(categoriesData);
         setAuthors(authorsData);
+        setMonthlyTotals(monthlyTotalsData); // Set monthly totals correctly
 
         // Calcular total de faturas por cartão (simples)
         const totals: Record<number, number> = {};
-        invoicesData.forEach((invoice: { cardId: number; total?: number; value?: number }) => {
+        monthlyTotalsData.forEach((invoice: { cardId: number; total?: number; value?: number }) => {
           if (!totals[invoice.cardId]) {
             totals[invoice.cardId] = 0;
           }
-          totals[invoice.cardId] += Number(invoice.total || invoice.value || 0);
-        });
-        setCardInvoiceTotals(totals);
+        })
+  // totalLimit já é usado diretamente na renderização
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
       } finally {
@@ -83,9 +83,6 @@ export default function Dashboard() {
   const currentMonthTotal = monthlyTotals.find(
     (t) => t.reference_month === selectedMonth && t.reference_year === selectedYear
   );
-
-  const activeCards = cards.filter((c) => c.active);
-  const totalLimit = activeCards.reduce((sum, card) => sum + Number(card.card_limit), 0);
 
   if (isLoading) {
     return (
@@ -261,27 +258,26 @@ export default function Dashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {activeCards.map((card) => {
-                const totalInvoices = cardInvoiceTotals[card.id] || 0;
-                const availableLimit = Number(card.card_limit) - totalInvoices;
-
+                // card vem da view card_available_balance
+                const availableLimit = Number(card.available_balance);
                 return (
                   <button
-                    key={card.id}
-                    onClick={() => navigate(`/cards/${card.id}`)}
+                    key={card.card_id}
+                    onClick={() => navigate(`/cards/${card.card_id}`)}
                     className="p-6 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-primary-500 dark:hover:border-primary-400 hover:shadow-md transition text-left"
                     style={{ borderLeftWidth: '4px', borderLeftColor: card.color }}
                   >
                     <div className="flex items-start justify-between mb-4">
                       <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
-                        {card.name}
+                        {card.card_name}
                       </h3>
                       <div
                         className="w-8 h-8 rounded-lg flex items-center justify-center"
-                        style={{ backgroundColor: `${card.color}20` }}
+                        style={{ backgroundColor: `#6366f120` }}
                       >
                         <CreditCard
                           className="w-4 h-4"
-                          style={{ color: card.color }}
+                          style={{ color: '#6366f1' }}
                         />
                       </div>
                     </div>
@@ -306,18 +302,6 @@ export default function Dashboard() {
                           })}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Fechamento:</span>
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          Dia {card.closing_day}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Vencimento:</span>
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          Dia {card.due_day}
-                        </span>
-                      </div>
                     </div>
                   </button>
                 );
@@ -333,9 +317,9 @@ export default function Dashboard() {
               Últimos Meses
             </h2>
             <div className="space-y-3">
-              {monthlyTotals.map((total) => (
+              {monthlyTotals.map((total, idx) => (
                 <div
-                  key={`${total.reference_year}-${total.reference_month}`}
+                  key={`${total.reference_year}-${total.reference_month}-${idx}`}
                   className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg transition-colors"
                 >
                   <div>

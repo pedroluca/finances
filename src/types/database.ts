@@ -99,8 +99,11 @@ export interface InvoiceItemWithDetails extends InvoiceItem {
 }
 
 export interface CardWithBalance extends Card {
+  card_id: number; // id da view
+  card_name: string; // nome da view
   current_debt: number;
   available_balance: number;
+  color: string; // cor da view
 }
 
 export interface MonthlyTotal {
