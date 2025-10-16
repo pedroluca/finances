@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useAppStore } from '../store/app.store';
+import LogoImg from '../assets/logo.png'
 import type { CardWithBalance } from '../types/database';
 import {
   CreditCard,
@@ -103,7 +104,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-16 h-16 rounded-lg flex items-center justify-center">
-                <img src="/logo.png" alt="Finances" className="w-full h-full object-contain" />
+                <img src={LogoImg} alt="Finances" className="w-full h-full object-contain" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
