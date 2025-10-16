@@ -11,47 +11,44 @@ interface EditItemModalProps {
 
 export default function EditItemModal({ item, onClose, onSave }: EditItemModalProps) {
   const { categories, authors } = useAppStore();
-
-  // Aguarda autores carregarem antes de inicializar authorId
+  
   const [description, setDescription] = useState(item.description);
-  const [amount, setAmount] = useState(Number(item.amount).toFixed(2));
-  const [displayAmount, setDisplayAmount] = useState(() => {
-    const numValue = Number(item.amount);
-    return `R$ ${numValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  });
-  const [categoryId, setCategoryId] = useState(item.category_id ? String(item.category_id) : '');
-  const [authorId, setAuthorId] = useState(() => {
-    if (item.author_id) return String(item.author_id);
-    if (authors && authors.length > 0) return String(authors[0].id);
-    return '';
-  });
+  const [amount, setAmount] = useState(item.amount.toString());
+  const [displayAmount, setDisplayAmount] = useState('');
+  const [categoryId, setCategoryId] = useState(item.category_id?.toString() || '');
+  const [authorId, setAuthorId] = useState(item.author_id.toString());
   const [purchaseDate, setPurchaseDate] = useState(
     item.purchase_date ? new Date(item.purchase_date).toISOString().split('T')[0] : ''
   );
   const [isLoading, setIsLoading] = useState(false);
 
-  // O modal sempre renderiza, mas o select de autores só habilita quando authors estiver carregado
-
   useEffect(() => {
-    // Atualiza o valor formatado ao mudar o amount
-    const numValue = Number(amount);
-    if (!isNaN(numValue)) {
-      setDisplayAmount(`R$ ${numValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
-    } else {
-      setDisplayAmount('');
-    }
-  }, [amount]);
+    // Formatar valor inicial
+    const numValue = Number(item.amount);
+    const formatted = numValue.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    setDisplayAmount(`R$ ${formatted}`);
+  }, [item.amount]);
 
   const handleAmountChange = (value: string) => {
     const numbers = value.replace(/\D/g, '');
+    
     if (numbers === '') {
       setAmount('');
       setDisplayAmount('');
       return;
     }
+
     const numValue = parseInt(numbers) / 100;
-    setAmount(numValue.toFixed(2));
-    setDisplayAmount(`R$ ${numValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+    setAmount(numValue.toString());
+
+    const formatted = numValue.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    setDisplayAmount(`R$ ${formatted}`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,8 +71,6 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
       setIsLoading(false);
     }
   };
-
-
 
   return (
     <div className="fixed inset-0 bg-[rgba(0,0,0,0.6)] flex items-center justify-center z-50">
@@ -100,7 +95,7 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               required
             />
           </div>
@@ -115,7 +110,7 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
               value={displayAmount}
               onChange={(e) => handleAmountChange(e.target.value)}
               placeholder="R$ 0,00"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               required
             />
             {item.is_installment && (
@@ -133,11 +128,10 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             >
               <option value="">Sem categoria</option>
-              {categories && categories.length > 0 && categories.map((cat) => (
+              {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.icon} {cat.name}
                 </option>
@@ -153,12 +147,10 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
             <select
               value={authorId}
               onChange={(e) => setAuthorId(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               required
-              disabled={!authors || authors.length === 0}
             >
-              <option value="">{!authors || authors.length === 0 ? 'Carregando autores...' : 'Selecione...'}</option>
-              {authors && authors.length > 0 && authors.map((author) => (
+              {authors.map((author) => (
                 <option key={author.id} value={author.id}>
                   {author.name} {author.is_owner && '(Você)'}
                 </option>
@@ -175,7 +167,7 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
               type="date"
               value={purchaseDate}
               onChange={(e) => setPurchaseDate(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
@@ -191,7 +183,7 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Save className="w-5 h-5" />
               {isLoading ? 'Salvando...' : 'Salvar'}

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useAppStore } from '../store/app.store';
-import { CardService } from '../services/card.api';
+import { phpApiRequest } from '../lib/api';
 import { ArrowLeft, CreditCard, DollarSign, Calendar, Palette } from 'lucide-react';
 
 const CARD_COLORS = [
@@ -64,13 +64,16 @@ export default function AddCard() {
     try {
       setIsLoading(true);
 
-      const newCard = await CardService.createCard({
-        user_id: user.id,
-        name: name.trim(),
-        card_limit: limit,
-        closing_day: closing,
-        due_day: due,
-        color,
+      const newCard = await phpApiRequest('cards.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          card_limit: limit,
+          closing_day: closing,
+          due_day: due,
+          color,
+        })
       });
 
       if (newCard) {

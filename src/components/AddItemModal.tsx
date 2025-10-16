@@ -1,31 +1,30 @@
 import { useState, useEffect, useMemo, type FormEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useAppStore } from '../store/app.store';
 import { phpApiRequest } from '../lib/api';
-import { ArrowLeft, DollarSign, FileText, Calendar, Tag, User, Plus } from 'lucide-react';
+import type { CardWithBalance } from '../types/database';
+import { DollarSign, FileText, Calendar, Tag, User, Plus, X } from 'lucide-react';
 
-export default function AddItem() {
-  const navigate = useNavigate();
-  const { cardId } = useParams<{ cardId: string }>();
+interface AddItemModalProps {
+  card: CardWithBalance;
+  invoiceId: number;
+  open: boolean;
+  onClose: () => void;
+  onItemAdded?: () => void;
+}
+
+export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdded }: AddItemModalProps) {
   const { user } = useAuthStore();
-  const { cards, setCards, categories, setCategories, authors, setAuthors, addAuthor } = useAppStore();
-
+  const { categories, setCategories, authors, setAuthors, addAuthor } = useAppStore();
   const [isDataLoading, setIsDataLoading] = useState(false);
-
-  // Sempre derive o cartão e o autor do store, nunca guarde em useState
-  const card = useMemo(() => cards.find((c) => c.id === Number(cardId)), [cards, cardId]);
   const defaultAuthor = useMemo(() => authors.find((a) => a.is_owner), [authors]);
 
-  // Carregar dados necessários se não estiverem no store
   useEffect(() => {
+    if (!open) return;
     const fetchData = async () => {
       setIsDataLoading(true);
       try {
-        if (!cards.length) {
-          const cardsData = await phpApiRequest('cards.php', { method: 'GET' });
-          setCards(cardsData);
-        }
+        // Não busca mais cards aqui, pois o card já é passado como prop
         if (!categories.length) {
           const categoriesData = await phpApiRequest('categories.php', { method: 'GET' });
           setCategories(categoriesData);
@@ -40,15 +39,13 @@ export default function AddItem() {
     };
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cardId]);
+  }, [open]);
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [displayAmount, setDisplayAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [authorId, setAuthorId] = useState('');
-
-  // Sempre que defaultAuthor mudar (após carregar autores), atualize o authorId se ele estiver vazio
   useEffect(() => {
     if (defaultAuthor && !authorId) {
       setAuthorId(defaultAuthor.id.toString());
@@ -56,9 +53,7 @@ export default function AddItem() {
   }, [defaultAuthor, authorId]);
   const [newAuthorName, setNewAuthorName] = useState('');
   const [showNewAuthor, setShowNewAuthor] = useState(false);
-  const [purchaseDate, setPurchaseDate] = useState(
-    new Date().toISOString().split('T')[0]
-  );
+  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
   const [isInstallment, setIsInstallment] = useState(false);
   const [installments, setInstallments] = useState('1');
   const [currentInstallment, setCurrentInstallment] = useState('1');
@@ -66,20 +61,14 @@ export default function AddItem() {
   const [error, setError] = useState('');
 
   const handleAmountChange = (value: string) => {
-    // Remove tudo exceto números
     const numbers = value.replace(/\D/g, '');
-    
     if (numbers === '') {
       setAmount('');
       setDisplayAmount('');
       return;
     }
-
-    // Converte para número (centavos)
     const numValue = parseInt(numbers) / 100;
     setAmount(numValue.toString());
-
-    // Formata para exibição
     const formatted = numValue.toLocaleString('pt-BR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -90,33 +79,32 @@ export default function AddItem() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-
     if (!user || !card) {
       setError('Dados inválidos');
       return;
     }
-
     if (!description.trim()) {
       setError('Digite uma descrição');
       return;
     }
-
     const amountValue = parseFloat(amount);
     if (isNaN(amountValue) || amountValue <= 0) {
       setError('Digite um valor válido');
       return;
     }
-
-    // Se estiver criando novo autor
     let selectedAuthorId = authorId ? Number(authorId) : defaultAuthor?.id;
-    
     if (showNewAuthor && newAuthorName.trim()) {
       try {
         setIsLoading(true);
+        // Corrigir: enviar user_id e is_owner
         const newAuthor = await phpApiRequest('authors.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newAuthorName.trim() })
+          body: JSON.stringify({
+            user_id: user.id,
+            name: newAuthorName.trim(),
+            is_owner: false
+          })
         });
         if (newAuthor && newAuthor.id) {
           addAuthor(newAuthor);
@@ -128,131 +116,79 @@ export default function AddItem() {
         }
         setIsLoading(false);
       } catch (err) {
-        console.error('Erro ao criar autor:', err);
+        console.log(err)
         selectedAuthorId = defaultAuthor?.id;
         setShowNewAuthor(false);
         setIsLoading(false);
       }
     }
-
     if (!selectedAuthorId) {
       setError('Selecione quem comprou');
       return;
     }
-
     try {
       setIsLoading(true);
-
-      const currentDate = new Date();
-      const currentMonth = currentDate.getMonth() + 1;
-      const currentYear = currentDate.getFullYear();
-
-      // Buscar ou criar fatura do mês atual (simulado: só pega a primeira fatura do cartão)
-      const invoices = await phpApiRequest('invoices.php', { method: 'GET' });
-  let invoice = invoices.find((inv: { cardId: number; month: number; year: number; id: number }) => inv.cardId === card.id && inv.month === currentMonth && inv.year === currentYear);
-      if (!invoice) {
-        // Cria nova fatura
-        invoice = await phpApiRequest('invoices.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cardId: card.id, month: currentMonth, year: currentYear })
-        });
-      }
-      if (!invoice || !invoice.id) {
-        setError('Erro ao buscar/criar fatura');
-        return;
-      }
-
       if (isInstallment && Number(installments) > 1) {
-        // Criar item parcelado
+        // Garantir card_id sempre presente
+        let cardIdToSend = card?.id;
+        if (!cardIdToSend) {
+          const stored = localStorage.getItem('lastCardId');
+          if (stored) cardIdToSend = Number(stored);
+        }
+        const payload = {
+          action: 'createInstallment',
+          card_id: cardIdToSend,
+          description: description.trim(),
+          total_amount: amountValue,
+          total_installments: Number(installments),
+          author_id: selectedAuthorId,
+          ...(categoryId ? { category_id: Number(categoryId) } : {}),
+          purchase_date: purchaseDate,
+          current_installment: Number(currentInstallment)
+        };
+        console.log('Enviando parcelado:', payload); // DEBUG
         await phpApiRequest('items.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            card_id: card.id,
-            description: description.trim(),
-            total_amount: amountValue,
-            total_installments: Number(installments),
-            author_id: selectedAuthorId,
-            category_id: categoryId ? Number(categoryId) : undefined,
-            purchase_date: purchaseDate,
-            start_month: currentMonth,
-            start_year: currentYear,
-            current_installment: Number(currentInstallment),
-            invoice_id: invoice.id
-          })
+          body: JSON.stringify(payload)
         });
       } else {
-        // Criar item único
         await phpApiRequest('items.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            invoice_id: invoice.id,
+            invoice_id: invoiceId,
             description: description.trim(),
             amount: amountValue,
             author_id: selectedAuthorId,
-            category_id: categoryId ? Number(categoryId) : undefined,
+            ...(categoryId ? { category_id: Number(categoryId) } : {}),
             purchase_date: purchaseDate
           })
         });
       }
-
-      // Voltar para a página do cartão
-      navigate(`/cards/${cardId}`);
+      if (onItemAdded) onItemAdded();
+      onClose();
     } catch (err) {
-      console.error('Erro ao criar item:', err);
+      console.log(err)
       setError('Erro ao criar item');
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isDataLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Carregando dados...</p>
-      </div>
-    );
-  }
-  if (!card) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Cartão não encontrado</p>
-      </div>
-    );
-  }
-
+  if (!open) return null;
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <button
-            onClick={() => navigate(`/cards/${cardId}`)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Adicionar Item</h1>
-            <p className="text-sm text-gray-600">
-              {card.name} - Fatura atual
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Form */}
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.5)]">
+  <div className="bg-white rounded-xl shadow-lg max-w-lg w-full p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
+          <X className="w-6 h-6" />
+        </button>
+        <h2 className="text-xl font-bold mb-4">Adicionar Item</h2>
+        {isDataLoading ? (
+          <div className="py-12 text-center text-gray-500">Carregando dados...</div>
+        ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* ... (o mesmo conteúdo do form do AddItem) ... */}
             {/* Descrição */}
             <div>
               <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
@@ -269,7 +205,6 @@ export default function AddItem() {
                 required
               />
             </div>
-
             {/* Valor e Parcelamento */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -287,7 +222,6 @@ export default function AddItem() {
                   required
                 />
               </div>
-
               <div>
                 <label htmlFor="installments" className="block text-sm font-medium text-gray-700 mb-2">
                   Parcelas
@@ -301,7 +235,6 @@ export default function AddItem() {
                       const value = e.target.value;
                       setInstallments(value);
                       setIsInstallment(Number(value) > 1);
-                      // Resetar parcela atual se mudar total
                       if (Number(value) < Number(currentInstallment)) {
                         setCurrentInstallment('1');
                       }
@@ -313,14 +246,14 @@ export default function AddItem() {
                 </div>
                 {isInstallment && (
                   <p className="text-xs text-gray-500 mt-1">
-                    {Number(installments)}x de R${' '}
+                    {Number(installments)}x de R${
+                      ' '}
                     {(parseFloat(amount || '0') / Number(installments)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                 )}
               </div>
             </div>
-
-            {/* Parcela Atual - só aparece se for parcelado */}
+            {/* Parcela Atual */}
             {isInstallment && (
               <div>
                 <label htmlFor="currentInstallment" className="block text-sm font-medium text-gray-700 mb-2">
@@ -340,7 +273,6 @@ export default function AddItem() {
                 </p>
               </div>
             )}
-
             {/* Categoria */}
             <div>
               <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
@@ -361,14 +293,12 @@ export default function AddItem() {
                 ))}
               </select>
             </div>
-
             {/* Autor */}
             <div>
               <label htmlFor="author" className="block text-sm font-medium text-gray-700 mb-2">
                 <User className="w-4 h-4 inline mr-2" />
                 Quem comprou?
               </label>
-              
               {!showNewAuthor ? (
                 <>
                   <select
@@ -415,7 +345,6 @@ export default function AddItem() {
                 </>
               )}
             </div>
-
             {/* Data da Compra */}
             <div>
               <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
@@ -430,12 +359,11 @@ export default function AddItem() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
-
             {/* Botões */}
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
-                onClick={() => navigate(`/cards/${cardId}`)}
+                onClick={onClose}
                 className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
               >
                 Cancelar
@@ -443,13 +371,18 @@ export default function AddItem() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Salvando...' : 'Adicionar'}
               </button>
             </div>
+            {error && (
+              <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-2 text-sm text-red-800 text-center">
+                {error}
+              </div>
+            )}
           </form>
-        </div>
+        )}
       </div>
     </div>
   );

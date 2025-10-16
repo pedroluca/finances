@@ -1,59 +1,26 @@
-import { useState, useEffect, useMemo, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useAppStore } from '../store/app.store';
-import { phpApiRequest } from '../lib/api';
+import { ItemService } from '../services/item.api';
+import { InvoiceService } from '../services/invoice.api';
+import { AuthorService } from '../services/author.api';
 import { ArrowLeft, DollarSign, FileText, Calendar, Tag, User, Plus } from 'lucide-react';
 
 export default function AddItem() {
   const navigate = useNavigate();
   const { cardId } = useParams<{ cardId: string }>();
   const { user } = useAuthStore();
-  const { cards, setCards, categories, setCategories, authors, setAuthors, addAuthor } = useAppStore();
+  const { cards, categories, authors, addAuthor } = useAppStore();
 
-  const [isDataLoading, setIsDataLoading] = useState(false);
-
-  // Sempre derive o cartão e o autor do store, nunca guarde em useState
-  const card = useMemo(() => cards.find((c) => c.id === Number(cardId)), [cards, cardId]);
-  const defaultAuthor = useMemo(() => authors.find((a) => a.is_owner), [authors]);
-
-  // Carregar dados necessários se não estiverem no store
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsDataLoading(true);
-      try {
-        if (!cards.length) {
-          const cardsData = await phpApiRequest('cards.php', { method: 'GET' });
-          setCards(cardsData);
-        }
-        if (!categories.length) {
-          const categoriesData = await phpApiRequest('categories.php', { method: 'GET' });
-          setCategories(categoriesData);
-        }
-        if (!authors.length) {
-          const authorsData = await phpApiRequest('authors.php', { method: 'GET' });
-          setAuthors(authorsData);
-        }
-      } finally {
-        setIsDataLoading(false);
-      }
-    };
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cardId]);
+  const card = cards.find((c) => c.id === Number(cardId));
+  const defaultAuthor = authors.find((a) => a.is_owner);
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [displayAmount, setDisplayAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [authorId, setAuthorId] = useState('');
-
-  // Sempre que defaultAuthor mudar (após carregar autores), atualize o authorId se ele estiver vazio
-  useEffect(() => {
-    if (defaultAuthor && !authorId) {
-      setAuthorId(defaultAuthor.id.toString());
-    }
-  }, [defaultAuthor, authorId]);
+  const [authorId, setAuthorId] = useState(defaultAuthor?.id.toString() || '');
   const [newAuthorName, setNewAuthorName] = useState('');
   const [showNewAuthor, setShowNewAuthor] = useState(false);
   const [purchaseDate, setPurchaseDate] = useState(
@@ -113,22 +80,25 @@ export default function AddItem() {
     if (showNewAuthor && newAuthorName.trim()) {
       try {
         setIsLoading(true);
-        const newAuthor = await phpApiRequest('authors.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newAuthorName.trim() })
+        const newAuthor = await AuthorService.createAuthor({
+          user_id: user.id,
+          name: newAuthorName.trim(),
+          is_owner: false,
         });
-        if (newAuthor && newAuthor.id) {
+        
+        if (newAuthor) {
           addAuthor(newAuthor);
-          setAuthorId(newAuthor.id.toString());
           selectedAuthorId = newAuthor.id;
         } else {
+          // Se não conseguiu criar, usa o autor padrão (você)
+          console.warn('Não foi possível criar novo autor, usando autor padrão');
           selectedAuthorId = defaultAuthor?.id;
           setShowNewAuthor(false);
         }
         setIsLoading(false);
       } catch (err) {
         console.error('Erro ao criar autor:', err);
+        // Em caso de erro, usa o autor padrão (você)
         selectedAuthorId = defaultAuthor?.id;
         setShowNewAuthor(false);
         setIsLoading(false);
@@ -147,54 +117,44 @@ export default function AddItem() {
       const currentMonth = currentDate.getMonth() + 1;
       const currentYear = currentDate.getFullYear();
 
-      // Buscar ou criar fatura do mês atual (simulado: só pega a primeira fatura do cartão)
-      const invoices = await phpApiRequest('invoices.php', { method: 'GET' });
-  let invoice = invoices.find((inv: { cardId: number; month: number; year: number; id: number }) => inv.cardId === card.id && inv.month === currentMonth && inv.year === currentYear);
+      // Buscar ou criar fatura do mês atual
+      const invoice = await InvoiceService.getOrCreateInvoice(
+        card.id,
+        currentMonth,
+        currentYear
+      );
+
       if (!invoice) {
-        // Cria nova fatura
-        invoice = await phpApiRequest('invoices.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cardId: card.id, month: currentMonth, year: currentYear })
-        });
-      }
-      if (!invoice || !invoice.id) {
-        setError('Erro ao buscar/criar fatura');
+        setError('Erro ao buscar fatura');
         return;
       }
 
       if (isInstallment && Number(installments) > 1) {
-        // Criar item parcelado
-        await phpApiRequest('items.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            card_id: card.id,
-            description: description.trim(),
-            total_amount: amountValue,
-            total_installments: Number(installments),
-            author_id: selectedAuthorId,
-            category_id: categoryId ? Number(categoryId) : undefined,
-            purchase_date: purchaseDate,
-            start_month: currentMonth,
-            start_year: currentYear,
-            current_installment: Number(currentInstallment),
-            invoice_id: invoice.id
-          })
+        // Calcular quantas parcelas faltam criar
+        const currentInstallmentNum = Number(currentInstallment);
+        
+        // Criar item parcelado a partir da parcela atual
+        await ItemService.createInstallment({
+          card_id: card.id,
+          description: description.trim(),
+          total_amount: amountValue,
+          total_installments: Number(installments),
+          author_id: selectedAuthorId,
+          category_id: categoryId ? Number(categoryId) : undefined,
+          purchase_date: new Date(purchaseDate),
+          start_month: currentMonth,
+          start_year: currentYear,
+          current_installment: currentInstallmentNum,
         });
       } else {
         // Criar item único
-        await phpApiRequest('items.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            invoice_id: invoice.id,
-            description: description.trim(),
-            amount: amountValue,
-            author_id: selectedAuthorId,
-            category_id: categoryId ? Number(categoryId) : undefined,
-            purchase_date: purchaseDate
-          })
+        await ItemService.createItem({
+          invoice_id: invoice.id,
+          description: description.trim(),
+          amount: amountValue,
+          author_id: selectedAuthorId,
+          category_id: categoryId ? Number(categoryId) : undefined,
+          purchase_date: new Date(purchaseDate),
         });
       }
 
@@ -208,13 +168,6 @@ export default function AddItem() {
     }
   };
 
-  if (isDataLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Carregando dados...</p>
-      </div>
-    );
-  }
   if (!card) {
     return (
       <div className="min-h-screen flex items-center justify-center">
