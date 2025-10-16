@@ -33,11 +33,11 @@ export default function CardDetails() {
   // Recupera o cardId do localStorage se não vier da URL
   const [cardId] = useState(() => {
     if (paramCardId) {
-      localStorage.setItem('lastCardId', paramCardId);
+      localStorage.setItem("lastCardId", paramCardId);
       return paramCardId;
     }
-    const stored = localStorage.getItem('lastCardId');
-    return stored || '';
+    const stored = localStorage.getItem("lastCardId");
+    return stored || "";
   });
   const { user } = useAuthStore();
   const { cards, removeCard, authors } = useAppStore();
@@ -83,14 +83,14 @@ export default function CardDetails() {
     if (card || !cardId || cards.length) return;
     const fetchCard = async () => {
       try {
-        const cardsData = await phpApiRequest('cards.php', { method: 'GET' });
+        const cardsData = await phpApiRequest("cards.php", { method: "GET" });
         if (Array.isArray(cardsData)) {
-          if (typeof useAppStore.getState().setCards === 'function') {
+          if (typeof useAppStore.getState().setCards === "function") {
             useAppStore.getState().setCards(cardsData);
           }
         }
       } catch (err) {
-        console.error('Erro ao buscar cartões:', err);
+        console.error("Erro ao buscar cartões:", err);
       }
     };
     fetchCard();
@@ -129,7 +129,13 @@ export default function CardDetails() {
             inv.reference_month === viewingMonth &&
             inv.reference_year === viewingYear
         );
-        setItems(invoice?.items || []);
+        setItems(
+          (invoice?.items || []).map((item) => ({
+            ...item,
+            is_installment: !!Number(item.is_installment),
+            is_paid: !!Number(item.is_paid),
+          }))
+        );
       } catch (error) {
         console.error("Erro ao carregar dados iniciais:", error);
       } finally {
@@ -164,7 +170,14 @@ export default function CardDetails() {
             inv.reference_month === viewingMonth &&
             inv.reference_year === viewingYear
         );
-        setItems(invoice?.items || []);
+        setItems(
+          (invoice?.items || []).map((item) => ({
+            ...item,
+            is_installment: !!Number(item.is_installment),
+            is_paid: !!Number(item.is_paid),
+          }))
+        );
+
         setSelectedItems(new Set());
       } catch (error) {
         console.error("Erro ao carregar itens:", error);
@@ -203,7 +216,7 @@ export default function CardDetails() {
 
   // Limpa o cardId do localStorage ao voltar
   const handleBack = () => {
-    localStorage.removeItem('lastCardId');
+    localStorage.removeItem("lastCardId");
     navigate(-1);
   };
 
@@ -300,14 +313,26 @@ export default function CardDetails() {
     try {
       await Promise.all(
         Array.from(selectedItems).map((itemId) =>
-          phpApiRequest(`items.php?action=delete`, {
-            method: "POST",
+          phpApiRequest(`invoice_items.php`, {
+            method: "DELETE",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ item_id: itemId }),
+            body: JSON.stringify({ id: itemId }),
           })
         )
       );
-      setItems((prev) => prev.filter((item) => !selectedItems.has(item.id)));
+      // setItems((prev) => prev.filter((item) => !selectedItems.has(item.id)));
+      setItems((prev) =>
+        prev.filter(
+          (item) =>
+            !selectedItems.has(item.id) &&
+            // remove também os que pertencem ao mesmo grupo
+            !prev.some(
+              (sel) =>
+                selectedItems.has(sel.id) &&
+                item.installment_group_id === sel.installment_group_id
+            )
+        )
+      );
       setSelectedItems(new Set());
     } catch (error) {
       console.error("Erro ao excluir itens:", error);
@@ -629,97 +654,97 @@ export default function CardDetails() {
               {filteredItems
                 .sort((a, b) => b.id - a.id)
                 .map((item, index) => (
-                <div
-                  key={item.id}
-                  style={{
-                    animation: `slideInFromRight 0.25s ease-out ${Math.min(
-                      index * 0.02,
-                      0.3
-                    )}s both`,
-                  }}
-                  className={`flex items-start sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 border-2 rounded-lg transition ${
-                    isCurrentMonth
-                      ? "cursor-pointer"
-                      : "cursor-default opacity-75"
-                  } ${
-                    selectedItems.has(item.id)
-                      ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"
-                      : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                  }`}
-                  onClick={() => isCurrentMonth && toggleSelectItem(item.id)}
-                >
-                  <div className="flex-shrink-0 mt-0.5 sm:mt-0">
-                    {isCurrentMonth ? (
-                      selectedItems.has(item.id) ? (
-                        <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" />
-                      ) : item.is_paid ? (
+                  <div
+                    key={item.id}
+                    style={{
+                      animation: `slideInFromRight 0.25s ease-out ${Math.min(
+                        index * 0.02,
+                        0.3
+                      )}s both`,
+                    }}
+                    className={`flex items-start sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 border-2 rounded-lg transition ${
+                      isCurrentMonth
+                        ? "cursor-pointer"
+                        : "cursor-default opacity-75"
+                    } ${
+                      selectedItems.has(item.id)
+                        ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"
+                        : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    }`}
+                    onClick={() => isCurrentMonth && toggleSelectItem(item.id)}
+                  >
+                    <div className="flex-shrink-0 mt-0.5 sm:mt-0">
+                      {isCurrentMonth ? (
+                        selectedItems.has(item.id) ? (
+                          <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" />
+                        ) : item.is_paid ? (
+                          <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
+                        ) : (
+                          <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
+                        )
+                      ) : // Ícone fixo para visualização apenas
+                      item.is_paid ? (
                         <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
                       ) : (
-                        <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
-                      )
-                    ) : // Ícone fixo para visualização apenas
-                    item.is_paid ? (
-                      <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
-                    ) : (
-                      <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
-                    )}
-                  </div>
-
-                  <div
-                    className="flex-1 min-w-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openEditModal(item);
-                    }}
-                  >
-                    <p
-                      className={`font-medium text-sm sm:text-base truncate ${
-                        item.is_paid
-                          ? "text-gray-500 dark:text-gray-500 line-through"
-                          : "text-gray-900 dark:text-white"
-                      }`}
-                    >
-                      {item.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2 sm:gap-3 mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                      {item.category_name && (
-                        <span className="flex items-center gap-1 truncate">
-                          {item.category_icon} {item.category_name}
-                        </span>
+                        <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
                       )}
-                      <span className="truncate">{item.author_name}</span>
-                      {item.purchase_date && (
-                        <span className="hidden sm:inline">
-                          {new Date(item.purchase_date).toLocaleDateString(
-                            "pt-BR"
-                          )}
-                        </span>
+                    </div>
+
+                    <div
+                      className="flex-1 min-w-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditModal(item);
+                      }}
+                    >
+                      <p
+                        className={`font-medium text-sm sm:text-base truncate ${
+                          item.is_paid
+                            ? "text-gray-500 dark:text-gray-500 line-through"
+                            : "text-gray-900 dark:text-white"
+                        }`}
+                      >
+                        {item.description}
+                      </p>
+                      <div className="flex flex-wrap gap-2 sm:gap-3 mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                        {item.category_name && (
+                          <span className="flex items-center gap-1 truncate">
+                            {item.category_icon} {item.category_name}
+                          </span>
+                        )}
+                        <span className="truncate">{item.author_name}</span>
+                        {item.purchase_date && (
+                          <span className="hidden sm:inline">
+                            {new Date(item.purchase_date).toLocaleDateString(
+                              "pt-BR"
+                            )}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-right flex-shrink-0">
+                      <p
+                        className={`text-sm sm:text-lg font-semibold ${
+                          item.is_paid
+                            ? "text-gray-400 dark:text-gray-600"
+                            : "text-gray-900 dark:text-white"
+                        }`}
+                      >
+                        R${" "}
+                        {Number(item.amount).toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </p>
+                      {item.installment_number && (
+                        <p className="text-xs text-gray-500 dark:text-gray-500">
+                          {item.installment_number}/{item.total_installments}x
+                        </p>
                       )}
                     </div>
                   </div>
-
-                  <div className="text-right flex-shrink-0">
-                    <p
-                      className={`text-sm sm:text-lg font-semibold ${
-                        item.is_paid
-                          ? "text-gray-400 dark:text-gray-600"
-                          : "text-gray-900 dark:text-white"
-                      }`}
-                    >
-                      R${" "}
-                      {Number(item.amount).toLocaleString("pt-BR", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </p>
-                    {item.installment_number && (
-                      <p className="text-xs text-gray-500 dark:text-gray-500">
-                        {item.installment_number}/{item.total_installments}x
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           )}
         </div>
@@ -866,7 +891,11 @@ export default function CardDetails() {
               const invoices = await phpApiRequest(
                 `invoices.php?card_id=${card.card_id ?? card.id}`
               );
-              const invoiceAtual = (invoices as (InvoiceWithCard & { items: InvoiceItemWithDetails[] })[]).find(
+              const invoiceAtual = (
+                invoices as (InvoiceWithCard & {
+                  items: InvoiceItemWithDetails[];
+                })[]
+              ).find(
                 (inv: InvoiceWithCard & { items: InvoiceItemWithDetails[] }) =>
                   inv.reference_month === viewingMonth &&
                   inv.reference_year === viewingYear
@@ -874,7 +903,7 @@ export default function CardDetails() {
               setItems(invoiceAtual?.items || []);
               setSelectedItems(new Set());
             } catch (error) {
-              console.error('Erro ao recarregar itens após adicionar:', error);
+              console.error("Erro ao recarregar itens após adicionar:", error);
             } finally {
               setIsLoadingItems(false);
             }
