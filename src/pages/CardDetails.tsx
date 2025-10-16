@@ -626,7 +626,9 @@ export default function CardDetails() {
               className="space-y-2 sm:space-y-3 animate-fade-in"
               style={{ animation: "fadeIn 0.2s ease-in" }}
             >
-              {filteredItems.map((item, index) => (
+              {filteredItems
+                .sort((a, b) => b.id - a.id)
+                .map((item, index) => (
                 <div
                   key={item.id}
                   style={{
