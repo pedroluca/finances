@@ -858,9 +858,26 @@ export default function CardDetails() {
           invoiceId={invoice.id}
           open={showAddItemModal}
           onClose={() => setShowAddItemModal(false)}
-          onItemAdded={() => {
+          onItemAdded={async () => {
             setShowAddItemModal(false);
-            setHasInitialLoad(false);
+            // Recarrega os itens da fatura após adicionar
+            setIsLoadingItems(true);
+            try {
+              const invoices = await phpApiRequest(
+                `invoices.php?card_id=${card.card_id ?? card.id}`
+              );
+              const invoiceAtual = (invoices as (InvoiceWithCard & { items: InvoiceItemWithDetails[] })[]).find(
+                (inv: InvoiceWithCard & { items: InvoiceItemWithDetails[] }) =>
+                  inv.reference_month === viewingMonth &&
+                  inv.reference_year === viewingYear
+              );
+              setItems(invoiceAtual?.items || []);
+              setSelectedItems(new Set());
+            } catch (error) {
+              console.error('Erro ao recarregar itens após adicionar:', error);
+            } finally {
+              setIsLoadingItems(false);
+            }
           }}
         />
       )}
