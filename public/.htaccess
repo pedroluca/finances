@@ -1,0 +1,11 @@
+# SPA fallback para React Router (Vite)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  # Não reescreve arquivos e pastas reais
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+  # Redireciona tudo para index.html
+  RewriteRule ^ index.html [L]
+</IfModule>
