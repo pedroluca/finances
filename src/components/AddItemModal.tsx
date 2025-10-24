@@ -179,11 +179,11 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.5)]">
-  <div className="bg-white rounded-xl shadow-lg max-w-lg w-full p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
-          <X className="w-6 h-6" />
+  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-lg w-full p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
+        <button onClick={onClose} className="absolute top-4 right-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+          <X className="w-6 h-6 text-gray-500" />
         </button>
-        <h2 className="text-xl font-bold mb-4">Adicionar Item</h2>
+        <h2 className="text-xl font-bold mb-4 dark:text-white">Adicionar Item</h2>
         {isDataLoading ? (
           <div className="py-12 text-center text-gray-500">Carregando dados...</div>
         ) : (
@@ -191,7 +191,7 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
             {/* ... (o mesmo conteúdo do form do AddItem) ... */}
             {/* Descrição */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
                 <FileText className="w-4 h-4 inline mr-2" />
                 Descrição
               </label>
@@ -201,14 +201,14 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Ex: Compras no supermercado"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 required
               />
             </div>
             {/* Valor e Parcelamento */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
                   <DollarSign className="w-4 h-4 inline mr-2" />
                   Valor
                 </label>
@@ -218,12 +218,12 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
                   value={displayAmount}
                   onChange={(e) => handleAmountChange(e.target.value)}
                   placeholder="R$ 0,00"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   required
                 />
               </div>
               <div>
-                <label htmlFor="installments" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="installments" className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
                   Parcelas
                 </label>
                 <div className="flex gap-2">
@@ -241,11 +241,11 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
                     }}
                     min="1"
                     max="24"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
                 {isInstallment && (
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                     {Number(installments)}x de R${
                       ' '}
                     {(parseFloat(amount || '0') / Number(installments)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -256,7 +256,7 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
             {/* Parcela Atual */}
             {isInstallment && (
               <div>
-                <label htmlFor="currentInstallment" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="currentInstallment" className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
                   Parcela Atual
                 </label>
                 <input
@@ -266,7 +266,7 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
                   onChange={(e) => setCurrentInstallment(e.target.value)}
                   min="1"
                   max={installments}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Será criada a partir da parcela {currentInstallment} até a {installments} ({Number(installments) - Number(currentInstallment) + 1} parcela{Number(installments) - Number(currentInstallment) + 1 !== 1 ? 's' : ''})
@@ -275,7 +275,7 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
             )}
             {/* Categoria */}
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
                 <Tag className="w-4 h-4 inline mr-2" />
                 Categoria (Opcional)
               </label>
@@ -283,11 +283,11 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
                 id="category"
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
-                <option value="">Sem categoria</option>
+                <option value="" className='dark:bg-gray-800'>Sem categoria</option>
                 {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
+                  <option key={cat.id} value={cat.id} className='dark:bg-gray-800'>
                     {cat.icon} {cat.name}
                   </option>
                 ))}
@@ -295,7 +295,7 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
             </div>
             {/* Autor */}
             <div>
-              <label htmlFor="author" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="author" className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
                 <User className="w-4 h-4 inline mr-2" />
                 Quem comprou?
               </label>
@@ -305,11 +305,11 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
                     id="author"
                     value={authorId}
                     onChange={(e) => setAuthorId(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
-                    <option value="">Selecione...</option>
+                    <option value="" className='dark:bg-gray-800'>Selecione...</option>
                     {authors.map((author) => (
-                      <option key={author.id} value={author.id}>
+                      <option key={author.id} value={author.id} className='dark:bg-gray-800'>
                         {author.name} {author.is_owner && '(Você)'}
                       </option>
                     ))}
@@ -317,7 +317,7 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
                   <button
                     type="button"
                     onClick={() => setShowNewAuthor(true)}
-                    className="mt-2 text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                    className="mt-2 text-sm text-primary-600 hover:text-primary-700 dark:text-white flex items-center gap-1"
                   >
                     <Plus className="w-4 h-4" />
                     Adicionar nova pessoa
@@ -330,7 +330,7 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
                     value={newAuthorName}
                     onChange={(e) => setNewAuthorName(e.target.value)}
                     placeholder="Nome da pessoa"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                   <button
                     type="button"
@@ -338,7 +338,7 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
                       setShowNewAuthor(false);
                       setNewAuthorName('');
                     }}
-                    className="mt-2 text-sm text-gray-600 hover:text-gray-700"
+                    className="mt-2 text-sm text-gray-600 dark:text-white hover:text-gray-700"
                   >
                     Cancelar
                   </button>
@@ -347,7 +347,7 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
             </div>
             {/* Data da Compra */}
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
                 <Calendar className="w-4 h-4 inline mr-2" />
                 Data da Compra
               </label>
@@ -356,7 +356,7 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
                 id="date"
                 value={purchaseDate}
                 onChange={(e) => setPurchaseDate(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
             {/* Botões */}
@@ -364,7 +364,7 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 dark:text-gray-300 dark:hover:text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
               >
                 Cancelar
               </button>

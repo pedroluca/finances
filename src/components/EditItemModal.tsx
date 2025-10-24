@@ -79,35 +79,35 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
 
   return (
     <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Editar Item</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Editar Item</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Descrição */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
               Descrição
             </label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500"
               required
             />
           </div>
 
           {/* Valor */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
               Valor
             </label>
             <input
@@ -115,11 +115,11 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
               value={displayAmount}
               onChange={(e) => handleAmountChange(e.target.value)}
               placeholder="R$ 0,00"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500"
               required
             />
             {item.is_installment && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-100 mt-1">
                 Parcela {item.installment_number}/{item.total_installments}
               </p>
             )}
@@ -127,18 +127,18 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
 
           {/* Categoria */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
               Categoria
             </label>
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500"
               required
             >
-              <option value="">Sem categoria</option>
+              <option value="" className='dark:bg-gray-800'>Sem categoria</option>
               {categories && categories.length > 0 && categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
+                <option key={cat.id} value={cat.id} className='dark:bg-gray-800'>
                   {cat.icon} {cat.name}
                 </option>
               ))}
@@ -147,19 +147,19 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
 
           {/* Quem comprou */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
               Quem comprou?
             </label>
             <select
               value={authorId}
               onChange={(e) => setAuthorId(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500"
               required
               disabled={!authors || authors.length === 0}
             >
-              <option value="">{!authors || authors.length === 0 ? 'Carregando autores...' : 'Selecione...'}</option>
+              <option value="" className='dark:bg-gray-800'>{!authors || authors.length === 0 ? 'Carregando autores...' : 'Selecione...'}</option>
               {authors && authors.length > 0 && authors.map((author) => (
-                <option key={author.id} value={author.id}>
+                <option key={author.id} value={author.id} className='dark:bg-gray-800'>
                   {author.name} {author.is_owner && '(Você)'}
                 </option>
               ))}
@@ -168,14 +168,14 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
 
           {/* Data da Compra */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
               Data da Compra
             </label>
             <input
               type="date"
               value={purchaseDate}
               onChange={(e) => setPurchaseDate(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
@@ -184,7 +184,7 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 dark:text-white rounded-lg hover:bg-gray-50 transition"
             >
               Cancelar
             </button>
