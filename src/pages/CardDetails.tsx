@@ -285,10 +285,10 @@ export default function CardDetails() {
     try {
       await Promise.all(
         Array.from(selectedItems).map((itemId) =>
-          phpApiRequest(`items.php?action=togglePaidStatus`, {
-            method: "POST",
+          phpApiRequest(`invoice_items.php`, {
+            method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ item_id: itemId, user_id: user.id }),
+            body: JSON.stringify({ id: itemId, is_paid: true }),
           })
         )
       );
