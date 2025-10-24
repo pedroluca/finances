@@ -99,6 +99,26 @@ switch ($_SERVER['REQUEST_METHOD']) {
             }
             echo json_encode(['success' => true, 'items' => $created_items]);
             exit();
+        } elseif ($action === 'togglePaidStatus') {
+            $item_id = $input['item_id'] ?? null;
+            $user_id = $input['user_id'] ?? null;
+            if (!$item_id) {
+                echo json_encode(['success' => false, 'message' => 'item_id obrigatório']);
+                exit();
+            }
+            // Buscar status atual
+            $stmt = $pdo->prepare('SELECT is_paid FROM invoice_items WHERE id = :id');
+            $stmt->execute(['id' => $item_id]);
+            $item = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$item) {
+                echo json_encode(['success' => false, 'message' => 'Item não encontrado']);
+                exit();
+            }
+            $newStatus = $item['is_paid'] ? 0 : 1;
+            $stmt = $pdo->prepare('UPDATE invoice_items SET is_paid = :is_paid WHERE id = :id');
+            $stmt->execute(['is_paid' => $newStatus, 'id' => $item_id]);
+            echo json_encode(['success' => true, 'is_paid' => $newStatus]);
+            exit();
         }
         // Fluxo antigo: criar item único
         $invoice_id = $input['invoice_id'] ?? null;
