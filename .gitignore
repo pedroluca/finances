@@ -25,4 +25,4 @@ dist-ssr
 
 .env
 
-config.php
+php-api/*
