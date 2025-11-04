@@ -13,7 +13,7 @@ interface AddItemModalProps {
   onItemAdded?: () => void;
 }
 
-export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdded }: AddItemModalProps) {
+export default function AddItemModal({ card, open, onClose, onItemAdded }: AddItemModalProps) {
   const { user } = useAuthStore();
   const { categories, setCategories, authors, setAuthors, addAuthor } = useAppStore();
   const [isDataLoading, setIsDataLoading] = useState(false);
@@ -153,11 +153,18 @@ export default function AddItemModal({ card, invoiceId, open, onClose, onItemAdd
           body: JSON.stringify(payload)
         });
       } else {
+        // Garantir card_id sempre presente
+        let cardIdToSend = card?.id || card?.card_id;
+        if (!cardIdToSend) {
+          const stored = localStorage.getItem('lastCardId');
+          if (stored) cardIdToSend = Number(stored);
+        }
+        
         await phpApiRequest('items.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            invoice_id: invoiceId,
+            card_id: cardIdToSend,
             description: description.trim(),
             amount: amountValue,
             author_id: selectedAuthorId,

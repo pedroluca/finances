@@ -190,29 +190,32 @@ DELIMITER ;
 
 -- ==================== VIEWS ====================
 
--- View: Saldo disponível por cartão (limite - gastos do mês atual e próximo)
+-- View: Saldo disponível por cartão
+-- Considera apenas itens não pagos de todas as faturas
 CREATE OR REPLACE VIEW card_available_balance AS
 SELECT 
     c.id as card_id,
     c.user_id,
     c.name as card_name,
     c.card_limit,
+    c.closing_day,
+    c.due_day,
+    c.color,
     COALESCE(SUM(CASE 
-        WHEN (i.reference_year = YEAR(CURDATE()) AND i.reference_month >= MONTH(CURDATE()))
-            OR (i.reference_year = YEAR(CURDATE()) + 1 AND MONTH(CURDATE()) = 12 AND i.reference_month = 1)
-        THEN i.total_amount 
+        WHEN ii.is_paid = FALSE 
+        THEN ii.amount
         ELSE 0 
     END), 0) as current_debt,
     c.card_limit - COALESCE(SUM(CASE 
-        WHEN (i.reference_year = YEAR(CURDATE()) AND i.reference_month >= MONTH(CURDATE()))
-            OR (i.reference_year = YEAR(CURDATE()) + 1 AND MONTH(CURDATE()) = 12 AND i.reference_month = 1)
-        THEN i.total_amount 
+        WHEN ii.is_paid = FALSE
+        THEN ii.amount
         ELSE 0 
     END), 0) as available_balance
 FROM cards c
 LEFT JOIN invoices i ON c.id = i.card_id
+LEFT JOIN invoice_items ii ON i.id = ii.invoice_id
 WHERE c.active = TRUE
-GROUP BY c.id, c.user_id, c.name, c.card_limit;
+GROUP BY c.id, c.user_id, c.name, c.card_limit, c.closing_day, c.due_day, c.color;
 
 -- View: Total mensal de todas as faturas
 CREATE OR REPLACE VIEW monthly_totals AS

@@ -265,9 +265,7 @@ export default function CardDetails() {
   };
 
   const toggleSelectItem = (itemId: number) => {
-    // Só permite seleção no mês atual
-    if (!isCurrentMonth) return;
-
+    // Permite seleção em qualquer mês para marcar como pago
     setSelectedItems((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(itemId)) {
@@ -341,9 +339,7 @@ export default function CardDetails() {
   };
 
   const openEditModal = (item: InvoiceItemWithDetails) => {
-    // Só permite edição no mês atual
-    if (!isCurrentMonth) return;
-
+    // Permite edição de itens de qualquer mês
     setEditingItem(item);
     setShowEditModal(true);
   };
@@ -579,7 +575,7 @@ export default function CardDetails() {
               )}
             </div>
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              {selectedItems.size > 0 && isCurrentMonth && (
+              {selectedItems.size > 0 && (
                 <>
                   <button
                     onClick={markSelectedAsPaid}
@@ -662,31 +658,20 @@ export default function CardDetails() {
                         0.3
                       )}s both`,
                     }}
-                    className={`flex items-start sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 border-2 rounded-lg transition ${
-                      isCurrentMonth
-                        ? "cursor-pointer"
-                        : "cursor-default opacity-75"
-                    } ${
+                    className={`flex items-start sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 border-2 rounded-lg transition cursor-pointer ${
                       selectedItems.has(item.id)
                         ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"
                         : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                     }`}
-                    onClick={() => isCurrentMonth && toggleSelectItem(item.id)}
+                    onClick={() => toggleSelectItem(item.id)}
                   >
                     <div className="flex-shrink-0 mt-0.5 sm:mt-0">
-                      {isCurrentMonth ? (
-                        selectedItems.has(item.id) ? (
-                          <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" />
-                        ) : item.is_paid ? (
-                          <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
-                        ) : (
-                          <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
-                        )
-                      ) : // Ícone fixo para visualização apenas
-                      item.is_paid ? (
+                      {selectedItems.has(item.id) ? (
+                        <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" />
+                      ) : item.is_paid ? (
                         <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
                       ) : (
-                        <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
+                        <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
                       )}
                     </div>
 
