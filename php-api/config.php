@@ -7,6 +7,9 @@ $DB_NAME = 'finances';
 $DB_USER = 'seu_usuario';
 $DB_PASS = 'sua_senha';
 
+// Configura timezone para o Brasil (Brasília)
+date_default_timezone_set('America/Sao_Paulo');
+
 if (!isset($pdo)) {
     try {
         $pdo = new PDO(
@@ -16,6 +19,9 @@ if (!isset($pdo)) {
             [PDO::ATTR_PERSISTENT => true]
         );
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        
+        // Configura timezone do MySQL para o Brasil
+        $pdo->exec("SET time_zone = '-03:00'");
     } catch (PDOException $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Erro ao conectar ao banco de dados', 'error' => $e->getMessage()]);

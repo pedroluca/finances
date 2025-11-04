@@ -700,7 +700,7 @@ export default function CardDetails() {
                         <span className="truncate">{item.author_name}</span>
                         {item.purchase_date && (
                           <span className="hidden sm:inline">
-                            {new Date(item.purchase_date).toLocaleDateString(
+                            {new Date(item.purchase_date + 'T00:00:00').toLocaleDateString(
                               "pt-BR"
                             )}
                           </span>
