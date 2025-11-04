@@ -2,10 +2,10 @@
 // config.php
 // Configure aqui os dados do seu banco de dados MySQL
 
-$DB_HOST = 'localhost'; // ou o host do seu servidor
-$DB_NAME = 'finances';
-$DB_USER = 'seu_usuario';
-$DB_PASS = 'sua_senha';
+$DB_HOST = '45.152.44.1'; // ou o host do seu servidor
+$DB_NAME = 'u428622816_finances';
+$DB_USER = 'u428622816_user';
+$DB_PASS = '8|vos3vI';
 
 // Configura timezone para o Brasil (Brasília)
 date_default_timezone_set('America/Sao_Paulo');
