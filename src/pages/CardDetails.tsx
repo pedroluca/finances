@@ -95,8 +95,43 @@ export default function CardDetails() {
     };
     fetchCard();
   }, [card, cardId, cards.length]);
-  const currentMonth = currentDate.getMonth() + 1;
-  const currentYear = currentDate.getFullYear();
+
+  // Calcula o mês/ano da fatura atual baseado no dia de fechamento
+  const getCurrentInvoiceMonthYear = () => {
+    const today = new Date();
+    const todayDay = today.getDate();
+    const todayMonth = today.getMonth() + 1; // 1-12
+    const todayYear = today.getFullYear();
+
+    if (!card?.closing_day) {
+      return { month: todayMonth, year: todayYear };
+    }
+
+    const closingDay = card.closing_day;
+
+    // Se hoje ainda não passou do dia de fechamento, a fatura atual é deste mês
+    if (todayDay <= closingDay) {
+      return { month: todayMonth, year: todayYear };
+    }
+
+    // Se já passou do dia de fechamento, a fatura atual é do próximo mês
+    if (todayMonth === 12) {
+      return { month: 1, year: todayYear + 1 };
+    }
+    return { month: todayMonth + 1, year: todayYear };
+  };
+
+  const currentInvoice = getCurrentInvoiceMonthYear();
+  const currentMonth = currentInvoice.month;
+  const currentYear = currentInvoice.year;
+
+  // Atualiza o mês de visualização quando o cartão carregar ou mudar
+  useEffect(() => {
+    if (card && !hasInitialLoad) {
+      setViewingMonth(currentMonth);
+      setViewingYear(currentYear);
+    }
+  }, [card, currentMonth, currentYear, hasInitialLoad]);
 
   // Verifica se está visualizando o mês atual
   const isCurrentMonth =
