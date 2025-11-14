@@ -81,6 +81,50 @@ export default function Dashboard() {
     navigate('/login');
   };
 
+  // Calcula o "Gasto do Mês" como a soma dos itens não pagos das faturas atuais
+  const getCurrentMonthExpense = () => {
+    const today = new Date();
+    const todayDay = today.getDate();
+    const todayMonth = today.getMonth() + 1;
+    const todayYear = today.getFullYear();
+
+    let totalExpense = 0;
+
+    activeCards.forEach((card) => {
+      const closingDay = card.closing_day;
+      if (!closingDay) return;
+
+      // Determina qual é o mês/ano da fatura atual deste cartão
+      let currentInvoiceMonth = todayMonth;
+      let currentInvoiceYear = todayYear;
+
+      // Se já passou do dia de fechamento, a fatura atual é do próximo mês
+      if (todayDay > closingDay) {
+        if (todayMonth === 12) {
+          currentInvoiceMonth = 1;
+          currentInvoiceYear = todayYear + 1;
+        } else {
+          currentInvoiceMonth = todayMonth + 1;
+        }
+      }
+
+      // Busca o total não pago desta fatura específica
+      const invoiceTotal = monthlyTotals.find(
+        (t) =>
+          t.reference_month === currentInvoiceMonth &&
+          t.reference_year === currentInvoiceYear
+      );
+
+      if (invoiceTotal) {
+        totalExpense += Number(invoiceTotal.unpaid_amount || 0);
+      }
+    });
+
+    return totalExpense;
+  };
+
+  const currentMonthExpense = getCurrentMonthExpense();
+
   const currentMonthTotal = monthlyTotals.find(
     (t) => t.reference_month === selectedMonth && t.reference_year === selectedYear
   );
@@ -176,7 +220,7 @@ export default function Dashboard() {
                 </p>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
                   R${' '}
-                  {(currentMonthTotal?.total_amount || 0).toLocaleString('pt-BR', {
+                  {currentMonthExpense.toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
