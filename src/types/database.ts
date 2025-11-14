@@ -107,11 +107,13 @@ export interface CardWithBalance extends Card {
 }
 
 export interface MonthlyTotal {
+  card_id: number;
   reference_year: number;
   reference_month: number;
   total_cards: number;
   total_amount: number;
   paid_amount: number;
+  unpaid_amount: number;
   remaining_amount: number;
   user_id: number;
 }

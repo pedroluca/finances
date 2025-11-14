@@ -83,6 +83,8 @@ export default function Dashboard() {
 
   // Calcula o "Gasto do Mês" como a soma dos itens não pagos das faturas atuais
   const getCurrentMonthExpense = () => {
+    if (!monthlyTotals || monthlyTotals.length === 0) return 0;
+    
     const today = new Date();
     const todayDay = today.getDate();
     const todayMonth = today.getMonth() + 1;
@@ -92,7 +94,8 @@ export default function Dashboard() {
 
     activeCards.forEach((card) => {
       const closingDay = card.closing_day;
-      if (!closingDay) return;
+      const cardId = card.card_id ?? card.id;
+      if (!closingDay || !cardId) return;
 
       // Determina qual é o mês/ano da fatura atual deste cartão
       let currentInvoiceMonth = todayMonth;
@@ -108,26 +111,23 @@ export default function Dashboard() {
         }
       }
 
-      // Busca o total não pago desta fatura específica
+      // Busca o total não pago desta fatura específica (card_id + mês + ano)
       const invoiceTotal = monthlyTotals.find(
         (t) =>
+          t.card_id === cardId &&
           t.reference_month === currentInvoiceMonth &&
           t.reference_year === currentInvoiceYear
       );
 
-      if (invoiceTotal) {
-        totalExpense += Number(invoiceTotal.unpaid_amount || 0);
+      if (invoiceTotal && invoiceTotal.unpaid_amount != null) {
+        totalExpense += Number(invoiceTotal.unpaid_amount);
       }
     });
 
     return totalExpense;
   };
 
-  const currentMonthExpense = getCurrentMonthExpense();
-
-  const currentMonthTotal = monthlyTotals.find(
-    (t) => t.reference_month === selectedMonth && t.reference_year === selectedYear
-  );
+  const currentMonthExpense = isLoading ? 0 : getCurrentMonthExpense();
 
   if (isLoading) {
     return (
@@ -384,13 +384,13 @@ export default function Dashboard() {
                   <div className="text-right">
                     <p className="font-semibold text-gray-900 dark:text-white">
                       R${' '}
-                      {total.total_amount.toLocaleString('pt-BR', {
+                      {(total.total_amount || 0).toLocaleString('pt-BR', {
                         minimumFractionDigits: 2,
                       })}
                     </p>
                     <p className="text-sm text-green-600 dark:text-green-400">
                       Pago: R${' '}
-                      {total.paid_amount.toLocaleString('pt-BR', {
+                      {(total.paid_amount || 0).toLocaleString('pt-BR', {
                         minimumFractionDigits: 2,
                       })}
                     </p>
