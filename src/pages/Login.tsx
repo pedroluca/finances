@@ -77,6 +77,7 @@ export default function Login() {
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
                   placeholder="seu@email.com"
                   disabled={isLoading}
+                  autoFocus
                 />
               </div>
             </div>
