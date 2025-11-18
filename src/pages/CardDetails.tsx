@@ -158,11 +158,11 @@ export default function CardDetails() {
         })[] = await phpApiRequest(
           `invoices.php?card_id=${card.card_id ?? card.id}`
         );
-        // Encontrar a fatura do mês/ano visualizado
+        // Encontrar a fatura do mês/ano atual (usa currentMonth/currentYear calculados)
         const invoice = invoices.find(
           (inv) =>
-            inv.reference_month === viewingMonth &&
-            inv.reference_year === viewingYear
+            inv.reference_month === currentMonth &&
+            inv.reference_year === currentYear
         );
         setItems(
           (invoice?.items || []).map((item) => ({
@@ -181,7 +181,7 @@ export default function CardDetails() {
 
     loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [card?.card_id, user?.id]); // Só executa uma vez no mount
+  }, [card?.card_id, user?.id, currentMonth, currentYear]); // Carrega baseado no mês atual calculado
 
   // Carregamento de itens quando o mês muda (APÓS carregamento inicial)
   useEffect(() => {

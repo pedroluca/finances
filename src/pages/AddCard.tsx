@@ -91,26 +91,26 @@ export default function AddCard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Header */}
-      <div className="bg-white border-b">
+      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 transition-colors">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
           <button
             onClick={() => navigate('/dashboard')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Adicionar Cartão</h1>
-            <p className="text-sm text-gray-600">Cadastre um novo cartão de crédito</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Adicionar Cartão</h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Cadastre um novo cartão de crédito</p>
           </div>
         </div>
       </div>
 
       {/* Form */}
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
           {error && (
             <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
               <p className="text-sm text-red-800">{error}</p>
@@ -120,7 +120,7 @@ export default function AddCard() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Nome do Cartão */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <CreditCard className="w-4 h-4 inline mr-2" />
                 Nome do Cartão
               </label>
@@ -130,7 +130,7 @@ export default function AddCard() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ex: Nubank, Itaú, C6..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
                 required
                 autoFocus
               />
@@ -138,7 +138,7 @@ export default function AddCard() {
 
             {/* Limite do Cartão */}
             <div>
-              <label htmlFor="limit" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="limit" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <DollarSign className="w-4 h-4 inline mr-2" />
                 Limite do Cartão
               </label>
@@ -150,7 +150,7 @@ export default function AddCard() {
                 placeholder="Ex: 5000.00"
                 step="0.01"
                 min="0"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
                 required
               />
             </div>
@@ -158,7 +158,7 @@ export default function AddCard() {
             {/* Datas */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="closing" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="closing" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <Calendar className="w-4 h-4 inline mr-2" />
                   Dia de Fechamento
                 </label>
@@ -170,14 +170,14 @@ export default function AddCard() {
                   placeholder="Ex: 15"
                   min="1"
                   max="31"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
                   required
                 />
-                <p className="mt-1 text-xs text-gray-500">Dia 1 a 31</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Dia 1 a 31</p>
               </div>
 
               <div>
-                <label htmlFor="due" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="due" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <Calendar className="w-4 h-4 inline mr-2" />
                   Dia de Vencimento
                 </label>
@@ -189,16 +189,16 @@ export default function AddCard() {
                   placeholder="Ex: 25"
                   min="1"
                   max="31"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
                   required
                 />
-                <p className="mt-1 text-xs text-gray-500">Dia 1 a 31</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Dia 1 a 31</p>
               </div>
             </div>
 
             {/* Cor do Cartão */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 <Palette className="w-4 h-4 inline mr-2" />
                 Cor do Cartão
               </label>
@@ -225,7 +225,7 @@ export default function AddCard() {
 
             {/* Preview do Cartão */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Preview
               </label>
               <div
@@ -255,7 +255,7 @@ export default function AddCard() {
               <button
                 type="button"
                 onClick={() => navigate('/dashboard')}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
               >
                 Cancelar
               </button>
