@@ -209,6 +209,7 @@ export default function AddItemModal({ card, open, onClose, onItemAdded }: AddIt
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Ex: Compras no supermercado"
                 className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                autoFocus
                 required
               />
             </div>
