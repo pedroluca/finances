@@ -187,7 +187,7 @@ export default function AddItemModal({ card, open, onClose, onItemAdded }: AddIt
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.5)]">
   <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-lg w-full p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
-        <button onClick={onClose} className="absolute top-4 right-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+        <button onClick={onClose} className="absolute cursor-pointer top-4 right-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
           <X className="w-6 h-6 text-gray-500" />
         </button>
         <h2 className="text-xl font-bold mb-4 dark:text-white">Adicionar Item</h2>
@@ -325,7 +325,7 @@ export default function AddItemModal({ card, open, onClose, onItemAdded }: AddIt
                   <button
                     type="button"
                     onClick={() => setShowNewAuthor(true)}
-                    className="mt-2 text-sm text-primary-600 hover:text-primary-700 dark:text-white flex items-center gap-1"
+                    className="mt-2 cursor-pointer text-sm text-primary-600 hover:text-primary-700 dark:text-white flex items-center gap-1"
                   >
                     <Plus className="w-4 h-4" />
                     Adicionar nova pessoa
@@ -346,7 +346,7 @@ export default function AddItemModal({ card, open, onClose, onItemAdded }: AddIt
                       setShowNewAuthor(false);
                       setNewAuthorName('');
                     }}
-                    className="mt-2 text-sm text-gray-600 dark:text-white hover:text-gray-700"
+                    className="mt-2 text-sm cursor-pointer text-gray-600 dark:text-white hover:text-gray-700"
                   >
                     Cancelar
                   </button>
@@ -372,14 +372,14 @@ export default function AddItemModal({ card, open, onClose, onItemAdded }: AddIt
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 dark:text-gray-300 dark:hover:text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="flex-1 cursor-pointer px-6 py-3 border border-gray-300 text-gray-700 dark:text-gray-300 dark:hover:text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 cursor-pointer px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Salvando...' : 'Adicionar'}
               </button>
