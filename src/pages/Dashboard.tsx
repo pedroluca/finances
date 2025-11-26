@@ -262,7 +262,7 @@ export default function Dashboard() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 md:pb-0 md:mx-0 md:px-0 md:overflow-visible scrollbar-hide">
               {activeCards.map((card) => {
                 // card vem da view card_available_balance
                 const availableLimit = Number(card.available_balance)
@@ -270,7 +270,7 @@ export default function Dashboard() {
                   <button
                     key={card.card_id}
                     onClick={() => navigate(`/cards/${card.card_id}`)}
-                    className="relative w-full cursor-pointer aspect-[1.586/1] rounded-2xl p-6 text-white shadow-xl transition-transform hover:scale-[1.02] hover:shadow-2xl overflow-hidden group text-left"
+                    className="relative w-[85vw] sm:w-[350px] md:w-full shrink-0 snap-center cursor-pointer aspect-[1.586/1] rounded-2xl p-6 text-white shadow-xl transition-transform hover:scale-[1.02] hover:shadow-2xl overflow-hidden group text-left"
                     style={{
                       background: `linear-gradient(135deg, ${card.color} 0%, ${card.color}dd 100%)`,
                       boxShadow: `0 4px 24px -8px ${card.color}80`
