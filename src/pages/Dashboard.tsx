@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth.store'
 import { useAppStore } from '../store/app.store'
@@ -11,6 +11,10 @@ import {
   Settings,
   DollarSign,
   TrendingUp,
+  TrendingDown,
+  Wifi,
+  WifiHigh,
+  Nfc,
 } from 'lucide-react'
 import { phpApiRequest } from '../lib/api'
 
@@ -22,10 +26,6 @@ export default function Dashboard() {
     setCards,
     setCategories,
     setAuthors,
-    selectedMonth,
-    selectedYear,
-    setSelectedMonth,
-    setSelectedYear,
   } = useAppStore()
   const { monthlyTotals, setMonthlyTotals } = useAppStore()
 
@@ -132,7 +132,7 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent"></div>
           <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando...</p>
         </div>
       </div>
@@ -160,13 +160,13 @@ export default function Dashboard() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate('/settings')}
-                className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                className="p-2 text-gray-600 cursor-pointer dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
               >
                 <Settings className="w-5 h-5" />
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                className="flex items-center cursor-pointer gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
               >
                 <LogOut className="w-5 h-5" />
                 <span>Sair</span>
@@ -189,8 +189,8 @@ export default function Dashboard() {
                   {activeCards.length}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center">
-                <CreditCard className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                <CreditCard className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </div>
@@ -226,7 +226,7 @@ export default function Dashboard() {
                 </p>
               </div>
               <div className="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-red-600 dark:text-red-400" />
+                <TrendingDown className="w-6 h-6 text-red-600 dark:text-red-400" />
               </div>
             </div>
           </div>
@@ -240,7 +240,7 @@ export default function Dashboard() {
             </h2>
             <button
               onClick={() => navigate('/cards/new')}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition"
+              className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition"
             >
               <Plus className="w-5 h-5" />
               <span>Novo Cartão</span>
@@ -255,7 +255,7 @@ export default function Dashboard() {
               </p>
               <button
                 onClick={() => navigate('/cards/new')}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
+                className="inline-flex cursor-pointer items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
               >
                 <Plus className="w-5 h-5" />
                 <span>Adicionar Primeiro Cartão</span>
@@ -270,43 +270,46 @@ export default function Dashboard() {
                   <button
                     key={card.card_id}
                     onClick={() => navigate(`/cards/${card.card_id}`)}
-                    className="p-6 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-primary-500 dark:hover:border-primary-400 hover:shadow-md transition text-left"
-                    style={{ borderLeftWidth: '4px', borderLeftColor: card.color }}
+                    className="relative w-full cursor-pointer aspect-[1.586/1] rounded-2xl p-6 text-white shadow-xl transition-transform hover:scale-[1.02] hover:shadow-2xl overflow-hidden group text-left"
+                    style={{
+                      background: `linear-gradient(135deg, ${card.color} 0%, ${card.color}dd 100%)`,
+                      boxShadow: `0 4px 24px -8px ${card.color}80`
+                    }}
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
-                        {card.card_name}
-                      </h3>
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center"
-                        style={{ backgroundColor: `#6366f120` }}
-                      >
-                        <CreditCard
-                          className="w-4 h-4"
-                          style={{ color: '#6366f1' }}
-                        />
+                    {/* Decorative Background Circles */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full -ml-12 -mb-12 blur-2xl pointer-events-none" />
+
+                    <div className="relative h-full flex flex-col justify-between z-10">
+                      {/* Header */}
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-bold text-xl tracking-wide drop-shadow-md">
+                          {card.card_name}
+                        </h3>
+                        <Nfc className="w-8 h-8 opacity-80" />
                       </div>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Limite:</span>
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          R${' '}
-                          {Number(card.card_limit).toLocaleString('pt-BR', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </span>
+
+                      {/* Chip */}
+                      <div className="w-12 h-9 bg-yellow-200/80 rounded-md border border-yellow-400/50 flex items-center justify-center overflow-hidden relative shadow-sm">
+                          <div className="absolute w-full h-[1px] bg-yellow-600/40 top-1/2 -translate-y-1/2"></div>
+                          <div className="absolute h-full w-[1px] bg-yellow-600/40 left-1/2 -translate-x-1/2"></div>
+                          <div className="w-8 h-6 border border-yellow-600/40 rounded-sm"></div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Limite Disponível:</span>
-                        <span className={`font-semibold ${availableLimit < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                          R${' '}
-                          {availableLimit.toLocaleString('pt-BR', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </span>
+
+                      {/* Footer / Limits */}
+                      <div className="grid grid-cols-2 gap-4 mt-auto">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider opacity-80 font-medium mb-0.5">Limite Total</p>
+                          <p className="font-bold text-lg tracking-tight drop-shadow-sm">
+                            R$ {Number(card.card_limit).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] uppercase tracking-wider opacity-80 font-medium mb-0.5">Disponível</p>
+                          <p className="font-bold text-lg tracking-tight drop-shadow-sm">
+                            R$ {availableLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </button>
