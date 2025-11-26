@@ -1,23 +1,22 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/auth.store';
-import { useAppStore } from '../store/app.store';
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '../store/auth.store'
+import { useAppStore } from '../store/app.store'
 import LogoImg from '../assets/logo.png'
-import type { CardWithBalance } from '../types/database';
+import type { CardWithBalance } from '../types/database'
 import {
   CreditCard,
   Plus,
   LogOut,
-  Calendar,
   Settings,
   DollarSign,
   TrendingUp,
-} from 'lucide-react';
-import { phpApiRequest } from '../lib/api';
+} from 'lucide-react'
+import { phpApiRequest } from '../lib/api'
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const { user, logout, isAuthenticated } = useAuthStore();
+  const navigate = useNavigate()
+  const { user, logout, isAuthenticated } = useAuthStore()
   const {
     cards,
     setCards,
@@ -27,87 +26,87 @@ export default function Dashboard() {
     selectedYear,
     setSelectedMonth,
     setSelectedYear,
-  } = useAppStore();
-  const { monthlyTotals, setMonthlyTotals } = useAppStore();
+  } = useAppStore()
+  const { monthlyTotals, setMonthlyTotals } = useAppStore()
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true)
   // cards agora vem da view card_available_balance
-  const activeCards = (cards as CardWithBalance[]); // todos já são ativos na view
+  const activeCards = (cards as CardWithBalance[]) // todos já são ativos na view
 
-  const totalLimit = activeCards.reduce((sum, card) => sum + Number(card.card_limit ?? 0), 0);
+  const totalLimit = activeCards.reduce((sum, card) => sum + Number(card.card_limit ?? 0), 0)
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
-      navigate('/login');
-      return;
+      navigate('/login')
+      return
     }
 
     const loadInitialData = async () => {
-      if (!user) return;
+      if (!user) return
       try {
-        setIsLoading(true);
+        setIsLoading(true)
         // Carregar dados em paralelo da nova API PHP
         const [cardsData, categoriesData, authorsData, monthlyTotalsData] = await Promise.all([
           phpApiRequest('cards.php', { method: 'GET' }),
           phpApiRequest('categories.php', { method: 'GET' }),
           phpApiRequest('authors.php', { method: 'GET' }),
           phpApiRequest('invoices.php?action=monthlyTotals', { method: 'GET' }),
-        ]);
-        setCards(cardsData);
-        setCategories(categoriesData);
-        setAuthors(authorsData);
-        setMonthlyTotals(monthlyTotalsData); // Set monthly totals correctly
+        ])
+        setCards(cardsData)
+        setCategories(categoriesData)
+        setAuthors(authorsData)
+        setMonthlyTotals(monthlyTotalsData) // Set monthly totals correctly
 
         // Calcular total de faturas por cartão (simples)
-        const totals: Record<number, number> = {};
+        const totals: Record<number, number> = {}
         monthlyTotalsData.forEach((invoice: { cardId: number; total?: number; value?: number }) => {
           if (!totals[invoice.cardId]) {
-            totals[invoice.cardId] = 0;
+            totals[invoice.cardId] = 0
           }
         })
   // totalLimit já é usado diretamente na renderização
       } catch (error) {
-        console.error('Erro ao carregar dados:', error);
+        console.error('Erro ao carregar dados:', error)
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
+    }
 
-    loadInitialData();
-  }, [isAuthenticated, user, navigate, setCards, setCategories, setAuthors, setMonthlyTotals]);
+    loadInitialData()
+  }, [isAuthenticated, user, navigate, setCards, setCategories, setAuthors, setMonthlyTotals])
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+    logout()
+    navigate('/login')
+  }
 
   // Calcula o "Gasto do Mês" como a soma dos itens não pagos das faturas atuais
   const getCurrentMonthExpense = () => {
-    if (!monthlyTotals || monthlyTotals.length === 0) return 0;
+    if (!monthlyTotals || monthlyTotals.length === 0) return 0
     
-    const today = new Date();
-    const todayDay = today.getDate();
-    const todayMonth = today.getMonth() + 1;
-    const todayYear = today.getFullYear();
+    const today = new Date()
+    const todayDay = today.getDate()
+    const todayMonth = today.getMonth() + 1
+    const todayYear = today.getFullYear()
 
-    let totalExpense = 0;
+    let totalExpense = 0
 
     activeCards.forEach((card) => {
-      const closingDay = card.closing_day;
-      const cardId = card.card_id ?? card.id;
-      if (!closingDay || !cardId) return;
+      const closingDay = card.closing_day
+      const cardId = card.card_id ?? card.id
+      if (!closingDay || !cardId) return
 
       // Determina qual é o mês/ano da fatura atual deste cartão
-      let currentInvoiceMonth = todayMonth;
-      let currentInvoiceYear = todayYear;
+      let currentInvoiceMonth = todayMonth
+      let currentInvoiceYear = todayYear
 
       // Se já passou do dia de fechamento, a fatura atual é do próximo mês
       if (todayDay > closingDay) {
         if (todayMonth === 12) {
-          currentInvoiceMonth = 1;
-          currentInvoiceYear = todayYear + 1;
+          currentInvoiceMonth = 1
+          currentInvoiceYear = todayYear + 1
         } else {
-          currentInvoiceMonth = todayMonth + 1;
+          currentInvoiceMonth = todayMonth + 1
         }
       }
 
@@ -117,17 +116,17 @@ export default function Dashboard() {
           t.card_id === cardId &&
           t.reference_month === currentInvoiceMonth &&
           t.reference_year === currentInvoiceYear
-      );
+      )
 
       if (invoiceTotal && invoiceTotal.unpaid_amount != null) {
-        totalExpense += Number(invoiceTotal.unpaid_amount);
+        totalExpense += Number(invoiceTotal.unpaid_amount)
       }
-    });
+    })
 
-    return totalExpense;
-  };
+    return totalExpense
+  }
 
-  const currentMonthExpense = isLoading ? 0 : getCurrentMonthExpense();
+  const currentMonthExpense = isLoading ? 0 : getCurrentMonthExpense()
 
   if (isLoading) {
     return (
@@ -137,7 +136,7 @@ export default function Dashboard() {
           <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -233,44 +232,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Month Selector */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8 transition-colors">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Período
-            </h2>
-            <div className="flex items-center gap-3">
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors"
-              >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
-                  <option key={month} value={month}>
-                    {new Date(2025, month - 1).toLocaleDateString('pt-BR', {
-                      month: 'long',
-                    })}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors"
-              >
-                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(
-                  (year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  )
-                )}
-              </select>
-            </div>
-          </div>
-        </div>
-
         {/* Cards List */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8 transition-colors">
           <div className="flex items-center justify-between mb-6">
@@ -304,7 +265,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {activeCards.map((card) => {
                 // card vem da view card_available_balance
-                const availableLimit = Number(card.available_balance);
+                const availableLimit = Number(card.available_balance)
                 return (
                   <button
                     key={card.card_id}
@@ -349,7 +310,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </button>
-                );
+                )
               })}
             </div>
           )}
@@ -368,7 +329,7 @@ export default function Dashboard() {
                   className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg transition-colors"
                 >
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">
+                    <p className="font-medium text-gray-900 capitalize dark:text-white">
                       {new Date(
                         total.reference_year,
                         total.reference_month - 1
@@ -378,7 +339,7 @@ export default function Dashboard() {
                       })}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {total.total_cards} cartão(ões)
+                      Cartão {total.name}
                     </p>
                   </div>
                   <div className="text-right">
@@ -402,5 +363,5 @@ export default function Dashboard() {
         )}
       </main>
     </div>
-  );
+  )
 }

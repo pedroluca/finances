@@ -143,9 +143,17 @@ export default function AddItem() {
     try {
       setIsLoading(true);
 
-      const currentDate = new Date();
-      const currentMonth = currentDate.getMonth() + 1;
-      const currentYear = currentDate.getFullYear();
+      const [pYear, pMonth, pDay] = purchaseDate.split('-').map(Number);
+      let currentMonth = pMonth;
+      let currentYear = pYear;
+
+      if (pDay >= card.closing_day) {
+        currentMonth++;
+        if (currentMonth > 12) {
+          currentMonth = 1;
+          currentYear++;
+        }
+      }
 
       // Buscar ou criar fatura do mês atual (simulado: só pega a primeira fatura do cartão)
       const invoices = await phpApiRequest('invoices.php', { method: 'GET' });
@@ -169,6 +177,7 @@ export default function AddItem() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            action: 'createInstallment',
             card_id: card.id,
             description: description.trim(),
             total_amount: amountValue,
@@ -176,10 +185,7 @@ export default function AddItem() {
             author_id: selectedAuthorId,
             category_id: categoryId ? Number(categoryId) : undefined,
             purchase_date: purchaseDate,
-            start_month: currentMonth,
-            start_year: currentYear,
-            current_installment: Number(currentInstallment),
-            invoice_id: invoice.id
+            current_installment: Number(currentInstallment)
           })
         });
       } else {

@@ -110,7 +110,7 @@ export interface MonthlyTotal {
   card_id: number;
   reference_year: number;
   reference_month: number;
-  total_cards: number;
+  name: string;
   total_amount: number;
   paid_amount: number;
   unpaid_amount: number;
