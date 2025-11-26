@@ -84,7 +84,7 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Editar Item</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+            className="p-2 hover:bg-gray-100 cursor-pointer dark:hover:bg-gray-700 rounded-lg transition"
           >
             <X className="w-5 h-5 text-gray-500" />
           </button>
@@ -184,14 +184,14 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 dark:text-white rounded-lg hover:bg-gray-50 transition"
+              className="flex-1 px-6 py-3 border cursor-pointer border-gray-300 dark:text-white rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 px-6 py-3 bg-indigo-600 cursor-pointer text-white rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Save className="w-5 h-5" />
               {isLoading ? 'Salvando...' : 'Salvar'}

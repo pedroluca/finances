@@ -454,7 +454,7 @@ export default function CardDetails() {
             <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
               <button
                 onClick={handleBack}
-                className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
+                className="p-1.5 sm:p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
               >
                 <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-300" />
               </button>
@@ -468,13 +468,13 @@ export default function CardDetails() {
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
                 onClick={() => navigate(`/cards/${cardId}/edit`)}
-                className="p-1.5 sm:p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 cursor-pointer text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="p-1.5 sm:p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
               >
                 <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
@@ -485,7 +485,7 @@ export default function CardDetails() {
           <div className="flex items-center justify-between gap-2">
             <button
               onClick={goToPreviousMonth}
-              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm sm:text-base"
+              className="flex cursor-pointer items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm sm:text-base"
             >
               <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="hidden sm:inline">Anterior</span>
@@ -514,7 +514,7 @@ export default function CardDetails() {
 
             <button
               onClick={goToNextMonth}
-              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm sm:text-base"
+              className="flex cursor-pointer items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm sm:text-base"
             >
               <span className="hidden sm:inline">Próximo</span>
               <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -581,11 +581,11 @@ export default function CardDetails() {
           <div className="mt-4 sm:mt-6 flex gap-3 sm:gap-4 text-xs sm:text-sm">
             <div>
               <span className="opacity-80">Fecha dia</span>{" "}
-              <span className="font-semibold">{card.closing_day ?? ""}</span>
+              <span className="font-semibold">{(card.closing_day ?? "") + '/' + viewingMonth}</span>
             </div>
             <div>
               <span className="opacity-80">Vence dia</span>{" "}
-              <span className="font-semibold">{card.due_day ?? ""}</span>
+              <span className="font-semibold">{card.due_day}/{card.closing_day > card.due_day ? (viewingMonth + 1 > 12 ? 1 : viewingMonth + 1) : viewingMonth}</span>
             </div>
           </div>
         </div>
