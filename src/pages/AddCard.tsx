@@ -10,10 +10,14 @@ const CARD_COLORS = [
   { name: 'Verde', value: '#10B981' },
   { name: 'Roxo', value: '#8B5CF6' },
   { name: 'Rosa', value: '#EC4899' },
-  { name: 'Laranja', value: '#F59E0B' },
+  { name: 'Laranja', value: '#FF7A00' },
   { name: 'Vermelho', value: '#EF4444' },
   { name: 'Ciano', value: '#06B6D4' },
   { name: 'Indigo', value: '#6366F1' },
+  { name: 'Prata', value: '#9CA3AF' },
+  { name: 'Preto', value: '#121212' },
+  { name: 'Dourado', value: '#D4AF37' },
+  { name: 'Grafite', value: '#2F2F2F' },
 ];
 
 export default function AddCard() {
@@ -130,7 +134,7 @@ export default function AddCard() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ex: Nubank, Itaú, C6..."
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                 required
                 autoFocus
               />
@@ -150,7 +154,7 @@ export default function AddCard() {
                 placeholder="Ex: 5000.00"
                 step="0.01"
                 min="0"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                 required
               />
             </div>
@@ -170,7 +174,7 @@ export default function AddCard() {
                   placeholder="Ex: 15"
                   min="1"
                   max="31"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                   required
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Dia 1 a 31</p>
@@ -189,7 +193,7 @@ export default function AddCard() {
                   placeholder="Ex: 25"
                   min="1"
                   max="31"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                   required
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Dia 1 a 31</p>
@@ -262,7 +266,7 @@ export default function AddCard() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Salvando...' : 'Adicionar Cartão'}
               </button>
