@@ -26,6 +26,8 @@ import type {
   InvoiceItemWithDetails,
   InvoiceWithCard,
 } from "../types/database";
+import ConfirmModal from "../components/ConfirmModal";
+import { useToast } from "../components/Toast";
 
 export default function CardDetails() {
   const navigate = useNavigate();
@@ -41,12 +43,14 @@ export default function CardDetails() {
   });
   const { user } = useAuthStore();
   const { cards, removeCard, authors } = useAppStore();
+  const { showToast } = useToast();
 
   const [items, setItems] = useState<InvoiceItemWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingItems, setIsLoadingItems] = useState(false);
   const [hasInitialLoad, setHasInitialLoad] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteItemsModal, setShowDeleteItemsModal] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [editingItem, setEditingItem] = useState<InvoiceItemWithDetails | null>(
     null
@@ -336,12 +340,13 @@ export default function CardDetails() {
     }
   };
 
-  const deleteSelectedItems = async () => {
+  const deleteSelectedItems = () => {
     if (!user || selectedItems.size === 0) return;
+    setShowDeleteItemsModal(true);
+  };
 
-    if (!confirm(`Deseja excluir ${selectedItems.size} item(ns)?`)) {
-      return;
-    }
+  const confirmDeleteItems = async () => {
+    if (!user || selectedItems.size === 0) return;
 
     try {
       await Promise.all(
@@ -353,7 +358,7 @@ export default function CardDetails() {
           })
         )
       );
-      // setItems((prev) => prev.filter((item) => !selectedItems.has(item.id)));
+      
       setItems((prev) =>
         prev.filter(
           (item) =>
@@ -366,10 +371,12 @@ export default function CardDetails() {
             )
         )
       );
+      
+      showToast(`${selectedItems.size} item(ns) excluído(s) com sucesso`, 'success');
       setSelectedItems(new Set());
     } catch (error) {
       console.error("Erro ao excluir itens:", error);
-      alert("Erro ao excluir itens");
+      showToast("Erro ao excluir itens", 'error');
     }
   };
 
@@ -866,34 +873,27 @@ export default function CardDetails() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 transition-colors">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Excluir Cartão?
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Tem certeza que deseja excluir o cartão "{card.name}"? Esta ação
-              não pode ser desfeita.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="flex-1 cursor-pointer px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleDeleteCard}
-                className="flex-1 cursor-pointer px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-              >
-                Excluir
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Delete Confirmation Modal (Card) */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteCard}
+        title="Excluir Cartão?"
+        message={`Tem certeza que deseja excluir o cartão "${card.name}"? Esta ação não pode ser desfeita.`}
+        confirmText="Excluir"
+        isDestructive
+      />
+
+      {/* Delete Confirmation Modal (Items) */}
+      <ConfirmModal
+        isOpen={showDeleteItemsModal}
+        onClose={() => setShowDeleteItemsModal(false)}
+        onConfirm={confirmDeleteItems}
+        title="Excluir Itens?"
+        message={`Tem certeza que deseja excluir ${selectedItems.size} item(ns)?`}
+        confirmText="Excluir"
+        isDestructive
+      />
 
       {/* Edit Item Modal */}
       {/* Add Item Modal */}
