@@ -1,3 +1,18 @@
+# Cache control para manifest e ícones PWA
+<IfModule mod_headers.c>
+  # Não fazer cache do manifest.json
+  <FilesMatch "manifest\.json$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+  </FilesMatch>
+  
+  # Cache curto para ícones (1 hora) para permitir atualizações
+  <FilesMatch "\.(png|ico)$">
+    Header set Cache-Control "public, max-age=3600"
+  </FilesMatch>
+</IfModule>
+
 # SPA fallback para React Router (Vite)
 <IfModule mod_rewrite.c>
   RewriteEngine On
