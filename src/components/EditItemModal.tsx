@@ -25,9 +25,17 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
     if (authors && authors.length > 0) return String(authors[0].id);
     return '';
   });
-  const [purchaseDate, setPurchaseDate] = useState(
-    item.purchase_date ? new Date(item.purchase_date).toISOString().split('T')[0] : ''
-  );
+  const [purchaseDate, setPurchaseDate] = useState(() => {
+    if (!item.purchase_date) return '';
+    // Parse the date string directly without timezone conversion
+    const dateStr = String(item.purchase_date);
+    // If it's already in YYYY-MM-DD format, use it directly
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateStr;
+    }
+    // Otherwise, try to extract the date part
+    return dateStr.split('T')[0];
+  });
   const [isLoading, setIsLoading] = useState(false);
 
   // O modal sempre renderiza, mas o select de autores só habilita quando authors estiver carregado
@@ -64,7 +72,7 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
         amount: parseFloat(amount),
         category_id: categoryId ? Number(categoryId) : null,
         author_id: Number(authorId),
-        purchase_date: purchaseDate ? new Date(purchaseDate) : null,
+        purchase_date: (purchaseDate || null) as any, // API expects string, type expects Date
       });
       onClose();
     } catch (error) {
