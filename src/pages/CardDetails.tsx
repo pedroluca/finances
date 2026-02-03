@@ -780,20 +780,26 @@ export default function CardDetails() {
       {/* Author Filter Modal */}
       {showAuthorFilter && (
         <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Filtrar por Pessoa
-              </h3>
-              <button
-                onClick={() => setShowAuthorFilter(false)}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full max-h-[80vh] flex flex-col">
+            <div className="p-6 pb-4 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Filtrar por Pessoa
+                </h3>
+                <button
+                  onClick={() => setShowAuthorFilter(false)}
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="overflow-y-auto pl-6 pr-3 pb-6 flex-1" style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'rgba(156, 163, 175, 0.3) transparent'
+            }}>
+              <div className="space-y-3">
               <button
                 onClick={() => {
                   setSelectedAuthorFilter(null);
@@ -868,6 +874,7 @@ export default function CardDetails() {
                   </div>
                 </button>
               ))}
+              </div>
             </div>
           </div>
         </div>
