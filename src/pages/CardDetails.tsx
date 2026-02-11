@@ -341,20 +341,43 @@ export default function CardDetails() {
 
   // Calcular totais por autor
   const authorTotals = authors.map((author) => {
-    const authorItems = items.filter((item) => item.author_id === author.id)
-    const total = authorItems.reduce(
-      (sum, item) => sum + Number(item.amount),
-      0
-    )
-    const unpaidTotal = authorItems
-      .filter((item) => !item.is_paid)
-      .reduce((sum, item) => sum + Number(item.amount), 0)
+    let total = 0
+    let unpaidTotal = 0
+    let itemCount = 0
+
+    items.forEach((item) => {
+      let amountToAdd = 0
+      let isInvolved = false
+
+      if (item.assignments && item.assignments.length > 0) {
+        const assignment = item.assignments.find(
+          (a) => a.author_id === author.id
+        )
+        if (assignment) {
+          amountToAdd = Number(assignment.amount)
+          isInvolved = true
+        }
+      } else {
+        if (item.author_id === author.id) {
+          amountToAdd = Number(item.amount)
+          isInvolved = true
+        }
+      }
+
+      if (isInvolved) {
+        total += amountToAdd
+        itemCount++
+        if (!item.is_paid) {
+          unpaidTotal += amountToAdd
+        }
+      }
+    })
 
     return {
       ...author,
       total,
       unpaidTotal,
-      itemCount: authorItems.length,
+      itemCount,
     }
   })
 
@@ -582,6 +605,7 @@ export default function CardDetails() {
                    authorName: userAssignment.author_name
                }
            }
+           return { amount: 0, authorName: item.author_name }
        }
        if (item.author_id === selectedAuthorFilter) {
            return { amount: Number(item.amount), authorName: item.author_name }
@@ -590,7 +614,6 @@ export default function CardDetails() {
     
     let authorDisplay = item.author_name;
     if (item.assignments && item.assignments.length > 0) {
-        // Pega o primeiro nome de cada autor
         const uniqueNames = Array.from(new Set(item.assignments.map(a => a.author_name.split(' ')[0])));
         authorDisplay = uniqueNames.join(', ');
     }
@@ -600,9 +623,10 @@ export default function CardDetails() {
 
   const filteredItems = items.filter((item) => {
     if (selectedAuthorFilter) {
-        if (item.author_id === selectedAuthorFilter) return true;
-        if (item.assignments && item.assignments.some(a => a.author_id === selectedAuthorFilter)) return true;
-        return false;
+        if (item.assignments && item.assignments.length > 0) {
+             return item.assignments.some(a => a.author_id === selectedAuthorFilter);
+        }
+        return item.author_id === selectedAuthorFilter;
     }
     return true
   })
