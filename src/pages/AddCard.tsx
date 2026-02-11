@@ -303,7 +303,7 @@ export default function AddCard() {
                     key={c.value}
                     type="button"
                     onClick={() => setColor(c.value)}
-                    className={`p-4 rounded-lg border-2 transition-all ${
+                    className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${
                       color === c.value
                         ? 'border-gray-900 ring-2 ring-gray-300'
                         : 'border-gray-200 hover:border-gray-300'
