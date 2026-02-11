@@ -1,20 +1,20 @@
-import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthStore } from './store/auth.store';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import AddCard from './pages/AddCard';
-import CardDetails from './pages/CardDetails';
-import AddItem from './pages/AddItem';
-import Settings from './pages/Settings';
+import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useAuthStore } from './store/auth.store'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import Dashboard from './pages/Dashboard'
+import AddCard from './pages/AddCard'
+import CardDetails from './pages/CardDetails'
+import AddItem from './pages/AddItem'
+import Settings from './pages/Settings'
 
 function App() {
-  const { isAuthenticated, verifyAuth } = useAuthStore();
+  const { isAuthenticated, verifyAuth } = useAuthStore()
 
   useEffect(() => {
-    verifyAuth();
-  }, [verifyAuth]);
+    verifyAuth()
+  }, [verifyAuth])
 
   return (
     <BrowserRouter>
@@ -43,6 +43,10 @@ function App() {
           element={isAuthenticated ? <CardDetails /> : <Navigate to="/login" />}
         />
         <Route
+          path="/cards/:cardId/edit"
+          element={isAuthenticated ? <AddCard /> : <Navigate to="/login" />}
+        />
+        <Route
           path="/cards/:cardId/items/new"
           element={isAuthenticated ? <AddItem /> : <Navigate to="/login" />}
         />
@@ -67,7 +71,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
-  );
+  )
 }
 
-export default App;
+export default App
