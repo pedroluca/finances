@@ -318,7 +318,7 @@ export default function AddItemModal({ card, open, onClose, onItemAdded }: AddIt
                     <option value="" className='dark:bg-gray-800'>Selecione...</option>
                     {authors.map((author) => (
                       <option key={author.id} value={author.id} className='dark:bg-gray-800'>
-                        {author.name} {author.is_owner && '(Você)'}
+                        {author.name} {author.is_owner ? '(Você)' : ''}
                       </option>
                     ))}
                   </select>

@@ -168,7 +168,7 @@ export default function EditItemModal({ item, onClose, onSave }: EditItemModalPr
               <option value="" className='dark:bg-gray-800'>{!authors || authors.length === 0 ? 'Carregando autores...' : 'Selecione...'}</option>
               {authors && authors.length > 0 && authors.map((author) => (
                 <option key={author.id} value={author.id} className='dark:bg-gray-800'>
-                  {author.name} {author.is_owner && '(Você)'}
+                  {author.name} {author.is_owner ? '(Você)' : ''}
                 </option>
               ))}
             </select>

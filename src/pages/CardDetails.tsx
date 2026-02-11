@@ -42,7 +42,7 @@ export default function CardDetails() {
     return stored || ""
   })
   const { user } = useAuthStore()
-  const { cards, removeCard, authors } = useAppStore()
+  const { cards, removeCard, authors, setAuthors, categories, setCategories } = useAppStore()
   const { showToast } = useToast()
 
   const [items, setItems] = useState<InvoiceItemWithDetails[]>([])
@@ -212,14 +212,35 @@ export default function CardDetails() {
 
       try {
         setIsLoading(true)
-        // Buscar faturas do cartão (com itens)
-        const invoices: (InvoiceWithCard & {
-          items: InvoiceItemWithDetails[]
-        })[] = await phpApiRequest(
-          `invoices.php?card_id=${card.card_id ?? card.id}`
-        )
+        
+        // Carrega categorias e autores se não estiverem na store
+        const promises: Promise<any>[] = []
+        
+        // Sempre busca a fatura
+        promises.push(phpApiRequest(`invoices.php?card_id=${card.card_id ?? card.id}`))
+        
+        const needCategories = !categories || categories.length === 0
+        const needAuthors = !authors || authors.length === 0
+        
+        if (needCategories) {
+          promises.push(phpApiRequest('categories.php', { method: 'GET' }))
+        } else {
+          promises.push(Promise.resolve(null))
+        }
+        
+        if (needAuthors) {
+          promises.push(phpApiRequest('authors.php', { method: 'GET' }))
+        } else {
+           promises.push(Promise.resolve(null))
+        }
+
+        const [invoices, fetchedCategories, fetchedAuthors] = await Promise.all(promises)
+
+        if (fetchedCategories) setCategories(fetchedCategories)
+        if (fetchedAuthors) setAuthors(fetchedAuthors)
+
         // Encontrar a fatura do mês/ano atual (usa currentMonth/currentYear calculados)
-        const invoice = invoices.find(
+        const invoice = (invoices as (InvoiceWithCard & { items: InvoiceItemWithDetails[] })[]).find(
           (inv) =>
             inv.reference_month === currentMonth &&
             inv.reference_year === currentYear
@@ -479,20 +500,55 @@ export default function CardDetails() {
     if (!editingItem || !user) return
 
     try {
+      const { ...dataToSend } = updatedItem
+      
       await phpApiRequest(`items.php?action=update`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          action: 'update',
           item_id: editingItem.id,
           user_id: user.id,
-          ...updatedItem,
+          ...dataToSend,
         }),
       })
+
+      // Atualizar localmente com os dados novos (incluindo nomes de categoria/autor)
       setItems((prev) =>
-        prev.map((item) =>
-          item.id === editingItem.id ? { ...item, ...updatedItem } : item
-        )
+        prev.map((item) => {
+          if (item.id === editingItem.id) {
+            const newItem = { ...item, ...updatedItem }
+            
+            // Buscar nomes atualizados nas listas
+            if (updatedItem.category_id !== undefined) {
+               const cat = categories.find(c => c.id === updatedItem.category_id)
+               if (cat) {
+                 newItem.category_name = cat.name
+                 newItem.category_icon = cat.icon
+                 newItem.category_color = cat.color
+               } else if (updatedItem.category_id === null) {
+                 newItem.category_name = null
+                 newItem.category_icon = null
+                 newItem.category_color = null
+               }
+            }
+            
+            if (updatedItem.author_id !== undefined) {
+                const auth = authors.find(a => a.id === updatedItem.author_id)
+                if (auth) {
+                    newItem.author_name = auth.name
+                }
+            }
+
+            return newItem
+          }
+          return item
+        })
       )
+      
+      // Atualizar totais se necessário (opcional, mas bom)
+      // fetchMonthTotals() // Se existir essa função exposta ou se recalcularmos
+      
     } catch (error) {
       console.error("Erro ao atualizar item:", error)
       throw error
