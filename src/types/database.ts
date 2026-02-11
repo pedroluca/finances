@@ -83,6 +83,7 @@ export interface InvoiceItem {
     author_id: number;
     author_name: string;
     amount: number;
+    is_paid: boolean;
   }[];
 }
 
@@ -109,6 +110,7 @@ export interface InvoiceItemWithDetails extends InvoiceItem {
     author_id: number;
     author_name: string;
     amount: number;
+    is_paid: boolean;
   }[];
 }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import AddItemModal from "../components/AddItemModal"
 import { useNavigate, useParams } from "react-router-dom"
 import { useAuthStore } from "../store/auth.store"
@@ -265,46 +265,49 @@ export default function CardDetails() {
   }, [card?.card_id, user?.id, currentMonth, currentYear]) // Carrega baseado no mês atual calculado
 
   // Carregamento de itens quando o mês muda (APÓS carregamento inicial)
+  const loadMonthItems = useCallback(async () => {
+    if (!card || !user) return
+
+    try {
+      setIsLoadingItems(true)
+      // Buscar faturas do cartão (com itens)
+      const invoices: (InvoiceWithCard & {
+        items: InvoiceItemWithDetails[]
+      })[] = await phpApiRequest(
+        `invoices.php?card_id=${card.card_id ?? card.id}`
+      )
+      // Encontrar a fatura do mês/ano visualizado
+      const invoice = invoices.find(
+        (inv) =>
+          inv.reference_month === viewingMonth &&
+          inv.reference_year === viewingYear
+      )
+      setItems(
+        (invoice?.items || []).map((item) => ({
+          ...item,
+          is_installment: !!Number(item.is_installment),
+          is_paid: !!Number(item.is_paid),
+          assignments: item.assignments?.map(a => ({
+               ...a,
+               is_paid: !!Number(a.is_paid)
+          }))
+        }))
+      )
+
+      setSelectedItems(new Set())
+    } catch (error) {
+      console.error("Erro ao carregar itens:", error)
+    } finally {
+      setIsLoadingItems(false)
+    }
+  }, [card, user, viewingMonth, viewingYear])
+
+  // Carregamento de itens quando o mês muda (APÓS carregamento inicial)
   useEffect(() => {
     // Não executa no mount inicial
     if (!hasInitialLoad) return
-
-    const loadMonthItems = async () => {
-      if (!card || !user) return
-
-      try {
-        setIsLoadingItems(true)
-        // Buscar faturas do cartão (com itens)
-        const invoices: (InvoiceWithCard & {
-          items: InvoiceItemWithDetails[]
-        })[] = await phpApiRequest(
-          `invoices.php?card_id=${card.card_id ?? card.id}`
-        )
-        // Encontrar a fatura do mês/ano visualizado
-        const invoice = invoices.find(
-          (inv) =>
-            inv.reference_month === viewingMonth &&
-            inv.reference_year === viewingYear
-        )
-        setItems(
-          (invoice?.items || []).map((item) => ({
-            ...item,
-            is_installment: !!Number(item.is_installment),
-            is_paid: !!Number(item.is_paid),
-          }))
-        )
-
-        setSelectedItems(new Set())
-      } catch (error) {
-        console.error("Erro ao carregar itens:", error)
-      } finally {
-        setIsLoadingItems(false)
-      }
-    }
-
     loadMonthItems()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewingMonth, viewingYear])
+  }, [hasInitialLoad, loadMonthItems])
 
   // Funções de navegação entre meses
   const goToPreviousMonth = () => {
@@ -349,6 +352,8 @@ export default function CardDetails() {
       let amountToAdd = 0
       let isInvolved = false
 
+      let isPaid = item.is_paid
+
       if (item.assignments && item.assignments.length > 0) {
         const assignment = item.assignments.find(
           (a) => a.author_id === author.id
@@ -356,6 +361,7 @@ export default function CardDetails() {
         if (assignment) {
           amountToAdd = Number(assignment.amount)
           isInvolved = true
+          isPaid = assignment.is_paid
         }
       } else {
         if (item.author_id === author.id) {
@@ -367,7 +373,7 @@ export default function CardDetails() {
       if (isInvolved) {
         total += amountToAdd
         itemCount++
-        if (!item.is_paid) {
+        if (!isPaid) {
           unpaidTotal += amountToAdd
         }
       }
@@ -450,19 +456,30 @@ export default function CardDetails() {
 
     try {
       await Promise.all(
-        Array.from(selectedItems).map((itemId) =>
-          phpApiRequest(`invoice_items.php`, {
+        Array.from(selectedItems).map((itemId) => {
+          const payload: any = { id: itemId, is_paid: true }
+          
+          if (selectedAuthorFilter) {
+             const originalItem = items.find(i => i.id === itemId)
+             if (originalItem && originalItem.assignments && originalItem.assignments.some(a => a.author_id === selectedAuthorFilter)) {
+                 payload.author_id = selectedAuthorFilter
+             }
+          }
+
+          return phpApiRequest(`invoice_items.php`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: itemId, is_paid: true }),
+            body: JSON.stringify(payload),
           })
-        )
+        })
       )
-      setItems((prev) =>
-        prev.map((item) =>
-          selectedItems.has(item.id) ? { ...item, is_paid: true } : item
-        )
-      )
+      
+      // Recarregar os itens para garantir que o status atualizado (inclusive status parcial) seja refletido corretamente
+      // Como o update local é complexo com assignments, o reload é mais seguro.
+      // Mas para UX rápida, podemos tentar update otimista ou parcial.
+      // Vamos recarregar por segurança pois o backend pode ter mudado o status do pai.
+      await loadMonthItems()
+      
       setSelectedItems(new Set())
     } catch (error) {
       console.error("Erro ao marcar itens como pagos:", error)
@@ -602,13 +619,14 @@ export default function CardDetails() {
            if (userAssignment) {
                return {
                    amount: Number(userAssignment.amount),
-                   authorName: userAssignment.author_name
+                   authorName: userAssignment.author_name,
+                   isPaid: !!Number(userAssignment.is_paid)
                }
            }
-           return { amount: 0, authorName: item.author_name }
+           return { amount: 0, authorName: item.author_name, isPaid: false }
        }
        if (item.author_id === selectedAuthorFilter) {
-           return { amount: Number(item.amount), authorName: item.author_name }
+           return { amount: Number(item.amount), authorName: item.author_name, isPaid: item.is_paid }
        }
     }
     
@@ -618,7 +636,7 @@ export default function CardDetails() {
         authorDisplay = uniqueNames.join(', ');
     }
     
-    return { amount: Number(item.amount), authorName: authorDisplay };
+    return { amount: Number(item.amount), authorName: authorDisplay, isPaid: item.is_paid };
   }
 
   const filteredItems = items.filter((item) => {
@@ -636,12 +654,28 @@ export default function CardDetails() {
       return sum + amount;
   }, 0)
 
-  const paidAmount = filteredItems
-    .filter((item) => item.is_paid)
-    .reduce((sum, item) => {
-        const { amount } = getDisplayDetails(item);
-        return sum + amount;
-    }, 0)
+  const paidAmount = filteredItems.reduce((sum, item) => {
+      // Se tiver filtro de autor, usa a lógica do filtro
+      if (selectedAuthorFilter) {
+          const { amount, isPaid } = getDisplayDetails(item);
+          return sum + (isPaid ? amount : 0);
+      }
+      
+      // Sem filtro
+      if (item.is_paid) {
+          return sum + Number(item.amount);
+      }
+      
+      // Item não pago totalmente, verificar parciais dos assignments
+      if (item.assignments && item.assignments.length > 0) {
+          const partial = item.assignments
+            .filter(a => a.is_paid)
+            .reduce((s, a) => s + Number(a.amount), 0);
+          return sum + partial;
+      }
+      
+      return sum;
+  }, 0)
 
   const remainingAmount = totalAmount - paidAmount
 
@@ -763,13 +797,17 @@ export default function CardDetails() {
           </div>
           <div className="grid grid-cols-3 gap-2 sm:gap-4">
             <div>
-              <p className="text-xs opacity-80">Total Fatura</p>
+              <p className="text-xs opacity-80">Total Fatura {selectedAuthorFilter && (
+                <span className="truncate max-w-[100px]">
+                  de {authors.find((a) => a.id === selectedAuthorFilter)?.name}
+                </span>
+              )}</p>
               <p className="text-sm sm:text-lg font-semibold">
                 R${" "}
                 {totalAmount.toLocaleString("pt-BR", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
-                })}
+                  })}
               </p>
             </div>
             <div>
@@ -898,8 +936,18 @@ export default function CardDetails() {
               {filteredItems
                 .sort((a, b) => b.id - a.id)
                 .map((item, index) => {
-                  const { amount: displayAmount, authorName: displayAuthorName } =
+                  const { amount: displayAmount, authorName: displayAuthorName, isPaid: displayIsPaid } =
                     getDisplayDetails(item)
+
+                  // Calcular se há pagamento parcial (quando não está filtrado e não está totalmente pago)
+                  let partialPaid = 0;
+                  if (!selectedAuthorFilter && !displayIsPaid && item.assignments) {
+                      partialPaid = item.assignments
+                        .filter(a => a.is_paid)
+                        .reduce((s, a) => s + Number(a.amount), 0);
+                  }
+                  const isPartial = partialPaid > 0;
+
                   return (
                     <div
                       key={item.id}
@@ -919,8 +967,10 @@ export default function CardDetails() {
                     <div className="flex-shrink-0 mt-0.5 sm:mt-0">
                       {selectedItems.has(item.id) ? (
                         <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-                      ) : item.is_paid ? (
+                      ) : displayIsPaid ? (
                         <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
+                      ) : isPartial ? (
+                        <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500" />
                       ) : (
                         <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
                       )}
@@ -935,7 +985,7 @@ export default function CardDetails() {
                     >
                       <p
                         className={`font-medium text-sm sm:text-base truncate ${
-                          item.is_paid
+                          displayIsPaid
                             ? "text-gray-500 dark:text-gray-500 line-through"
                             : "text-gray-900 dark:text-white"
                         }`}
@@ -962,7 +1012,7 @@ export default function CardDetails() {
                     <div className="text-right flex-shrink-0">
                       <p
                         className={`text-sm sm:text-lg font-semibold ${
-                          item.is_paid
+                          displayIsPaid
                             ? "text-gray-400 dark:text-gray-600"
                             : "text-gray-900 dark:text-white"
                         }`}
@@ -976,6 +1026,11 @@ export default function CardDetails() {
                       {item.installment_number && (
                         <p className="text-xs text-gray-500 dark:text-gray-500">
                           {item.installment_number}/{item.total_installments}x
+                        </p>
+                      )}
+                      {isPartial && (
+                        <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                           Pago: R$ {partialPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       )}
                     </div>
@@ -1061,7 +1116,7 @@ export default function CardDetails() {
                       <span className="text-gray-600 dark:text-gray-400">
                         Total:
                       </span>
-                      <span className="font-semibold text-gray-900 dark:text-white">
+                      <span className={`font-semibold ${author.unpaidTotal == 0 ? "text-green-600 dark:text-green-400" : "text-gray-900 dark:text-white"}`}>
                         R${" "}
                         {author.total.toLocaleString("pt-BR", {
                           minimumFractionDigits: 2,
