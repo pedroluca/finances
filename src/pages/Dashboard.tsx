@@ -269,18 +269,29 @@ export default function Dashboard() {
 
                       {/* Footer / Limits */}
                       <div className="grid grid-cols-2 gap-4 mt-auto">
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wider opacity-80 font-medium mb-0.5">Limite Total</p>
-                          <p className="font-bold text-lg tracking-tight drop-shadow-sm">
-                            R$ {Number(card.card_limit).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] uppercase tracking-wider opacity-80 font-medium mb-0.5">Disponível</p>
-                          <p className="font-bold text-lg tracking-tight drop-shadow-sm">
-                            R$ {availableLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                        </div>
+                        {card.is_shared ? (
+                          <div className="col-span-2">
+                            <p className="text-[10px] uppercase tracking-wider opacity-80 font-medium mb-0.5">Compartilhado com</p>
+                            <p className="font-bold text-lg tracking-tight drop-shadow-sm truncate">
+                              {card.owner_name}
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wider opacity-80 font-medium mb-0.5">Limite Total</p>
+                              <p className="font-bold text-lg tracking-tight drop-shadow-sm">
+                                R$ {Number(card.card_limit).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[10px] uppercase tracking-wider opacity-80 font-medium mb-0.5">Disponível</p>
+                              <p className="font-bold text-lg tracking-tight drop-shadow-sm">
+                                R$ {availableLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </p>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </button>

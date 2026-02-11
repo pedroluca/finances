@@ -8,6 +8,7 @@ import AddCard from './pages/AddCard'
 import CardDetails from './pages/CardDetails'
 import AddItem from './pages/AddItem'
 import Settings from './pages/Settings'
+import ManageAuthors from './pages/ManageAuthors'
 
 function App() {
   const { isAuthenticated, verifyAuth } = useAuthStore()
@@ -53,6 +54,10 @@ function App() {
         <Route
           path="/settings"
           element={isAuthenticated ? <Settings /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/settings/manage-authors"
+          element={isAuthenticated ? <ManageAuthors /> : <Navigate to="/login" />}
         />
 
         {/* Default redirect */}

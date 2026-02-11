@@ -58,6 +58,8 @@ export interface Author {
   user_id: number;
   name: string;
   is_owner: boolean;
+  linked_user_id?: number | null;
+  linked_user_email?: string | null;
   created_at: Date;
 }
 
@@ -120,6 +122,9 @@ export interface CardWithBalance extends Card {
   current_debt: number;
   available_balance: number;
   color: string; // cor da view
+  is_shared?: boolean;
+  owner_name?: string;
+  author_id_on_owner?: number;
 }
 
 export interface MonthlyTotal {

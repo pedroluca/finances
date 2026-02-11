@@ -714,20 +714,23 @@ export default function CardDetails() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              <button
-                onClick={() => navigate(`/cards/${cardId}/edit`)}
-                className="p-1.5 sm:p-2 cursor-pointer text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-              <button
-                onClick={handleDeleteCardClick}
-                className="p-1.5 sm:p-2 cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            </div>
+            {/* Only show actions if NOT shared */}
+            {!card.is_shared && (
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => navigate(`/cards/${cardId}/edit`)}
+                    className="p-1.5 sm:p-2 cursor-pointer text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                  <button
+                    onClick={handleDeleteCardClick}
+                    className="p-1.5 sm:p-2 cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                </div>
+            )}
           </div>
 
           {/* Navegação de Meses */}
@@ -785,14 +788,26 @@ export default function CardDetails() {
         >
           <div className="flex justify-between items-start mb-4 sm:mb-8">
             <div>
-              <p className="text-xs sm:text-sm opacity-80">Limite Total</p>
-              <p className="text-xl sm:text-3xl font-bold">
-                R${" "}
-                {Number(card.card_limit ?? 0).toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </p>
+              {card.is_shared ? (
+                  <div>
+                    <p className="text-xs sm:text-sm opacity-80 mb-1">Cartão Compartilhado</p>
+                    <p className="text-lg sm:text-2xl font-bold flex items-center gap-2">
+                        <span>{card.owner_name}</span>
+                    </p>
+                    <p className="text-xs opacity-60 mt-1">Você visualiza apenas os itens vinculados a você.</p>
+                  </div>
+              ) : (
+                  <>
+                    <p className="text-xs sm:text-sm opacity-80">Limite Total</p>
+                    <p className="text-xl sm:text-3xl font-bold">
+                        R${" "}
+                        {Number(card.card_limit ?? 0).toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                        })}
+                    </p>
+                  </>
+              )}
             </div>
             <CreditCard className="w-8 h-8 sm:w-12 sm:h-12 opacity-80" />
           </div>
