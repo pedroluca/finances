@@ -337,9 +337,7 @@ export default function CardDetails() {
   }
 
   // Filtrar itens por autor
-  const filteredItems = selectedAuthorFilter
-    ? items.filter((item) => item.author_id === selectedAuthorFilter)
-    : items
+
 
   // Calcular totais por autor
   const authorTotals = authors.map((author) => {
@@ -574,10 +572,53 @@ export default function CardDetails() {
     )
   }
 
-  const totalAmount = items.reduce((sum, item) => sum + Number(item.amount), 0)
-  const paidAmount = items
+  const getDisplayDetails = (item: InvoiceItemWithDetails) => {
+    if (selectedAuthorFilter) {
+       if (item.assignments && item.assignments.length > 0) {
+           const userAssignment = item.assignments.find(a => a.author_id === selectedAuthorFilter);
+           if (userAssignment) {
+               return {
+                   amount: Number(userAssignment.amount),
+                   authorName: userAssignment.author_name
+               }
+           }
+       }
+       if (item.author_id === selectedAuthorFilter) {
+           return { amount: Number(item.amount), authorName: item.author_name }
+       }
+    }
+    
+    let authorDisplay = item.author_name;
+    if (item.assignments && item.assignments.length > 0) {
+        // Pega o primeiro nome de cada autor
+        const uniqueNames = Array.from(new Set(item.assignments.map(a => a.author_name.split(' ')[0])));
+        authorDisplay = uniqueNames.join(', ');
+    }
+    
+    return { amount: Number(item.amount), authorName: authorDisplay };
+  }
+
+  const filteredItems = items.filter((item) => {
+    if (selectedAuthorFilter) {
+        if (item.author_id === selectedAuthorFilter) return true;
+        if (item.assignments && item.assignments.some(a => a.author_id === selectedAuthorFilter)) return true;
+        return false;
+    }
+    return true
+  })
+
+  const totalAmount = filteredItems.reduce((sum, item) => {
+      const { amount } = getDisplayDetails(item);
+      return sum + amount;
+  }, 0)
+
+  const paidAmount = filteredItems
     .filter((item) => item.is_paid)
-    .reduce((sum, item) => sum + Number(item.amount), 0)
+    .reduce((sum, item) => {
+        const { amount } = getDisplayDetails(item);
+        return sum + amount;
+    }, 0)
+
   const remainingAmount = totalAmount - paidAmount
 
   return (
@@ -832,9 +873,12 @@ export default function CardDetails() {
             >
               {filteredItems
                 .sort((a, b) => b.id - a.id)
-                .map((item, index) => (
-                  <div
-                    key={item.id}
+                .map((item, index) => {
+                  const { amount: displayAmount, authorName: displayAuthorName } =
+                    getDisplayDetails(item)
+                  return (
+                    <div
+                      key={item.id}
                     style={{
                       animation: `slideInFromRight 0.25s ease-out ${Math.min(
                         index * 0.02,
@@ -880,7 +924,7 @@ export default function CardDetails() {
                             {item.category_icon} {item.category_name}
                           </span>
                         )}
-                        <span className="truncate">{item.author_name}</span>
+                        <span className="truncate">{displayAuthorName}</span>
                         {item.purchase_date && (
                           <span className="hidden sm:inline">
                             {new Date(item.purchase_date + 'T00:00:00').toLocaleDateString(
@@ -900,7 +944,7 @@ export default function CardDetails() {
                         }`}
                       >
                         R${" "}
-                        {Number(item.amount).toLocaleString("pt-BR", {
+                        {displayAmount.toLocaleString("pt-BR", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
@@ -912,7 +956,8 @@ export default function CardDetails() {
                       )}
                     </div>
                   </div>
-                ))}
+                  )
+                })}
             </div>
           )}
         </div>

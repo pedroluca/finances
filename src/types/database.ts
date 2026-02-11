@@ -77,6 +77,13 @@ export interface InvoiceItem {
   notes: string | null;
   created_at: Date;
   updated_at: Date;
+  assignments?: {
+    id: number;
+    invoice_item_id: number;
+    author_id: number;
+    author_name: string;
+    amount: number;
+  }[];
 }
 
 // Tipos com relacionamentos
@@ -96,6 +103,13 @@ export interface InvoiceItemWithDetails extends InvoiceItem {
   category_icon: string | null;
   category_color: string | null;
   author_name: string;
+  assignments?: {
+    id: number;
+    invoice_item_id: number;
+    author_id: number;
+    author_name: string;
+    amount: number;
+  }[];
 }
 
 export interface CardWithBalance extends Card {
