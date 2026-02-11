@@ -8,7 +8,7 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  
+
   // Actions
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   register: (name: string, email: string, password: string, confirmPassword: string) => Promise<{ success: boolean; message?: string }>;
@@ -93,37 +93,42 @@ export const useAuthStore = create<AuthState>()(
           token: null,
           isAuthenticated: false,
         });
+        // Limpar COMPLETAMENTE o localStorage
+        localStorage.clear();
+        // Forçar reload completo da página para garantir que nada fique em cache
+        window.location.href = '/login';
       },
 
       verifyAuth: async () => {
         const { token } = get();
+
         if (!token) {
           set({ isAuthenticated: false, user: null });
           return;
         }
+
         try {
           const response = await phpApiRequest('auth.php?action=verify', {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` }
           });
+
           if (response.success && response.user) {
             set({
               user: response.user,
               isAuthenticated: true,
             });
           } else {
+            // NÃO fazer logout automático - apenas desautenticar
             set({
               user: null,
               token: null,
               isAuthenticated: false,
             });
           }
-        } catch {
-          set({
-            user: null,
-            token: null,
-            isAuthenticated: false,
-          });
+        } catch (error) {
+          console.error('Erro ao verificar autenticação:', error);
+          // Em caso de erro, manter o estado atual (pode ser erro de rede temporário)
         }
       },
 
