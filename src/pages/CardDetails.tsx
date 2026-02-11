@@ -680,9 +680,9 @@ export default function CardDetails() {
   const remainingAmount = totalAmount - paidAmount
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors overflow-hidden">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 transition-colors">
+      <div className="flex-none bg-white dark:bg-gray-800 border-b dark:border-gray-700 transition-colors z-10 relative shadow-sm">
         <div className="max-w-6xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             {/* <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
@@ -754,7 +754,7 @@ export default function CardDetails() {
               {!isCurrentMonth && (
                 <button
                   onClick={goToCurrentMonth}
-                  className="text-xs sm:text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium mt-1"
+                  className="cursor-pointer text-xs sm:text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium mt-1"
                 >
                   Ir para o mês atual
                 </button>
@@ -772,7 +772,8 @@ export default function CardDetails() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
+      <div className="flex-1 overflow-y-auto w-full relative custom-scrollbar" id="scrollable-content">
+        <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-8 pb-24">
         {/* Card Info */}
         <div
           key={`${viewingMonth}-${viewingYear}`}
@@ -1144,6 +1145,7 @@ export default function CardDetails() {
           </div>
         </div>
       )}
+      </div>
 
       {/* Delete Confirmation Modal (Card) */}
       <ConfirmModal
@@ -1157,17 +1159,35 @@ export default function CardDetails() {
         message={
           (() => {
             // Calculate total unpaid amount across ALL invoices
-            const unpaidAmount = allUnpaidItems.reduce((sum, item) => sum + Number(item.amount), 0)
+            const unpaidAmount = allUnpaidItems.reduce((sum, item) => {
+              let itemAmount = Number(item.amount)
+              // If item has assignments, check for partial payments
+              if (item.assignments && item.assignments.length > 0) {
+                 const paidPartial = item.assignments
+                   .filter(a => !!Number(a.is_paid))
+                   .reduce((s, a) => s + Number(a.amount), 0)
+                 itemAmount -= paidPartial
+              }
+              return sum + itemAmount
+            }, 0)
             
             let msg = `Tem certeza que deseja excluir o cartão "${card.card_name ?? card.name}"?`
             
             if (unpaidAmount > 0) {
-              msg += `\n\n⚠️ ATENÇÃO: Este cartão possui ${allUnpaidItems.length} item(ns) não pago(s) no valor total de R$ ${
+              msg += `\n\n⚠️ ATENÇÃO: Este cartão possui ${allUnpaidItems.filter(i => {
+                  let itemAmount = Number(i.amount)
+                  if (i.assignments && i.assignments.length > 0) {
+                     const paidPartial = i.assignments
+                       .filter(a => !!Number(a.is_paid))
+                       .reduce((s, a) => s + Number(a.amount), 0)
+                     itemAmount -= paidPartial
+                  }
+                  return itemAmount > 0.01 // Só conta se ainda tiver algo a pagar
+              }).length} item(ns) com pendência(s) no valor total de R$ ${
                 unpaidAmount.toLocaleString("pt-BR", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
-                })
-              }.`
+                })}.`
             }
             
             msg += "\n\nEsta ação não pode ser desfeita."
