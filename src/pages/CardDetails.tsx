@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import AddItemModal from "../components/AddItemModal";
-import { useNavigate, useParams } from "react-router-dom";
-import { useAuthStore } from "../store/auth.store";
-import { useAppStore } from "../store/app.store";
-import type { CardWithBalance } from "../types/database";
-import { phpApiRequest } from "../lib/api";
-import EditItemModal from "../components/EditItemModal";
+import { useState, useEffect } from "react"
+import AddItemModal from "../components/AddItemModal"
+import { useNavigate, useParams } from "react-router-dom"
+import { useAuthStore } from "../store/auth.store"
+import { useAppStore } from "../store/app.store"
+import type { CardWithBalance } from "../types/database"
+import { phpApiRequest } from "../lib/api"
+import EditItemModal from "../components/EditItemModal"
 import {
   ArrowLeft,
   CreditCard,
@@ -21,279 +21,334 @@ import {
   Filter,
   X,
   User,
-} from "lucide-react";
+} from "lucide-react"
 import type {
   InvoiceItemWithDetails,
   InvoiceWithCard,
-} from "../types/database";
-import ConfirmModal from "../components/ConfirmModal";
-import { useToast } from "../components/Toast";
+} from "../types/database"
+import ConfirmModal from "../components/ConfirmModal"
+import { useToast } from "../components/Toast"
 
 export default function CardDetails() {
-  const navigate = useNavigate();
-  const { cardId: paramCardId } = useParams<{ cardId: string }>();
+  const navigate = useNavigate()
+  const { cardId: paramCardId } = useParams<{ cardId: string }>()
   // Recupera o cardId do localStorage se não vier da URL
   const [cardId] = useState(() => {
     if (paramCardId) {
-      localStorage.setItem("lastCardId", paramCardId);
-      return paramCardId;
+      localStorage.setItem("lastCardId", paramCardId)
+      return paramCardId
     }
-    const stored = localStorage.getItem("lastCardId");
-    return stored || "";
-  });
-  const { user } = useAuthStore();
-  const { cards, removeCard, authors } = useAppStore();
-  const { showToast } = useToast();
+    const stored = localStorage.getItem("lastCardId")
+    return stored || ""
+  })
+  const { user } = useAuthStore()
+  const { cards, removeCard, authors } = useAppStore()
+  const { showToast } = useToast()
 
-  const [items, setItems] = useState<InvoiceItemWithDetails[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingItems, setIsLoadingItems] = useState(false);
-  const [hasInitialLoad, setHasInitialLoad] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showDeleteItemsModal, setShowDeleteItemsModal] = useState(false);
-  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  const [items, setItems] = useState<InvoiceItemWithDetails[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingItems, setIsLoadingItems] = useState(false)
+  const [hasInitialLoad, setHasInitialLoad] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showDeleteItemsModal, setShowDeleteItemsModal] = useState(false)
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set())
   const [editingItem, setEditingItem] = useState<InvoiceItemWithDetails | null>(
     null
-  );
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showAuthorFilter, setShowAuthorFilter] = useState(false);
+  )
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showAuthorFilter, setShowAuthorFilter] = useState(false)
   const [selectedAuthorFilter, setSelectedAuthorFilter] = useState<
     number | null
-  >(null);
-  const [showAddItemModal, setShowAddItemModal] = useState(false);
-  const [allUnpaidItems, setAllUnpaidItems] = useState<InvoiceItemWithDetails[]>([]);
-  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-    <button
-      onClick={() => setShowAddItemModal(true)}
-      className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition"
-    >
-      <Plus className="w-5 h-5" />
-      <span>Novo Item</span>
-    </button>
-    {/* ...outros botões existentes... */}
-  </div>;
+  >(null)
+  const [showAddItemModal, setShowAddItemModal] = useState(false)
+  const [allUnpaidItems, setAllUnpaidItems] = useState<InvoiceItemWithDetails[]>([])
+  const [modalInvoiceId, setModalInvoiceId] = useState<number | null>(null)
+
+  // Handle add item button click
+  const handleAddItemClick = async () => {
+    const invId = await getOrCreateInvoiceId()
+    if (invId) {
+      setModalInvoiceId(invId)
+      setShowAddItemModal(true)
+    } else {
+      showToast('Erro ao criar fatura', 'error')
+    }
+  };
 
   // Estado para controlar o mês/ano visualizado
-  const currentDate = new Date();
-  const [viewingMonth, setViewingMonth] = useState(currentDate.getMonth() + 1);
-  const [viewingYear, setViewingYear] = useState(currentDate.getFullYear());
+  const currentDate = new Date()
+  const [viewingMonth, setViewingMonth] = useState(currentDate.getMonth() + 1)
+  const [viewingYear, setViewingYear] = useState(currentDate.getFullYear())
 
   // cards agora vem da view card_available_balance
   const card = (cards as CardWithBalance[]).find(
     (c) => (c.card_id ?? c.id) === Number(cardId)
-  );
+  )
 
   // Se não encontrar o cartão, tenta buscar do backend usando o cardId salvo
   useEffect(() => {
-    if (card || !cardId || cards.length) return;
+    if (card || !cardId || cards.length) return
     const fetchCard = async () => {
       try {
-        const cardsData = await phpApiRequest("cards.php", { method: "GET" });
+        const cardsData = await phpApiRequest("cards.php", { method: "GET" })
         if (Array.isArray(cardsData)) {
           if (typeof useAppStore.getState().setCards === "function") {
-            useAppStore.getState().setCards(cardsData);
+            useAppStore.getState().setCards(cardsData)
           }
         }
       } catch (err) {
-        console.error("Erro ao buscar cartões:", err);
+        console.error("Erro ao buscar cartões:", err)
       }
-    };
-    fetchCard();
-  }, [card, cardId, cards.length]);
+    }
+    fetchCard()
+  }, [card, cardId, cards.length])
 
   // Calcula o mês/ano da fatura atual baseado no dia de fechamento
   const getCurrentInvoiceMonthYear = () => {
-    const today = new Date();
-    const todayDay = today.getDate();
-    const todayMonth = today.getMonth() + 1; // 1-12
-    const todayYear = today.getFullYear();
+    const today = new Date()
+    const todayDay = today.getDate()
+    const todayMonth = today.getMonth() + 1 // 1-12
+    const todayYear = today.getFullYear()
 
     if (!card?.closing_day) {
-      return { month: todayMonth, year: todayYear };
+      return { month: todayMonth, year: todayYear }
     }
 
-    const closingDay = card.closing_day;
+    const closingDay = card.closing_day
 
     // Se hoje ainda não passou do dia de fechamento, a fatura atual é deste mês
     if (todayDay <= closingDay) {
-      return { month: todayMonth, year: todayYear };
+      return { month: todayMonth, year: todayYear }
     }
 
     // Se já passou do dia de fechamento, a fatura atual é do próximo mês
     if (todayMonth === 12) {
-      return { month: 1, year: todayYear + 1 };
+      return { month: 1, year: todayYear + 1 }
     }
-    return { month: todayMonth + 1, year: todayYear };
-  };
+    return { month: todayMonth + 1, year: todayYear }
+  }
 
-  const currentInvoice = getCurrentInvoiceMonthYear();
-  const currentMonth = currentInvoice.month;
-  const currentYear = currentInvoice.year;
+  const currentInvoice = getCurrentInvoiceMonthYear()
+  const currentMonth = currentInvoice.month
+  const currentYear = currentInvoice.year
 
   // Atualiza o mês de visualização quando o cartão carregar ou mudar
   useEffect(() => {
     if (card && !hasInitialLoad) {
-      setViewingMonth(currentMonth);
-      setViewingYear(currentYear);
+      setViewingMonth(currentMonth)
+      setViewingYear(currentYear)
     }
-  }, [card, currentMonth, currentYear, hasInitialLoad]);
+  }, [card, currentMonth, currentYear, hasInitialLoad])
 
   // Verifica se está visualizando o mês atual
   const isCurrentMonth =
-    viewingMonth === currentMonth && viewingYear === currentYear;
+    viewingMonth === currentMonth && viewingYear === currentYear
 
-  // Encontrar a fatura do mês/ano visualizado para uso em AddItemModal
-  const invoice = (() => {
-    if (items.length > 0) {
-      return { id: items[0].invoice_id };
+  // Função para obter ou criar invoice do mês visualizado
+  const getOrCreateInvoiceId = async (): Promise<number | null> => {
+    if (!card) return null
+    
+    try {
+      const invoices: InvoiceWithCard[] = await phpApiRequest(
+        `invoices.php?card_id=${card.card_id ?? card.id}`
+      )
+      const inv = invoices.find(
+        (i) => i.reference_month === viewingMonth && i.reference_year === viewingYear
+      )
+      
+      if (inv) {
+        return inv.id
+      }
+      
+      // Calcular a closing_date (data de fechamento)
+      const closingDate = new Date(viewingYear, viewingMonth - 1, card.closing_day)
+      
+      // Se o dia não existe no mês (ex: dia 31 em fevereiro), ajusta pro último dia do mês
+      if (closingDate.getMonth() !== viewingMonth - 1) {
+        closingDate.setDate(0) // Vai pro último dia do mês anterior (que é o correto)
+      }
+      
+      // due_date é após a closing_date (próximo mês ou mesmo mês dependendo do due_day)
+      let dueMonth = viewingMonth
+      let dueYear = viewingYear
+      
+      // Se due_day < closing_day, vencimento é no próximo mês
+      if (card.due_day < card.closing_day) {
+        dueMonth = viewingMonth === 12 ? 1 : viewingMonth + 1
+        dueYear = viewingMonth === 12 ? viewingYear + 1 : viewingYear
+      }
+      
+      const dueDate = new Date(dueYear, dueMonth - 1, card.due_day)
+      
+      // Se o dia não existe no mês, ajusta
+      if (dueDate.getMonth() !== dueMonth - 1) {
+        dueDate.setDate(0)
+      }
+      
+      const newInvoice = await phpApiRequest('invoices.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          card_id: card.card_id ?? card.id,
+          reference_month: viewingMonth, // Mês do fechamento
+          reference_year: viewingYear,
+          closing_date: closingDate.toISOString().split('T')[0], // YYYY-MM-DD
+          due_date: dueDate.toISOString().split('T')[0] // YYYY-MM-DD
+        })
+      })
+      
+      return newInvoice?.id || null
+    } catch (error) {
+      console.error('Erro ao obter/criar invoice:', error)
+      return null
     }
-    return null;
-  })();
+  }
+
 
   // Carregamento inicial (apenas uma vez)
   useEffect(() => {
     const loadInitialData = async () => {
-      if (!card || !user) return;
+      if (!card || !user) return
 
       try {
-        setIsLoading(true);
+        setIsLoading(true)
         // Buscar faturas do cartão (com itens)
         const invoices: (InvoiceWithCard & {
-          items: InvoiceItemWithDetails[];
+          items: InvoiceItemWithDetails[]
         })[] = await phpApiRequest(
           `invoices.php?card_id=${card.card_id ?? card.id}`
-        );
+        )
         // Encontrar a fatura do mês/ano atual (usa currentMonth/currentYear calculados)
         const invoice = invoices.find(
           (inv) =>
             inv.reference_month === currentMonth &&
             inv.reference_year === currentYear
-        );
+        )
         setItems(
           (invoice?.items || []).map((item) => ({
             ...item,
             is_installment: !!Number(item.is_installment),
             is_paid: !!Number(item.is_paid),
           }))
-        );
+        )
       } catch (error) {
-        console.error("Erro ao carregar dados iniciais:", error);
+        console.error("Erro ao carregar dados iniciais:", error)
       } finally {
-        setIsLoading(false);
-        setHasInitialLoad(true);
+        setIsLoading(false)
+        setHasInitialLoad(true)
       }
-    };
+    }
 
-    loadInitialData();
+    loadInitialData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [card?.card_id, user?.id, currentMonth, currentYear]); // Carrega baseado no mês atual calculado
+  }, [card?.card_id, user?.id, currentMonth, currentYear]) // Carrega baseado no mês atual calculado
 
   // Carregamento de itens quando o mês muda (APÓS carregamento inicial)
   useEffect(() => {
     // Não executa no mount inicial
-    if (!hasInitialLoad) return;
+    if (!hasInitialLoad) return
 
     const loadMonthItems = async () => {
-      if (!card || !user) return;
+      if (!card || !user) return
 
       try {
-        setIsLoadingItems(true);
+        setIsLoadingItems(true)
         // Buscar faturas do cartão (com itens)
         const invoices: (InvoiceWithCard & {
-          items: InvoiceItemWithDetails[];
+          items: InvoiceItemWithDetails[]
         })[] = await phpApiRequest(
           `invoices.php?card_id=${card.card_id ?? card.id}`
-        );
+        )
         // Encontrar a fatura do mês/ano visualizado
         const invoice = invoices.find(
           (inv) =>
             inv.reference_month === viewingMonth &&
             inv.reference_year === viewingYear
-        );
+        )
         setItems(
           (invoice?.items || []).map((item) => ({
             ...item,
             is_installment: !!Number(item.is_installment),
             is_paid: !!Number(item.is_paid),
           }))
-        );
+        )
 
-        setSelectedItems(new Set());
+        setSelectedItems(new Set())
       } catch (error) {
-        console.error("Erro ao carregar itens:", error);
+        console.error("Erro ao carregar itens:", error)
       } finally {
-        setIsLoadingItems(false);
+        setIsLoadingItems(false)
       }
-    };
+    }
 
-    loadMonthItems();
+    loadMonthItems()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewingMonth, viewingYear]);
+  }, [viewingMonth, viewingYear])
 
   // Funções de navegação entre meses
   const goToPreviousMonth = () => {
     if (viewingMonth === 1) {
-      setViewingMonth(12);
-      setViewingYear(viewingYear - 1);
+      setViewingMonth(12)
+      setViewingYear(viewingYear - 1)
     } else {
-      setViewingMonth(viewingMonth - 1);
+      setViewingMonth(viewingMonth - 1)
     }
-  };
+  }
 
   const goToNextMonth = () => {
     if (viewingMonth === 12) {
-      setViewingMonth(1);
-      setViewingYear(viewingYear + 1);
+      setViewingMonth(1)
+      setViewingYear(viewingYear + 1)
     } else {
-      setViewingMonth(viewingMonth + 1);
+      setViewingMonth(viewingMonth + 1)
     }
-  };
+  }
 
   const goToCurrentMonth = () => {
-    setViewingMonth(currentMonth);
-    setViewingYear(currentYear);
-  };
+    setViewingMonth(currentMonth)
+    setViewingYear(currentYear)
+  }
 
   // Limpa o cardId do localStorage ao voltar
   const handleBack = () => {
-    localStorage.removeItem("lastCardId");
-    navigate(-1);
-  };
+    localStorage.removeItem("lastCardId")
+    navigate("/dashboard")
+  }
 
   // Filtrar itens por autor
   const filteredItems = selectedAuthorFilter
     ? items.filter((item) => item.author_id === selectedAuthorFilter)
-    : items;
+    : items
 
   // Calcular totais por autor
   const authorTotals = authors.map((author) => {
-    const authorItems = items.filter((item) => item.author_id === author.id);
+    const authorItems = items.filter((item) => item.author_id === author.id)
     const total = authorItems.reduce(
       (sum, item) => sum + Number(item.amount),
       0
-    );
+    )
     const unpaidTotal = authorItems
       .filter((item) => !item.is_paid)
-      .reduce((sum, item) => sum + Number(item.amount), 0);
+      .reduce((sum, item) => sum + Number(item.amount), 0)
 
     return {
       ...author,
       total,
       unpaidTotal,
       itemCount: authorItems.length,
-    };
-  });
+    }
+  })
 
   const handleDeleteCardClick = async () => {
-    if (!card) return;
+    if (!card) return
     
     // Fetch all invoices to check for unpaid items
     try {
       const invoices: (InvoiceWithCard & {
-        items: InvoiceItemWithDetails[];
+        items: InvoiceItemWithDetails[]
       })[] = await phpApiRequest(
         `invoices.php?card_id=${card.card_id ?? card.id}`
-      );
+      )
       
       // Collect all unpaid items from all invoices
       const unpaidItems = invoices
@@ -303,20 +358,20 @@ export default function CardDetails() {
           ...item,
           is_installment: !!Number(item.is_installment),
           is_paid: !!Number(item.is_paid),
-        }));
+        }))
       
-      setAllUnpaidItems(unpaidItems);
-      setShowDeleteModal(true);
+      setAllUnpaidItems(unpaidItems)
+      setShowDeleteModal(true)
     } catch (error) {
-      console.error("Erro ao buscar itens não pagos:", error);
+      console.error("Erro ao buscar itens não pagos:", error)
       // Still show modal even if fetch fails
-      setAllUnpaidItems([]);
-      setShowDeleteModal(true);
+      setAllUnpaidItems([])
+      setShowDeleteModal(true)
     }
-  };
+  }
 
   const handleDeleteCard = async () => {
-    if (!card || !user) return;
+    if (!card || !user) return
 
     try {
       await phpApiRequest(`cards.php?action=deactivate`, {
@@ -326,30 +381,30 @@ export default function CardDetails() {
           card_id: card.card_id ?? card.id,
           user_id: user.id,
         }),
-      });
-      removeCard(card.card_id ?? card.id);
-      navigate("/dashboard");
+      })
+      removeCard(card.card_id ?? card.id)
+      navigate("/dashboard")
     } catch (error) {
-      console.error("Erro ao excluir cartão:", error);
-      showToast("Erro ao excluir cartão", 'error');
+      console.error("Erro ao excluir cartão:", error)
+      showToast("Erro ao excluir cartão", 'error')
     }
-  };
+  }
 
   const toggleSelectItem = (itemId: number) => {
     // Permite seleção em qualquer mês para marcar como pago
     setSelectedItems((prev) => {
-      const newSet = new Set(prev);
+      const newSet = new Set(prev)
       if (newSet.has(itemId)) {
-        newSet.delete(itemId);
+        newSet.delete(itemId)
       } else {
-        newSet.add(itemId);
+        newSet.add(itemId)
       }
-      return newSet;
-    });
-  };
+      return newSet
+    })
+  }
 
   const markSelectedAsPaid = async () => {
-    if (!user || selectedItems.size === 0) return;
+    if (!user || selectedItems.size === 0) return
 
     try {
       await Promise.all(
@@ -360,25 +415,25 @@ export default function CardDetails() {
             body: JSON.stringify({ id: itemId, is_paid: true }),
           })
         )
-      );
+      )
       setItems((prev) =>
         prev.map((item) =>
           selectedItems.has(item.id) ? { ...item, is_paid: true } : item
         )
-      );
-      setSelectedItems(new Set());
+      )
+      setSelectedItems(new Set())
     } catch (error) {
-      console.error("Erro ao marcar itens como pagos:", error);
+      console.error("Erro ao marcar itens como pagos:", error)
     }
-  };
+  }
 
   const deleteSelectedItems = () => {
-    if (!user || selectedItems.size === 0) return;
-    setShowDeleteItemsModal(true);
-  };
+    if (!user || selectedItems.size === 0) return
+    setShowDeleteItemsModal(true)
+  }
 
   const confirmDeleteItems = async () => {
-    if (!user || selectedItems.size === 0) return;
+    if (!user || selectedItems.size === 0) return
 
     try {
       await Promise.all(
@@ -389,7 +444,7 @@ export default function CardDetails() {
             body: JSON.stringify({ id: itemId }),
           })
         )
-      );
+      )
       
       setItems((prev) =>
         prev.filter(
@@ -402,26 +457,26 @@ export default function CardDetails() {
                 item.installment_group_id === sel.installment_group_id
             )
         )
-      );
+      )
       
-      showToast(`${selectedItems.size} item(ns) excluído(s) com sucesso`, 'success');
-      setSelectedItems(new Set());
+      showToast(`${selectedItems.size} item(ns) excluído(s) com sucesso`, 'success')
+      setSelectedItems(new Set())
     } catch (error) {
-      console.error("Erro ao excluir itens:", error);
-      showToast("Erro ao excluir itens", 'error');
+      console.error("Erro ao excluir itens:", error)
+      showToast("Erro ao excluir itens", 'error')
     }
-  };
+  }
 
   const openEditModal = (item: InvoiceItemWithDetails) => {
     // Permite edição de itens de qualquer mês
-    setEditingItem(item);
-    setShowEditModal(true);
-  };
+    setEditingItem(item)
+    setShowEditModal(true)
+  }
 
   const saveItemChanges = async (
     updatedItem: Partial<InvoiceItemWithDetails>
   ) => {
-    if (!editingItem || !user) return;
+    if (!editingItem || !user) return
 
     try {
       await phpApiRequest(`items.php?action=update`, {
@@ -432,24 +487,24 @@ export default function CardDetails() {
           user_id: user.id,
           ...updatedItem,
         }),
-      });
+      })
       setItems((prev) =>
         prev.map((item) =>
           item.id === editingItem.id ? { ...item, ...updatedItem } : item
         )
-      );
+      )
     } catch (error) {
-      console.error("Erro ao atualizar item:", error);
-      throw error;
+      console.error("Erro ao atualizar item:", error)
+      throw error
     }
-  };
+  }
 
   if (!card) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p>Cartão não encontrado</p>
       </div>
-    );
+    )
   }
 
   if (isLoading) {
@@ -460,14 +515,14 @@ export default function CardDetails() {
           <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando...</p>
         </div>
       </div>
-    );
+    )
   }
 
-  const totalAmount = items.reduce((sum, item) => sum + Number(item.amount), 0);
+  const totalAmount = items.reduce((sum, item) => sum + Number(item.amount), 0)
   const paidAmount = items
     .filter((item) => item.is_paid)
-    .reduce((sum, item) => sum + Number(item.amount), 0);
-  const remainingAmount = totalAmount - paidAmount;
+    .reduce((sum, item) => sum + Number(item.amount), 0)
+  const remainingAmount = totalAmount - paidAmount
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
@@ -685,16 +740,14 @@ export default function CardDetails() {
                 <span className="hidden sm:inline">Filtrar por Pessoa</span>
                 <span className="sm:hidden">Filtrar</span>
               </button>
-              {isCurrentMonth && (
-                <button
-                  onClick={() => setShowAddItemModal(true)}
-                  className="flex items-center cursor-pointer gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-xs sm:text-base"
-                >
-                  <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="hidden sm:inline">Adicionar Item</span>
-                  <span className="sm:hidden">Novo</span>
-                </button>
-              )}
+              <button
+                onClick={handleAddItemClick}
+                className="flex items-center cursor-pointer gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-xs sm:text-base"
+              >
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">Adicionar Item</span>
+                <span className="sm:hidden">Novo</span>
+              </button>
             </div>
           </div>
 
@@ -752,8 +805,8 @@ export default function CardDetails() {
                     <div
                       className="flex-1 min-w-0"
                       onClick={(e) => {
-                        e.stopPropagation();
-                        openEditModal(item);
+                        e.stopPropagation()
+                        openEditModal(item)
                       }}
                     >
                       <p
@@ -834,8 +887,8 @@ export default function CardDetails() {
               <div className="space-y-3">
               <button
                 onClick={() => {
-                  setSelectedAuthorFilter(null);
-                  setShowAuthorFilter(false);
+                  setSelectedAuthorFilter(null)
+                  setShowAuthorFilter(false)
                 }}
                 className={`w-full p-4 rounded-lg text-left transition border-2 ${
                   selectedAuthorFilter === null
@@ -860,8 +913,8 @@ export default function CardDetails() {
                 <button
                   key={author.id}
                   onClick={() => {
-                    setSelectedAuthorFilter(author.id);
-                    setShowAuthorFilter(false);
+                    setSelectedAuthorFilter(author.id)
+                    setShowAuthorFilter(false)
                   }}
                   className={`w-full cursor-pointer p-4 rounded-lg text-left transition border-2 ${
                     selectedAuthorFilter === author.id
@@ -916,17 +969,17 @@ export default function CardDetails() {
       <ConfirmModal
         isOpen={showDeleteModal}
         onClose={() => {
-          setShowDeleteModal(false);
-          setAllUnpaidItems([]);
+          setShowDeleteModal(false)
+          setAllUnpaidItems([])
         }}
         onConfirm={handleDeleteCard}
         title="Excluir Cartão?"
         message={
           (() => {
             // Calculate total unpaid amount across ALL invoices
-            const unpaidAmount = allUnpaidItems.reduce((sum, item) => sum + Number(item.amount), 0);
+            const unpaidAmount = allUnpaidItems.reduce((sum, item) => sum + Number(item.amount), 0)
             
-            let msg = `Tem certeza que deseja excluir o cartão "${card.card_name ?? card.name}"?`;
+            let msg = `Tem certeza que deseja excluir o cartão "${card.card_name ?? card.name}"?`
             
             if (unpaidAmount > 0) {
               msg += `\n\n⚠️ ATENÇÃO: Este cartão possui ${allUnpaidItems.length} item(ns) não pago(s) no valor total de R$ ${
@@ -934,11 +987,11 @@ export default function CardDetails() {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })
-              }.`;
+              }.`
             }
             
-            msg += "\n\nEsta ação não pode ser desfeita.";
-            return msg;
+            msg += "\n\nEsta ação não pode ser desfeita."
+            return msg
           })()
         }
         confirmText="Excluir"
@@ -958,35 +1011,35 @@ export default function CardDetails() {
 
       {/* Edit Item Modal */}
       {/* Add Item Modal */}
-      {showAddItemModal && card && invoice && (
+      {showAddItemModal && card && modalInvoiceId && (
         <AddItemModal
           card={card}
-          invoiceId={invoice.id}
+          invoiceId={modalInvoiceId}
           open={showAddItemModal}
           onClose={() => setShowAddItemModal(false)}
           onItemAdded={async () => {
-            setShowAddItemModal(false);
+            setShowAddItemModal(false)
             // Recarrega os itens da fatura após adicionar
-            setIsLoadingItems(true);
+            setIsLoadingItems(true)
             try {
               const invoices = await phpApiRequest(
                 `invoices.php?card_id=${card.card_id ?? card.id}`
-              );
+              )
               const invoiceAtual = (
                 invoices as (InvoiceWithCard & {
-                  items: InvoiceItemWithDetails[];
+                  items: InvoiceItemWithDetails[]
                 })[]
               ).find(
                 (inv: InvoiceWithCard & { items: InvoiceItemWithDetails[] }) =>
                   inv.reference_month === viewingMonth &&
                   inv.reference_year === viewingYear
-              );
-              setItems(invoiceAtual?.items || []);
-              setSelectedItems(new Set());
+              )
+              setItems(invoiceAtual?.items || [])
+              setSelectedItems(new Set())
             } catch (error) {
-              console.error("Erro ao recarregar itens após adicionar:", error);
+              console.error("Erro ao recarregar itens após adicionar:", error)
             } finally {
-              setIsLoadingItems(false);
+              setIsLoadingItems(false)
             }
           }}
         />
@@ -997,12 +1050,12 @@ export default function CardDetails() {
         <EditItemModal
           item={editingItem}
           onClose={() => {
-            setShowEditModal(false);
-            setEditingItem(null);
+            setShowEditModal(false)
+            setEditingItem(null)
           }}
           onSave={saveItemChanges}
         />
       )}
     </div>
-  );
+  )
 }
