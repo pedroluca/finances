@@ -61,6 +61,7 @@ export default function CardDetails() {
     number | null
   >(null);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [allUnpaidItems, setAllUnpaidItems] = useState<InvoiceItemWithDetails[]>([]);
   <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
     <button
       onClick={() => setShowAddItemModal(true)}
@@ -283,6 +284,37 @@ export default function CardDetails() {
     };
   });
 
+  const handleDeleteCardClick = async () => {
+    if (!card) return;
+    
+    // Fetch all invoices to check for unpaid items
+    try {
+      const invoices: (InvoiceWithCard & {
+        items: InvoiceItemWithDetails[];
+      })[] = await phpApiRequest(
+        `invoices.php?card_id=${card.card_id ?? card.id}`
+      );
+      
+      // Collect all unpaid items from all invoices
+      const unpaidItems = invoices
+        .flatMap((inv) => inv.items || [])
+        .filter((item) => !item.is_paid)
+        .map((item) => ({
+          ...item,
+          is_installment: !!Number(item.is_installment),
+          is_paid: !!Number(item.is_paid),
+        }));
+      
+      setAllUnpaidItems(unpaidItems);
+      setShowDeleteModal(true);
+    } catch (error) {
+      console.error("Erro ao buscar itens não pagos:", error);
+      // Still show modal even if fetch fails
+      setAllUnpaidItems([]);
+      setShowDeleteModal(true);
+    }
+  };
+
   const handleDeleteCard = async () => {
     if (!card || !user) return;
 
@@ -299,7 +331,7 @@ export default function CardDetails() {
       navigate("/dashboard");
     } catch (error) {
       console.error("Erro ao excluir cartão:", error);
-      alert("Erro ao excluir cartão");
+      showToast("Erro ao excluir cartão", 'error');
     }
   };
 
@@ -480,7 +512,7 @@ export default function CardDetails() {
                 <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
               <button
-                onClick={() => setShowDeleteModal(true)}
+                onClick={handleDeleteCardClick}
                 className="p-1.5 sm:p-2 cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
               >
                 <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -883,10 +915,32 @@ export default function CardDetails() {
       {/* Delete Confirmation Modal (Card) */}
       <ConfirmModal
         isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setAllUnpaidItems([]);
+        }}
         onConfirm={handleDeleteCard}
         title="Excluir Cartão?"
-        message={`Tem certeza que deseja excluir o cartão "${card.name}"? Esta ação não pode ser desfeita.`}
+        message={
+          (() => {
+            // Calculate total unpaid amount across ALL invoices
+            const unpaidAmount = allUnpaidItems.reduce((sum, item) => sum + Number(item.amount), 0);
+            
+            let msg = `Tem certeza que deseja excluir o cartão "${card.card_name ?? card.name}"?`;
+            
+            if (unpaidAmount > 0) {
+              msg += `\n\n⚠️ ATENÇÃO: Este cartão possui ${allUnpaidItems.length} item(ns) não pago(s) no valor total de R$ ${
+                unpaidAmount.toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })
+              }.`;
+            }
+            
+            msg += "\n\nEsta ação não pode ser desfeita.";
+            return msg;
+          })()
+        }
         confirmText="Excluir"
         isDestructive
       />

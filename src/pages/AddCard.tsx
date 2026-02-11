@@ -1,9 +1,9 @@
-import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/auth.store';
-import { useAppStore } from '../store/app.store';
-import { phpApiRequest } from '../lib/api';
-import { ArrowLeft, CreditCard, DollarSign, Calendar, Palette } from 'lucide-react';
+import { useState, useEffect, type FormEvent } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useAuthStore } from '../store/auth.store'
+import { useAppStore } from '../store/app.store'
+import { phpApiRequest } from '../lib/api'
+import { ArrowLeft, CreditCard, DollarSign, Calendar, Palette } from 'lucide-react'
 
 const CARD_COLORS = [
   { name: 'Azul', value: '#3B82F6' },
@@ -18,81 +18,168 @@ const CARD_COLORS = [
   { name: 'Preto', value: '#121212' },
   { name: 'Dourado', value: '#D4AF37' },
   { name: 'Grafite', value: '#2F2F2F' },
-];
+]
 
 export default function AddCard() {
-  const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const { addCard } = useAppStore();
+  const navigate = useNavigate()
+  const { cardId } = useParams<{ cardId?: string }>()
+  const { user } = useAuthStore()
+  const { addCard, updateCard, cards } = useAppStore()
+  const isEditMode = !!cardId
 
-  const [name, setName] = useState('');
-  const [cardLimit, setCardLimit] = useState('');
-  const [closingDay, setClosingDay] = useState('');
-  const [dueDay, setDueDay] = useState('');
-  const [color, setColor] = useState(CARD_COLORS[0].value);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [name, setName] = useState('')
+  const [cardLimit, setCardLimit] = useState('')
+  const [closingDay, setClosingDay] = useState('')
+  const [dueDay, setDueDay] = useState('')
+  const [color, setColor] = useState(CARD_COLORS[0].value)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingCard, setIsLoadingCard] = useState(isEditMode)
+  const [error, setError] = useState('')
+
+  // Load existing card data when in edit mode
+  useEffect(() => {
+    if (!isEditMode || !cardId) return
+
+    const loadCard = async () => {
+      try {
+        setIsLoadingCard(true)
+        // Try to find card in store first
+        const existingCard = cards.find(
+          (c) => ((c as any).card_id ?? c.id) === Number(cardId)
+        )
+
+        if (existingCard) {
+          setName((existingCard as any).card_name ?? existingCard.name ?? '')
+          setCardLimit(String((existingCard as any).card_limit ?? 0))
+          setClosingDay(String(existingCard.closing_day ?? ''))
+          setDueDay(String(existingCard.due_day ?? ''))
+          setColor(existingCard.color ?? CARD_COLORS[0].value)
+        } else {
+          // Fetch from API if not in store
+          const cardsData = await phpApiRequest('cards.php', { method: 'GET' })
+          if (Array.isArray(cardsData)) {
+            const card = cardsData.find((c: any) => (c.card_id ?? c.id) === Number(cardId))
+            if (card) {
+              setName(card.card_name ?? card.name ?? '')
+              setCardLimit(String(card.card_limit ?? 0))
+              setClosingDay(String(card.closing_day ?? ''))
+              setDueDay(String(card.due_day ?? ''))
+              setColor(card.color ?? CARD_COLORS[0].value)
+            } else {
+              setError('Cartão não encontrado')
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao carregar cartão:', err)
+        setError('Erro ao carregar dados do cartão')
+      } finally {
+        setIsLoadingCard(false)
+      }
+    }
+
+    loadCard()
+  }, [isEditMode, cardId, cards])
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
+    e.preventDefault()
+    setError('')
 
     if (!user) {
-      setError('Usuário não autenticado');
-      return;
+      setError('Usuário não autenticado')
+      return
     }
 
     if (!name.trim()) {
-      setError('Digite o nome do cartão');
-      return;
+      setError('Digite o nome do cartão')
+      return
     }
 
-    const limit = parseFloat(cardLimit);
+    const limit = parseFloat(cardLimit)
     if (isNaN(limit) || limit <= 0) {
-      setError('Digite um limite válido');
-      return;
+      setError('Digite um limite válido')
+      return
     }
 
-    const closing = parseInt(closingDay);
+    const closing = parseInt(closingDay)
     if (isNaN(closing) || closing < 1 || closing > 31) {
-      setError('Dia de fechamento deve ser entre 1 e 31');
-      return;
+      setError('Dia de fechamento deve ser entre 1 e 31')
+      return
     }
 
-    const due = parseInt(dueDay);
+    const due = parseInt(dueDay)
     if (isNaN(due) || due < 1 || due > 31) {
-      setError('Dia de vencimento deve ser entre 1 e 31');
-      return;
+      setError('Dia de vencimento deve ser entre 1 e 31')
+      return
     }
 
     try {
-      setIsLoading(true);
+      setIsLoading(true)
 
-      const newCard = await phpApiRequest('cards.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          card_limit: limit,
-          closing_day: closing,
-          due_day: due,
-          color,
+      if (isEditMode && cardId) {
+        // Update existing card
+        const updatedCard = await phpApiRequest('cards.php', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            card_id: Number(cardId),
+            name: name.trim(),
+            card_limit: limit,
+            closing_day: closing,
+            due_day: due,
+            color,
+          })
         })
-      });
 
-      if (newCard) {
-        addCard(newCard);
-        navigate('/dashboard');
+        if (updatedCard) {
+          // Refresh all cards to ensure store is synced
+          const cardsData = await phpApiRequest('cards.php', { method: 'GET' })
+          if (Array.isArray(cardsData)) {
+            useAppStore.getState().setCards(cardsData)
+          }
+          navigate(`/cards/${cardId}`)
+        } else {
+          setError('Erro ao atualizar cartão')
+        }
       } else {
-        setError('Erro ao criar cartão');
+        // Create new card
+        const newCard = await phpApiRequest('cards.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name.trim(),
+            card_limit: limit,
+            closing_day: closing,
+            due_day: due,
+            color,
+          })
+        })
+
+        if (newCard) {
+          addCard(newCard)
+          navigate('/dashboard')
+        } else {
+          setError('Erro ao criar cartão')
+        }
       }
     } catch (err) {
-      console.error('Erro ao criar cartão:', err);
-      setError('Erro ao criar cartão');
+      console.error(`Erro ao ${isEditMode ? 'atualizar' : 'criar'} cartão:`, err)
+      setError(`Erro ao ${isEditMode ? 'atualizar' : 'criar'} cartão`)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
+
+  if (isLoadingCard) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando cartão...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
@@ -100,14 +187,18 @@ export default function AddCard() {
       <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 transition-colors">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
           <button
-            onClick={() => navigate('/dashboard')}
-            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+            onClick={() => navigate(isEditMode ? `/cards/${cardId}` : '/dashboard')}
+            className="p-2 cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Adicionar Cartão</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Cadastre um novo cartão de crédito</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {isEditMode ? 'Editar Cartão' : 'Adicionar Cartão'}
+            </h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {isEditMode ? 'Atualize as informações do seu cartão' : 'Cadastre um novo cartão de crédito'}
+            </p>
           </div>
         </div>
       </div>
@@ -258,22 +349,22 @@ export default function AddCard() {
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
-                onClick={() => navigate('/dashboard')}
-                className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                onClick={() => navigate(isEditMode ? `/cards/${cardId}` : '/dashboard')}
+                className="flex-1 px-6 py-3 cursor-pointer border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 cursor-pointer px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Salvando...' : 'Adicionar Cartão'}
+                {isLoading ? 'Salvando...' : (isEditMode ? 'Salvar Alterações' : 'Adicionar Cartão')}
               </button>
             </div>
           </form>
         </div>
       </div>
     </div>
-  );
+  )
 }
