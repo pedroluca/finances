@@ -1,8 +1,7 @@
-import { useEffect, useState, CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth.store'
 import { useAppStore } from '../store/app.store'
-import LogoImg from '../assets/logo.png'
 import type { CardWithBalance } from '../types/database'
 import {
   CreditCard,
@@ -15,8 +14,11 @@ import {
   Wifi,
   WifiHigh,
   Nfc,
+  User,
+  ChevronDown,
 } from 'lucide-react'
 import { phpApiRequest } from '../lib/api'
+import { DashboardHeader } from '../components/dashboard/d-header'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -30,6 +32,7 @@ export default function Dashboard() {
   const { monthlyTotals, setMonthlyTotals } = useAppStore()
 
   const [isLoading, setIsLoading] = useState(true)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   // cards agora vem da view card_available_balance
   const activeCards = (cards as CardWithBalance[]) // todos já são ativos na view
 
@@ -42,7 +45,7 @@ export default function Dashboard() {
     }
 
     const loadInitialData = async () => {
-      if (!user) return
+      if (!user?.id) return // Garantir que temos o user.id correto
       try {
         setIsLoading(true)
         // Carregar dados em paralelo da nova API PHP
@@ -57,14 +60,12 @@ export default function Dashboard() {
         setAuthors(authorsData)
         setMonthlyTotals(monthlyTotalsData) // Set monthly totals correctly
 
-        // Calcular total de faturas por cartão (simples)
         const totals: Record<number, number> = {}
         monthlyTotalsData.forEach((invoice: { cardId: number; total?: number; value?: number }) => {
           if (!totals[invoice.cardId]) {
             totals[invoice.cardId] = 0
           }
         })
-  // totalLimit já é usado diretamente na renderização
       } catch (error) {
         console.error('Erro ao carregar dados:', error)
       } finally {
@@ -73,14 +74,12 @@ export default function Dashboard() {
     }
 
     loadInitialData()
-  }, [isAuthenticated, user, navigate, setCards, setCategories, setAuthors, setMonthlyTotals])
+  }, [isAuthenticated, user?.id, navigate, setCards, setCategories, setAuthors, setMonthlyTotals]) // Mudado: user -> user?.id para evitar recarregar quando verifyAuth atualiza
 
   const handleLogout = () => {
     logout()
-    navigate('/login')
   }
 
-  // Calcula o "Gasto do Mês" como a soma dos itens não pagos das faturas atuais
   const getCurrentMonthExpense = () => {
     if (!monthlyTotals || monthlyTotals.length === 0) return 0
     
@@ -142,39 +141,11 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-16 h-16 rounded-lg flex items-center justify-center">
-                <img src={LogoImg} alt="Finances" className="w-full h-full object-contain" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Finances
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Olá, {user?.name}!</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate('/settings')}
-                className="p-2 text-gray-600 cursor-pointer dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
-              <button
-                onClick={handleLogout}
-                className="flex items-center cursor-pointer gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-              >
-                <LogOut className="w-5 h-5" />
-                <span>Sair</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader
+        userName={user?.name || ''}
+        userEmail={user?.email || ''}
+        onLogout={handleLogout}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats */}
@@ -319,8 +290,8 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Recent Months */}
-        {monthlyTotals.length > 0 && (
+        {/* Recent Months - Comentado para melhorias futuras */}
+        {/* {monthlyTotals.length > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
               Últimos Meses
@@ -363,7 +334,7 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
-        )}
+        )} */}
       </main>
     </div>
   )
