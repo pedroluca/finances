@@ -45,7 +45,7 @@ export default function ConfirmModal({
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+            className="cursor-pointer flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
           >
             {cancelText}
           </button>
@@ -54,7 +54,7 @@ export default function ConfirmModal({
               onConfirm();
               onClose();
             }}
-            className={`flex-1 px-4 py-2 text-white rounded-lg transition font-medium ${
+            className={`cursor-pointer flex-1 px-4 py-2 text-white rounded-lg transition font-medium ${
               isDestructive
                 ? 'bg-red-600 hover:bg-red-700'
                 : 'bg-purple-600 hover:bg-purple-700'
