@@ -38,7 +38,7 @@ export default function ConfirmModal({
           </button>
         </div>
         
-        <p className="text-gray-600 dark:text-gray-300 mb-6">
+        <p className="text-gray-600 dark:text-gray-300 mb-6 whitespace-pre-wrap">
           {message}
         </p>
 
