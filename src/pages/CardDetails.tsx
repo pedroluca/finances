@@ -63,6 +63,7 @@ export default function CardDetails() {
   const [showAddItemModal, setShowAddItemModal] = useState(false)
   const [allUnpaidItems, setAllUnpaidItems] = useState<InvoiceItemWithDetails[]>([])
   const [modalInvoiceId, setModalInvoiceId] = useState<number | null>(null)
+  const [cardOwnerAuthors, setCardOwnerAuthors] = useState<any[]>([])
 
   // Handle add item button click
   const handleAddItemClick = async () => {
@@ -84,6 +85,20 @@ export default function CardDetails() {
   const card = (cards as CardWithBalance[]).find(
     (c) => (c.card_id ?? c.id) === Number(cardId)
   )
+
+  // Buscar autores do dono do cartão se for compartilhado
+  useEffect(() => {
+    if (!card?.is_shared || !card?.user_id) return
+    const fetchOwnerAuthors = async () => {
+      try {
+        const ownerAuthorsData = await phpApiRequest(`authors.php?user_id=${card.user_id}`)
+        setCardOwnerAuthors(ownerAuthorsData)
+      } catch (error) {
+        console.error('Erro ao buscar autores do dono do cartão:', error)
+      }
+    }
+    fetchOwnerAuthors()
+  }, [card?.is_shared, card?.user_id])
 
   // Se não encontrar o cartão, tenta buscar do backend usando o cardId salvo
   useEffect(() => {
@@ -245,13 +260,25 @@ export default function CardDetails() {
             inv.reference_month === currentMonth &&
             inv.reference_year === currentYear
         )
-        setItems(
-          (invoice?.items || []).map((item) => ({
-            ...item,
-            is_installment: !!Number(item.is_installment),
-            is_paid: !!Number(item.is_paid),
-          }))
-        )
+        let itemsToShow = (invoice?.items || []).map((item) => ({
+          ...item,
+          is_installment: !!Number(item.is_installment),
+          is_paid: !!Number(item.is_paid),
+        }))
+
+        // Se for cartão compartilhado, filtrar apenas itens do autor vinculado
+        if (card.is_shared && card.author_id_on_owner) {
+          itemsToShow = itemsToShow.filter((item) => {
+            // Mostrar se o item foi criado para este autor
+            if (item.author_id === card.author_id_on_owner) {
+              return true
+            }
+            // OU se o autor está nos assignments (item dividido)
+            return item.assignments?.some((assignment: any) => assignment.author_id === card.author_id_on_owner)
+          })
+        }
+
+        setItems(itemsToShow)
       } catch (error) {
         console.error("Erro ao carregar dados iniciais:", error)
       } finally {
@@ -282,8 +309,7 @@ export default function CardDetails() {
           inv.reference_month === viewingMonth &&
           inv.reference_year === viewingYear
       )
-      setItems(
-        (invoice?.items || []).map((item) => ({
+      let itemsToShow = (invoice?.items || []).map((item) => ({
           ...item,
           is_installment: !!Number(item.is_installment),
           is_paid: !!Number(item.is_paid),
@@ -292,7 +318,20 @@ export default function CardDetails() {
                is_paid: !!Number(a.is_paid)
           }))
         }))
-      )
+
+      // Se for cartão compartilhado, filtrar apenas itens do autor vinculado 
+      if (card.is_shared && card.author_id_on_owner) {
+        itemsToShow = itemsToShow.filter((item) => {
+          // Mostrar se o item foi criado para este autor
+          if (item.author_id === card.author_id_on_owner) {
+            return true
+          }
+          // OU se o autor está nos assignments (item dividido)
+          return item.assignments?.some((assignment: any) => assignment.author_id === card.author_id_on_owner)
+        })
+      }
+
+      setItems(itemsToShow)
 
       setSelectedItems(new Set())
     } catch (error) {
@@ -613,6 +652,27 @@ export default function CardDetails() {
   }
 
   const getDisplayDetails = (item: InvoiceItemWithDetails) => {
+    // Para cart\u00f5es compartilhados, mostrar valor do assignment do autor vinculado
+    if (card.is_shared && card.author_id_on_owner) {
+      if (item.assignments && item.assignments.length > 0) {
+        const linkedAssignment = item.assignments.find(a => a.author_id === card.author_id_on_owner);
+        if (linkedAssignment) {
+          return {
+            amount: Number(linkedAssignment.amount),
+            authorName: linkedAssignment.author_name,
+            isPaid: !!Number(linkedAssignment.is_paid)
+          }
+        }
+      }
+      // Se n\u00e3o tem assignment mas o item \u00e9 do autor vinculado
+      if (item.author_id === card.author_id_on_owner) {
+        return { amount: Number(item.amount), authorName: item.author_name, isPaid: item.is_paid }
+      }
+      // Caso n\u00e3o deveria chegar aqui pois o filtro j\u00e1 removeu itens n\u00e3o vinculados
+      return { amount: 0, authorName: item.author_name, isPaid: false }
+    }
+
+    // L\u00f3gica original para filtro por autor
     if (selectedAuthorFilter) {
        if (item.assignments && item.assignments.length > 0) {
            const userAssignment = item.assignments.find(a => a.author_id === selectedAuthorFilter);
@@ -879,7 +939,7 @@ export default function CardDetails() {
               )}
             </div>
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              {selectedItems.size > 0 && (
+              {selectedItems.size > 0 && !card.is_shared && (
                 <>
                   <button
                     onClick={markSelectedAsPaid}
@@ -907,14 +967,16 @@ export default function CardDetails() {
                   </button>
                 </>
               )}
-              <button
-                onClick={() => setShowAuthorFilter(true)}
-                className="flex items-center cursor-pointer gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-xs sm:text-base"
-              >
-                <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="hidden sm:inline">Filtrar por Pessoa</span>
-                <span className="sm:hidden">Filtrar</span>
-              </button>
+              {!card.is_shared && (
+                <button
+                  onClick={() => setShowAuthorFilter(true)}
+                  className="flex items-center cursor-pointer gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-xs sm:text-base"
+                >
+                  <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="hidden sm:inline">Filtrar por Pessoa</span>
+                  <span className="sm:hidden">Filtrar</span>
+                </button>
+              )}
               <button
                 onClick={handleAddItemClick}
                 className="flex items-center cursor-pointer gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-xs sm:text-base"
@@ -937,7 +999,7 @@ export default function CardDetails() {
             <div className="text-center py-8 sm:py-12 animate-fade-in">
               <Calendar className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-2">
-                Nenhum item nesta fatura
+                {card.is_shared && card.author_id_on_owner ? 'Nenhum item vinculado a você nesta fatura' : 'Nenhum item nesta fatura'}
               </p>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-500">
                 Clique em "Adicionar Item" para começar
@@ -1231,6 +1293,9 @@ export default function CardDetails() {
           card={card}
           invoiceId={modalInvoiceId}
           open={showAddItemModal}
+          linkedAuthorId={card.is_shared ? card.author_id_on_owner : undefined}
+          cardOwnerAuthors={card.is_shared ? cardOwnerAuthors : undefined}
+          isAuthorLocked={card.is_shared}
           onClose={() => setShowAddItemModal(false)}
           onItemAdded={async () => {
             setShowAddItemModal(false)
@@ -1249,7 +1314,28 @@ export default function CardDetails() {
                   inv.reference_month === viewingMonth &&
                   inv.reference_year === viewingYear
               )
-              setItems(invoiceAtual?.items || [])
+              
+              let itemsToShow = (invoiceAtual?.items || []).map((item) => ({
+                ...item,
+                is_installment: !!Number(item.is_installment),
+                is_paid: !!Number(item.is_paid),
+                assignments: item.assignments?.map(a => ({
+                  ...a,
+                  is_paid: !!Number(a.is_paid)
+                }))
+              }))
+
+              // Aplicar filtro de cartão compartilhado
+              if (card.is_shared && card.author_id_on_owner) {
+                itemsToShow = itemsToShow.filter((item) => {
+                  if (item.author_id === card.author_id_on_owner) {
+                    return true
+                  }
+                  return item.assignments?.some((assignment: any) => assignment.author_id === card.author_id_on_owner)
+                })
+              }
+
+              setItems(itemsToShow)
               setSelectedItems(new Set())
             } catch (error) {
               console.error("Erro ao recarregar itens após adicionar:", error)

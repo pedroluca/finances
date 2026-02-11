@@ -36,7 +36,9 @@ export default function Dashboard() {
   // cards agora vem da view card_available_balance
   const activeCards = (cards as CardWithBalance[]) // todos já são ativos na view
 
-  const totalLimit = activeCards.reduce((sum, card) => sum + Number(card.card_limit ?? 0), 0)
+  const totalLimit = activeCards
+    .filter((card) => !card.is_shared)
+    .reduce((sum, card) => sum + Number(card.card_limit ?? 0), 0)
 
   useEffect(() => {
     if (!isAuthenticated || !user) {

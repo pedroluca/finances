@@ -21,6 +21,9 @@ interface AddItemModalProps {
   open: boolean
   onClose: () => void
   onItemAdded?: () => void
+  linkedAuthorId?: number // ID do autor vinculado para cartões compartilhados
+  cardOwnerAuthors?: any[] // Autores da conta do dono do cartão (para compartilhados)
+  isAuthorLocked?: boolean // Se true, não permite alterar o autor (cartões compartilhados)
 }
 
 export default function AddItemModal({
@@ -28,14 +31,23 @@ export default function AddItemModal({
   open,
   onClose,
   onItemAdded,
+  linkedAuthorId,
+  cardOwnerAuthors,
+  isAuthorLocked = false,
 }: AddItemModalProps) {
   const { user } = useAuthStore()
   const { categories, setCategories, authors, setAuthors, addAuthor } =
     useAppStore()
   const [isDataLoading, setIsDataLoading] = useState(false)
+  
+  // Use cardOwnerAuthors se fornecido (para cartões compartilhados), senão use authors do store
+  const availableAuthors = cardOwnerAuthors || authors
+  
   const defaultAuthor = useMemo(
-    () => authors.find((a) => a.is_owner),
-    [authors]
+    () => linkedAuthorId 
+      ? availableAuthors.find((a) => a.id === linkedAuthorId)
+      : availableAuthors.find((a) => a.is_owner),
+    [availableAuthors, linkedAuthorId]
   )
 
   useEffect(() => {
@@ -437,7 +449,8 @@ export default function AddItemModal({
             </div>
             
             {/* Divisão de Despesa */}
-            <div className="border-t border-b border-gray-200 dark:border-gray-700 py-4 my-4">
+            {!isAuthorLocked && (
+              <div className="border-t border-b border-gray-200 dark:border-gray-700 py-4 my-4">
                 <div className="flex items-center gap-2 mb-4">
                 <input
                     type="checkbox"
@@ -463,7 +476,11 @@ export default function AddItemModal({
                         <User className="w-4 h-4 inline mr-2" />
                         Quem comprou?
                     </label>
-                    {!showNewAuthor ? (
+                    {isAuthorLocked ? (
+                        <div className="w-full px-4 py-3 border border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 rounded-lg">
+                            {defaultAuthor?.name || 'Carregando...'}
+                        </div>
+                    ) : !showNewAuthor ? (
                         <>
                         <select
                             id="author"
@@ -474,7 +491,7 @@ export default function AddItemModal({
                             <option value="" className="dark:bg-gray-800">
                             Selecione...
                             </option>
-                            {authors.map((author) => (
+                            {availableAuthors.map((author) => (
                             <option
                                 key={author.id}
                                 value={author.id}
@@ -529,7 +546,7 @@ export default function AddItemModal({
                             </button>
                         </div>
                         
-                        {authors.map(author => {
+                        {availableAuthors.map(author => {
                             const isSelected = assignments.some(a => a.author_id === author.id)
                             const assignment = assignments.find(a => a.author_id === author.id)
                             
@@ -574,6 +591,7 @@ export default function AddItemModal({
                     </div>
                 )}
             </div>
+            )}
 
             {/* Data da Compra */}
             <div>
