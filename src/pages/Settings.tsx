@@ -28,11 +28,11 @@ export default function Settings() {
         {/* Navigation Cards */}
         <Link
           to="/settings/manage-authors"
-          className="block w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-colors p-6 hover:shadow-md cursor-pointer"
+          className="block w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-colors p-4 md:p-6 hover:shadow-md cursor-pointer"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+              <div className="w-12 h-12 p-3 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                 <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
@@ -50,7 +50,7 @@ export default function Settings() {
 
         {/* Sobre */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-colors">
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             <div className="flex items-center gap-3 mb-4">
               <Info className="w-6 h-6 text-gray-400" />
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
