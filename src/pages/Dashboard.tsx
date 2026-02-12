@@ -151,14 +151,14 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-3 md:mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl col-span-full md:col-span-1 shadow-sm p-4 md:p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                   Total de Cartões
                 </p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                <p className="text-lg md:text-3xl font-bold text-gray-900 dark:text-white mt-1 md:mt-2">
                   {activeCards.length}
                 </p>
               </div>
@@ -168,29 +168,29 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                   Limite Total
                 </p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                <p className="text-lg md:text-3xl font-bold text-gray-900 dark:text-white mt-1 md:mt-2">
                   R$ {totalLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+              <div className="w-10 md:w-12 h-10 md:h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
                 <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                   Gasto do Mês
                 </p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                <p className="text-lg md:text-3xl font-bold text-gray-900 dark:text-white mt-1 md:mt-2">
                   R${' '}
                   {currentMonthExpense.toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
@@ -198,7 +198,7 @@ export default function Dashboard() {
                   })}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center">
+              <div className="w-10 md:w-12 h-10 md:h-12 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center">
                 <TrendingDown className="w-6 h-6 text-red-600 dark:text-red-400" />
               </div>
             </div>
@@ -206,7 +206,7 @@ export default function Dashboard() {
         </div>
 
         {/* Cards List */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8 transition-colors">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:p-6 mb-4 md:mb-8 transition-colors">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Meus Cartões
