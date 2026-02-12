@@ -19,6 +19,8 @@ import {
 } from 'lucide-react'
 import { phpApiRequest } from '../lib/api'
 import { DashboardHeader } from '../components/dashboard/d-header'
+import { ScrollIndicator } from '../components/ui/scroll-indicator'
+import { useRef } from 'react'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -33,6 +35,22 @@ export default function Dashboard() {
 
   const [isLoading, setIsLoading] = useState(true)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [currentCardIndex, setCurrentCardIndex] = useState(0)
+  const cardsContainerRef = useRef<HTMLDivElement>(null)
+
+  const scrollToCard = (index: number) => {
+    if (!cardsContainerRef.current) return
+    const container = cardsContainerRef.current
+    const cardWidth = container.children[0]?.clientWidth || 0
+    const gap = 16 // gap-4 is 1rem (16px) inside flex
+    
+    container.scrollTo({
+        left: index * (cardWidth + gap),
+        behavior: 'smooth'
+    })
+    setCurrentCardIndex(index)
+  }
+
   // cards agora vem da view card_available_balance
   const activeCards = (cards as CardWithBalance[]) // todos já são ativos na view
 
@@ -235,7 +253,21 @@ export default function Dashboard() {
               </button>
             </div>
           ) : (
-            <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 md:pb-0 md:mx-0 md:px-0 md:overflow-visible scrollbar-hide">
+            <div className="relative">
+              <div 
+                ref={cardsContainerRef}
+                onScroll={(e) => {
+                  const container = e.currentTarget
+                  const scrollLeft = container.scrollLeft
+                  const cardWidth = container.children[0]?.clientWidth || 0
+                  const gap = 16 // gap-4 is 1rem (16px) inside flex
+                  
+                  // Calculate index based on scroll position + half card width for better snapping feel
+                  const index = Math.round(scrollLeft / (cardWidth + gap))
+                  setCurrentCardIndex(Math.min(activeCards.length - 1, Math.max(0, index)))
+                }}
+                className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 md:pb-0 md:mx-0 md:px-0 md:overflow-visible scrollbar-hide"
+              >
               {activeCards.map((card) => {
                 // card vem da view card_available_balance
                 const availableLimit = Number(card.available_balance)
@@ -300,6 +332,16 @@ export default function Dashboard() {
                 )
               })}
             </div>
+
+            {/* Scroll Indicator for Mobile */}
+            <div className="md:hidden mt-4 flex justify-center">
+              <ScrollIndicator 
+                total={activeCards.length} 
+                current={currentCardIndex}
+                onSelect={scrollToCard}
+              />
+            </div>
+          </div>
           )}
         </div>
 
