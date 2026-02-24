@@ -27,7 +27,7 @@ export function DashboardCardsList({ cards }: DashboardCardsListProps) {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:p-6 mb-4 md:mb-8 transition-colors">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:p-6 mb-3 md:mb-6 transition-colors">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
           Meus Cartões
