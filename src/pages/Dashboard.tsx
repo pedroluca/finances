@@ -6,16 +6,11 @@ import type { CardWithBalance } from '../types/database'
 import {
   CreditCard,
   Plus,
-  LogOut,
-  Settings,
   DollarSign,
-  TrendingUp,
   TrendingDown,
-  Wifi,
-  WifiHigh,
   Nfc,
-  User,
-  ChevronDown,
+  CalendarClock,
+  CheckCircle2,
 } from 'lucide-react'
 import { phpApiRequest } from '../lib/api'
 import { DashboardHeader } from '../components/dashboard/d-header'
@@ -99,6 +94,81 @@ export default function Dashboard() {
   const handleLogout = () => {
     logout()
   }
+
+  const getUpcomingPayments = () => {
+    if (!monthlyTotals || monthlyTotals.length === 0) return []
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const results: {
+      cardId: number
+      cardName: string
+      cardColor: string
+      unpaidAmount: number
+      dueDate: Date
+      isOverdue: boolean
+      isDueToday: boolean
+      isDueSoon: boolean
+      referenceMonth: number
+      referenceYear: number
+    }[] = []
+
+    activeCards.forEach((card) => {
+      const cardId = card.card_id ?? card.id
+      if (!cardId || !card.due_day) return
+
+      // Pega todas as faturas deste cartão com valor pendente, ordena da mais antiga pra mais recente
+      const pendingInvoices = monthlyTotals
+        .filter((t) => t.card_id === cardId && Number(t.unpaid_amount) > 0)
+        .sort((a, b) => {
+          if (a.reference_year !== b.reference_year) return a.reference_year - b.reference_year
+          return a.reference_month - b.reference_month
+        })
+
+      if (pendingInvoices.length === 0) return
+
+      // Mostra a mais antiga com saldo devedor (prioridade de pagamento)
+      const invoice = pendingInvoices[0]
+
+      // Calcula data de vencimento: due_day do cartão no mês/ano da fatura
+      // Se due_day <= closing_day, o vencimento é no mês seguinte à referência
+      let dueMonth = invoice.reference_month
+      let dueYear = invoice.reference_year
+      if (card.due_day !== undefined && card.closing_day !== undefined && card.due_day <= card.closing_day) {
+        // vencimento cai no mês seguinte ao mês de referência
+        if (dueMonth === 12) {
+          dueMonth = 1
+          dueYear += 1
+        } else {
+          dueMonth += 1
+        }
+      }
+      const dueDate = new Date(dueYear, dueMonth - 1, card.due_day)
+      dueDate.setHours(0, 0, 0, 0)
+
+      const diffMs = dueDate.getTime() - today.getTime()
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+
+      results.push({
+        cardId,
+        cardName: card.card_name,
+        cardColor: card.color,
+        unpaidAmount: Number(invoice.unpaid_amount),
+        dueDate,
+        isOverdue: diffDays < 0,
+        isDueToday: diffDays === 0,
+        isDueSoon: diffDays > 0 && diffDays <= 7,
+        referenceMonth: invoice.reference_month,
+        referenceYear: invoice.reference_year,
+      })
+    })
+
+    // Ordena: vencidas primeiro, depois por data de vencimento mais próxima
+    return results.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
+  }
+
+  const upcomingPayments = isLoading ? [] : getUpcomingPayments()
 
   const getCurrentMonthExpense = () => {
     if (!monthlyTotals || monthlyTotals.length === 0) return 0
@@ -345,51 +415,83 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Recent Months - Comentado para melhorias futuras */}
-        {/* {monthlyTotals.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-              Últimos Meses
-            </h2>
-            <div className="space-y-3">
-              {monthlyTotals.map((total, idx) => (
-                <div
-                  key={`${total.reference_year}-${total.reference_month}-${idx}`}
-                  className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <div>
-                    <p className="font-medium text-gray-900 capitalize dark:text-white">
-                      {new Date(
-                        total.reference_year,
-                        total.reference_month - 1
-                      ).toLocaleDateString('pt-BR', {
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Cartão {total.name}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      R${' '}
-                      {(total.total_amount || 0).toLocaleString('pt-BR', {
-                        minimumFractionDigits: 2,
-                      })}
-                    </p>
-                    <p className="text-sm text-green-600 dark:text-green-400">
-                      Pago: R${' '}
-                      {(total.paid_amount || 0).toLocaleString('pt-BR', {
-                        minimumFractionDigits: 2,
-                      })}
-                    </p>
-                  </div>
-                </div>
-              ))}
+        {/* Upcoming Payments */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:p-6 transition-colors">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-9 h-9 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+              <CalendarClock className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Próximos Pagamentos
+            </h2>
           </div>
-        )} */}
+
+          {upcomingPayments.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
+              <CheckCircle2 className="w-10 h-10 text-green-500" />
+              <p className="font-medium text-gray-900 dark:text-white">Tudo em dia!</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma fatura pendente no momento.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {upcomingPayments.map((payment) => {
+                const todayMs = new Date(); todayMs.setHours(0,0,0,0)
+                const diffMs = payment.dueDate.getTime() - todayMs.getTime()
+                const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+                return (
+                  <button
+                    key={payment.cardId}
+                    onClick={() => navigate(`/cards/${payment.cardId}`)}
+                    className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/60 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-3 h-10 rounded-full shrink-0"
+                        style={{ backgroundColor: payment.cardColor }}
+                      />
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white leading-tight">
+                          {payment.cardName}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          Vence{' '}
+                          {payment.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                          {' '}·{' '}
+                          fatura de{' '}
+                          {new Date(payment.referenceYear, payment.referenceMonth - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900 dark:text-white">
+                          R$ {payment.unpaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        {payment.isOverdue && (
+                          <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">Vencida</span>
+                        )}
+                        {payment.isDueToday && (
+                          <span className="text-[11px] font-semibold text-orange-500 dark:text-orange-400">Vence hoje</span>
+                        )}
+                        {payment.isDueSoon && !payment.isDueToday && (
+                          <span className="text-[11px] font-semibold text-yellow-600 dark:text-yellow-400">
+                            {diffDays === 1 ? 'Amanhã' : `Em ${diffDays} dias`}
+                          </span>
+                        )}
+                        {!payment.isOverdue && !payment.isDueToday && !payment.isDueSoon && (
+                          <span className="text-[11px] text-gray-400 dark:text-gray-500">
+                            {diffDays === 1 ? 'Em 1 dia' : `Em ${diffDays} dias`}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
       </main>
     </div>
   )
