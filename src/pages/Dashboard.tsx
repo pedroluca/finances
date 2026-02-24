@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
+  const [paymentFilter, setPaymentFilter] = useState<number | null>(15)
   const cardsContainerRef = useRef<HTMLDivElement>(null)
 
   const scrollToCard = (index: number) => {
@@ -95,7 +96,7 @@ export default function Dashboard() {
     logout()
   }
 
-  const getUpcomingPayments = () => {
+  const getUpcomingPayments = (maxDays: number | null) => {
     if (!monthlyTotals || monthlyTotals.length === 0) return []
 
     const today = new Date()
@@ -110,6 +111,7 @@ export default function Dashboard() {
       isOverdue: boolean
       isDueToday: boolean
       isDueSoon: boolean
+      diffDays: number
       referenceMonth: number
       referenceYear: number
     }[] = []
@@ -136,7 +138,6 @@ export default function Dashboard() {
       let dueMonth = invoice.reference_month
       let dueYear = invoice.reference_year
       if (card.due_day !== undefined && card.closing_day !== undefined && card.due_day <= card.closing_day) {
-        // vencimento cai no mês seguinte ao mês de referência
         if (dueMonth === 12) {
           dueMonth = 1
           dueYear += 1
@@ -150,6 +151,9 @@ export default function Dashboard() {
       const diffMs = dueDate.getTime() - today.getTime()
       const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
 
+      // Filtro de período: vencidas sempre aparecem; futuras só se dentro do range
+      if (maxDays !== null && diffDays > maxDays) return
+
       results.push({
         cardId,
         cardName: card.card_name,
@@ -159,6 +163,7 @@ export default function Dashboard() {
         isOverdue: diffDays < 0,
         isDueToday: diffDays === 0,
         isDueSoon: diffDays > 0 && diffDays <= 7,
+        diffDays,
         referenceMonth: invoice.reference_month,
         referenceYear: invoice.reference_year,
       })
@@ -168,7 +173,7 @@ export default function Dashboard() {
     return results.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
   }
 
-  const upcomingPayments = isLoading ? [] : getUpcomingPayments()
+  const upcomingPayments = isLoading ? [] : getUpcomingPayments(paymentFilter)
 
   const getCurrentMonthExpense = () => {
     if (!monthlyTotals || monthlyTotals.length === 0) return 0
@@ -417,27 +422,37 @@ export default function Dashboard() {
 
         {/* Upcoming Payments */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:p-6 transition-colors">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-9 h-9 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-              <CalendarClock className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            </div>
+          <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Próximos Pagamentos
             </h2>
+            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              {([{ label: 'Todos', value: null }, { label: '7d', value: 7 }, { label: '15d', value: 15 }, { label: '30d', value: 30 }] as { label: string; value: number | null }[]).map(({ label, value }) => (
+                <button
+                  key={label}
+                  onClick={() => setPaymentFilter(value)}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                    paymentFilter === value
+                      ? 'bg-white dark:bg-gray-600 text-purple-600 dark:text-purple-400 shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {upcomingPayments.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
               <CheckCircle2 className="w-10 h-10 text-green-500" />
               <p className="font-medium text-gray-900 dark:text-white">Tudo em dia!</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma fatura pendente no momento.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma pagamento pendente no momento.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {upcomingPayments.map((payment) => {
-                const todayMs = new Date(); todayMs.setHours(0,0,0,0)
-                const diffMs = payment.dueDate.getTime() - todayMs.getTime()
-                const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+                const diffDays = payment.diffDays
                 return (
                   <button
                     key={payment.cardId}
