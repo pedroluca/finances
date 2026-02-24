@@ -86,9 +86,11 @@ export default function Dashboard() {
           t.reference_year === currentInvoiceYear,
       )
 
-      if (invoiceTotal && invoiceTotal.unpaid_amount != null) {
-        totalExpense += Number(invoiceTotal.unpaid_amount)
+      // Usa a porção do usuário (user_unpaid_amount) para incluir compartilhados corretamente
+      if (invoiceTotal && invoiceTotal.user_unpaid_amount != null) {
+        totalExpense += Number(invoiceTotal.user_unpaid_amount)
       }
+
     })
 
     return totalExpense

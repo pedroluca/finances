@@ -7,7 +7,9 @@ interface UpcomingPayment {
   cardId: number
   cardName: string
   cardColor: string
-  unpaidAmount: number
+  unpaidAmount: number   // valor da fatia do usuário
+  totalAmount?: number   // total do cartão (só para cartões próprios)
+  isShared: boolean
   dueDate: Date
   isOverdue: boolean
   isDueToday: boolean
@@ -38,8 +40,9 @@ function buildUpcomingPayments(
     const cardId = card.card_id ?? card.id
     if (!cardId || !card.due_day) return
 
+    // Pega as faturas deste cartão com user_unpaid_amount > 0, da mais antiga pra mais recente
     const pendingInvoices = monthlyTotals
-      .filter((t) => t.card_id === cardId && Number(t.unpaid_amount) > 0)
+      .filter((t) => t.card_id === cardId && Number(t.user_unpaid_amount) > 0)
       .sort((a, b) => {
         if (a.reference_year !== b.reference_year) return a.reference_year - b.reference_year
         return a.reference_month - b.reference_month
@@ -47,8 +50,11 @@ function buildUpcomingPayments(
 
     if (pendingInvoices.length === 0) return
 
+    // Mostra a mais antiga com saldo devedor (prioridade de pagamento)
     const invoice = pendingInvoices[0]
 
+    // Calcula data de vencimento
+    // Se due_day <= closing_day, o vencimento é no mês seguinte à referência
     let dueMonth = invoice.reference_month
     let dueYear = invoice.reference_year
     if (card.due_day !== undefined && card.closing_day !== undefined && card.due_day <= card.closing_day) {
@@ -73,7 +79,9 @@ function buildUpcomingPayments(
       cardId,
       cardName: card.card_name,
       cardColor: card.color,
-      unpaidAmount: Number(invoice.unpaid_amount),
+      unpaidAmount: Number(invoice.user_unpaid_amount),
+      totalAmount: invoice.is_shared_portion ? undefined : Number(invoice.unpaid_amount),
+      isShared: !!card.is_shared,
       dueDate,
       isOverdue: diffDays < 0,
       isDueToday: diffDays === 0,
@@ -143,9 +151,16 @@ export function DashboardUpcomingPayments({ cards, monthlyTotals }: DashboardUpc
                   style={{ backgroundColor: payment.cardColor }}
                 />
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white leading-tight">
-                    {payment.cardName}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900 dark:text-white leading-tight">
+                      {payment.cardName}
+                    </p>
+                    {payment.isShared && (
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400">
+                        compartilhado
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     Vence{' '}
                     {payment.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
@@ -158,9 +173,32 @@ export function DashboardUpcomingPayments({ cards, monthlyTotals }: DashboardUpc
 
               <div className="flex items-center gap-3 shrink-0">
                 <div className="text-right">
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    R$ {payment.unpaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
+                  {/* Para cartões próprios: mostra "Sua parte" se for menor que o total */}
+                  {!payment.isShared && payment.totalAmount !== undefined && payment.totalAmount > payment.unpaidAmount ? (
+                    <>
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        R$ {payment.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                        Sua parte:{' '}
+                        <span className="font-medium text-gray-600 dark:text-gray-300">
+                          R$ {payment.unpaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      {/* Para compartilhados ou quando o total = parte do usuário */}
+                      {payment.isShared && (
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 text-right">Sua parte</p>
+                      )}
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        R$ {payment.unpaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </>
+                  )}
+
+                  {/* Urgency badges */}
                   {payment.isOverdue && (
                     <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">Vencida</span>
                   )}

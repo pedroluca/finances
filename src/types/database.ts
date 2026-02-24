@@ -137,6 +137,10 @@ export interface MonthlyTotal {
   unpaid_amount: number;
   remaining_amount: number;
   user_id: number;
+  /** Portão do usuário logado (próprio ou compartilhado) */
+  user_unpaid_amount: number;
+  /** true se este total é de um cartão compartilhado (não pertence ao usuário) */
+  is_shared_portion: boolean;
 }
 
 // DTOs para criação
