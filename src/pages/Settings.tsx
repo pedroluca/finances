@@ -131,28 +131,26 @@ export default function Settings() {
         </div>
 
         {/* Sobre */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-colors">
-          <div className="p-4 md:p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Info className="w-6 h-6 text-gray-400" />
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-colors p-4 md:p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 p-3 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
+              <Info className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Sobre o Finances
               </h3>
-            </div>
-            <div className="space-y-3 text-gray-600 dark:text-gray-400">
-              <p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Sistema de gerenciamento de faturas de cartão de crédito.
               </p>
-              <p className="text-sm">
-                Versão 1.1.0
-              </p>
-              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-sm">
-                  <span className="font-medium text-gray-900 dark:text-white">Desenvolvido por:</span> <Link to='https://pedroluca.dev.br' target='_blank' rel='noopener noreferrer' className="text-purple-600 dark:text-purple-400 hover:underline">Pedro Luca Prates</Link>
-                </p>
-              </div>
             </div>
           </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            v1.1.0 · Desenvolvido por{' '}
+            <Link to="https://pedroluca.dev.br" target="_blank" rel="noopener noreferrer" className="text-purple-600 dark:text-purple-400 hover:underline">
+              Pedro Luca Prates
+            </Link>
+          </p>
         </div>
       </main>
     </div>

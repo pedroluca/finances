@@ -18,7 +18,10 @@ body {
   box-sizing: border-box;
 }
 
-button:focus,
+button:focus {
+  outline: none;
+}
+
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
