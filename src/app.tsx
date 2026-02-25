@@ -10,6 +10,7 @@ import AddItem from './pages/AddItem'
 import Settings from './pages/Settings'
 import ManageAuthors from './pages/ManageAuthors'
 import ManageCardOrder from './pages/settings/ManageCardOrder'
+import ManageCategories from './pages/settings/ManageCategories'
 
 function App() {
   const { isAuthenticated, verifyAuth } = useAuthStore()
@@ -63,6 +64,10 @@ function App() {
         <Route
           path="/settings/card-order"
           element={isAuthenticated ? <ManageCardOrder /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/settings/categories"
+          element={isAuthenticated ? <ManageCategories /> : <Navigate to="/login" />}
         />
 
         {/* Default redirect */}

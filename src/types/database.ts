@@ -50,6 +50,7 @@ export interface Category {
   name: string;
   color: string;
   icon: string;
+  is_default: boolean;
   created_at: Date;
 }
 

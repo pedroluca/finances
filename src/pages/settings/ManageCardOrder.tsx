@@ -10,7 +10,7 @@ import type { CardWithBalance } from '../../types/database'
 export default function ManageCardOrder() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const { orderedCards, setCardOrder, cardOrder } = useAppStore()
+  const { orderedCards, setCardOrder, cardOrder, setCards } = useAppStore()
 
   const { showToast } = useToast()
 
@@ -22,6 +22,22 @@ export default function ManageCardOrder() {
     setLocalOrder(orderedCards() as CardWithBalance[])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardOrder])
+
+  // Carrega cards e ordem se a store estiver vazia (acesso direto à página)
+  useEffect(() => {
+    if (orderedCards().length === 0 && user?.id) {
+      Promise.all([
+        phpApiRequest(`cards.php?user_id=${user.id}`, { method: 'GET' }),
+        phpApiRequest(`card_order.php?user_id=${user.id}`, { method: 'GET' }),
+      ]).then(([cardsData, orderData]) => {
+        setCards(cardsData)
+        if (Array.isArray(orderData) && orderData.length > 0) {
+          setCardOrder(orderData.map((o: { card_id: number }) => o.card_id))
+        }
+      }).catch(() => {})
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Drag state
   const dragIndex = useRef<number | null>(null)

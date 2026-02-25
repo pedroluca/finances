@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Info, Users, ChevronRight, Sun, Moon, GripVertical } from 'lucide-react'
+import { ArrowLeft, Info, Users, ChevronRight, Sun, Moon, GripVertical, Tag } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
 
 export default function Settings() {
@@ -65,6 +65,29 @@ export default function Settings() {
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   Defina a ordem em que os cartões aparecem no dashboard.
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+          </div>
+        </Link>
+
+        {/* Categorias */}
+        <Link
+          to="/settings/categories"
+          className="block w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-colors p-4 md:p-6 hover:shadow-md cursor-pointer"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 p-3 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <Tag className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Categorias
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Crie e gerencie suas categorias personalizadas.
                 </p>
               </div>
             </div>
