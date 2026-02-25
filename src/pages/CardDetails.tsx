@@ -742,7 +742,7 @@ export default function CardDetails() {
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors overflow-hidden">
       {/* Header */}
-      <div className="flex-none bg-white dark:bg-gray-800 border-b dark:border-gray-700 transition-colors z-10 relative shadow-sm">
+      <div className="flex-none bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors z-10 relative shadow-sm">
         <div className="max-w-6xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             {/* <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">

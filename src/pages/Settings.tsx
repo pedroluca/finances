@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Info, Users, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Info, Users, ChevronRight, Sun, Moon } from 'lucide-react'
+import { useTheme } from '../hooks/useTheme'
 
 export default function Settings() {
   const navigate = useNavigate()
+  const { theme, toggleTheme } = useTheme()
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
@@ -47,6 +48,41 @@ export default function Settings() {
             <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
           </div>
         </Link>
+
+        {/* Aparência */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-colors p-4 md:p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                {theme === 'dark'
+                  ? <Moon className="w-6 h-6 text-yellow-500 dark:text-yellow-400" />
+                  : <Sun className="w-6 h-6 text-yellow-500" />
+                }
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Aparência
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {theme === 'dark' ? 'Modo escuro ativado' : 'Modo claro ativado'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={toggleTheme}
+              className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                theme === 'dark' ? 'bg-purple-600' : 'bg-gray-300'
+              }`}
+              aria-label="Alternar tema"
+            >
+              <span
+                className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                  theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
 
         {/* Sobre */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-colors">

@@ -177,6 +177,7 @@ export default function EditItemModal({
               ...a,
               id: 0, // Placeholder, backend gera
               invoice_item_id: item.id,
+              is_paid: false,
               author_name:
                 authors.find((auth) => auth.id === a.author_id)?.name || "",
             }))
