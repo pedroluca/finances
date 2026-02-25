@@ -12,12 +12,12 @@ import { DashboardUpcomingPayments } from '../components/dashboard/d-upcoming-pa
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, logout, isAuthenticated } = useAuthStore()
-  const { cards, setCards, setCategories, setAuthors, monthlyTotals, setMonthlyTotals } = useAppStore()
+  const { setCards, setCategories, setAuthors, monthlyTotals, setMonthlyTotals, setCardOrder, orderedCards } = useAppStore()
 
   const [isLoading, setIsLoading] = useState(true)
   const [hideValues, setHideValues] = useState(localStorage.getItem('hideValues') === 'true')
 
-  const activeCards = cards as CardWithBalance[]
+  const activeCards = orderedCards() as CardWithBalance[]
 
   const totalLimit = activeCards
     .filter((card) => !card.is_shared)
@@ -38,16 +38,21 @@ export default function Dashboard() {
       if (!user?.id) return
       try {
         setIsLoading(true)
-        const [cardsData, categoriesData, authorsData, monthlyTotalsData] = await Promise.all([
+        const [cardsData, categoriesData, authorsData, monthlyTotalsData, cardOrderData] = await Promise.all([
           phpApiRequest('cards.php', { method: 'GET' }),
           phpApiRequest('categories.php', { method: 'GET' }),
           phpApiRequest('authors.php', { method: 'GET' }),
           phpApiRequest('invoices.php?action=monthlyTotals', { method: 'GET' }),
+          phpApiRequest(`card_order.php?user_id=${user?.id}`, { method: 'GET' }),
         ])
         setCards(cardsData)
         setCategories(categoriesData)
         setAuthors(authorsData)
         setMonthlyTotals(monthlyTotalsData)
+        // cardOrderData = [{ card_id, position }]
+        if (Array.isArray(cardOrderData) && cardOrderData.length > 0) {
+          setCardOrder(cardOrderData.map((o: { card_id: number }) => o.card_id))
+        }
       } catch (error) {
         console.error('Erro ao carregar dados:', error)
       } finally {

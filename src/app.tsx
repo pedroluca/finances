@@ -9,6 +9,7 @@ import CardDetails from './pages/CardDetails'
 import AddItem from './pages/AddItem'
 import Settings from './pages/Settings'
 import ManageAuthors from './pages/ManageAuthors'
+import ManageCardOrder from './pages/settings/ManageCardOrder'
 
 function App() {
   const { isAuthenticated, verifyAuth } = useAuthStore()
@@ -58,6 +59,10 @@ function App() {
         <Route
           path="/settings/manage-authors"
           element={isAuthenticated ? <ManageAuthors /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/settings/card-order"
+          element={isAuthenticated ? <ManageCardOrder /> : <Navigate to="/login" />}
         />
 
         {/* Default redirect */}

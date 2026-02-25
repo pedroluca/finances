@@ -18,6 +18,10 @@ interface AppState {
   currentInvoiceItems: InvoiceItemWithDetails[];
   monthlyTotals: MonthlyTotal[];
   selectedItems: number[];
+  cardOrder: number[]; // card_ids na ordem definida pelo usuário
+
+  // Computed
+  orderedCards: () => Card[];
 
   // UI State
   isLoading: boolean;
@@ -30,6 +34,7 @@ interface AppState {
   addCard: (card: Card) => void;
   updateCard: (cardId: number, card: Partial<Card>) => void;
   removeCard: (cardId: number) => void;
+  setCardOrder: (order: number[]) => void;
 
   // Actions - Categories
   setCategories: (categories: Category[]) => void;
@@ -88,10 +93,27 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentInvoiceItems: [],
   monthlyTotals: [],
   selectedItems: [],
+  cardOrder: [],
   isLoading: false,
   selectedMonth: currentDate.getMonth() + 1,
   selectedYear: currentDate.getFullYear(),
   selectedCardId: null,
+
+  // Computed
+  orderedCards: () => {
+    const { cards, cardOrder } = get();
+    if (cardOrder.length === 0) return cards;
+    // CardWithBalance vem da view com `card_id`; Card simples usa `id`
+    const getCardId = (c: Card) => (c as any).card_id ?? c.id;
+    const indexed = new Map(cards.map((c) => [getCardId(c), c]));
+    const sorted = cardOrder
+      .map((id) => indexed.get(id))
+      .filter((c): c is Card => c !== undefined);
+    // Cartões sem entrada na ordem vão pro fim
+    const inOrder = new Set(cardOrder);
+    const rest = cards.filter((c) => !inOrder.has(getCardId(c)));
+    return [...sorted, ...rest];
+  },
 
   // Cards
   setCards: (cards) => set({ cards }),
@@ -102,6 +124,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     })),
   removeCard: (cardId) =>
     set((state) => ({ cards: state.cards.filter((c) => c.id !== cardId) })),
+  setCardOrder: (order) => set({ cardOrder: order }),
 
   // Categories
   setCategories: (categories) => set({ categories }),
@@ -208,6 +231,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       currentInvoiceItems: [],
       monthlyTotals: [],
       selectedItems: [],
+      cardOrder: [],
       selectedCardId: null,
     }),
 }));
