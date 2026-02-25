@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Info, Users, ChevronRight, Sun, Moon, GripVertical, Tag } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
+import { version } from '../../package.json'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -146,7 +147,7 @@ export default function Settings() {
             </div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            v1.1.0 · Desenvolvido por{' '}
+            v{version} · Desenvolvido por{' '}
             <Link to="https://pedroluca.dev.br" target="_blank" rel="noopener noreferrer" className="text-purple-600 dark:text-purple-400 hover:underline">
               Pedro Luca Prates
             </Link>
