@@ -1,16 +1,18 @@
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Settings, LogOut, User, ChevronDown } from 'lucide-react'
+import { Settings, LogOut, User, ChevronDown, Eye, EyeOff } from 'lucide-react'
 import LogoImg from '../../assets/logo.png'
 
 interface DashboardHeaderProps {
   userName: string
   userEmail: string
   onLogout: () => void
+  hideValues: boolean
+  onToggleHideValues: () => void
 }
 
-export function DashboardHeader({ userName, userEmail, onLogout }: DashboardHeaderProps) {
+export function DashboardHeader({ userName, userEmail, onLogout, hideValues, onToggleHideValues }: DashboardHeaderProps) {
   const navigate = useNavigate()
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
@@ -114,6 +116,14 @@ export function DashboardHeader({ userName, userEmail, onLogout }: DashboardHead
 
           {/* Actions - Desktop */}
           <div className="hidden sm:flex items-center gap-2">
+            <button
+              onClick={onToggleHideValues}
+              className="cursor-pointer p-2.5 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-xl transition-all duration-200"
+              aria-label={hideValues ? 'Mostrar valores' : 'Ocultar valores'}
+            >
+              {hideValues ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+
             <button
               onClick={() => navigate('/settings')}
               className="cursor-pointer p-2.5 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-xl transition-all duration-200"

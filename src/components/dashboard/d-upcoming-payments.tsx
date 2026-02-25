@@ -22,6 +22,7 @@ interface UpcomingPayment {
 interface DashboardUpcomingPaymentsProps {
   cards: CardWithBalance[]
   monthlyTotals: MonthlyTotal[]
+  hideValues: boolean
 }
 
 function buildUpcomingPayments(
@@ -102,7 +103,7 @@ const FILTERS: { label: string; value: number | null }[] = [
   { label: '30d', value: 30 },
 ]
 
-export function DashboardUpcomingPayments({ cards, monthlyTotals }: DashboardUpcomingPaymentsProps) {
+export function DashboardUpcomingPayments({ cards, monthlyTotals, hideValues }: DashboardUpcomingPaymentsProps) {
   const navigate = useNavigate()
   const [filter, setFilter] = useState<number | null>(15)
 
@@ -177,12 +178,12 @@ export function DashboardUpcomingPayments({ cards, monthlyTotals }: DashboardUpc
                   {!payment.isShared && payment.totalAmount !== undefined && payment.totalAmount > payment.unpaidAmount ? (
                     <>
                       <p className="font-semibold text-gray-900 dark:text-white">
-                        R$ {payment.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {hideValues ? 'R$ ••••' : `R$ ${payment.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                       </p>
                       <p className="text-[11px] text-gray-400 dark:text-gray-500">
                         Sua parte:{' '}
                         <span className="font-medium text-gray-600 dark:text-gray-300">
-                          R$ {payment.unpaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {hideValues ? 'R$ ••••' : `R$ ${payment.unpaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                         </span>
                       </p>
                     </>
@@ -193,7 +194,7 @@ export function DashboardUpcomingPayments({ cards, monthlyTotals }: DashboardUpc
                         <p className="text-[11px] text-gray-400 dark:text-gray-500 text-right">Sua parte</p>
                       )}
                       <p className="font-semibold text-gray-900 dark:text-white">
-                        R$ {payment.unpaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {hideValues ? 'R$ ••••' : `R$ ${payment.unpaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                       </p>
                     </>
                   )}

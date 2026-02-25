@@ -6,9 +6,10 @@ import { ScrollIndicator } from '../ui/scroll-indicator'
 
 interface DashboardCardsListProps {
   cards: CardWithBalance[]
+  hideValues: boolean
 }
 
-export function DashboardCardsList({ cards }: DashboardCardsListProps) {
+export function DashboardCardsList({ cards, hideValues }: DashboardCardsListProps) {
   const navigate = useNavigate()
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
   const cardsContainerRef = useRef<HTMLDivElement>(null)
@@ -115,13 +116,13 @@ export function DashboardCardsList({ cards }: DashboardCardsListProps) {
                           <div>
                             <p className="text-[10px] uppercase tracking-wider opacity-80 font-medium mb-0.5">Limite Total</p>
                             <p className="font-bold text-lg tracking-tight drop-shadow-sm">
-                              R$ {Number(card.card_limit).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {hideValues ? 'R$ ••••' : `R$ ${Number(card.card_limit).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                             </p>
                           </div>
                           <div className="text-right">
                             <p className="text-[10px] uppercase tracking-wider opacity-80 font-medium mb-0.5">Disponível</p>
                             <p className="font-bold text-lg tracking-tight drop-shadow-sm">
-                              R$ {availableLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {hideValues ? 'R$ ••••' : `R$ ${availableLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                             </p>
                           </div>
                         </>

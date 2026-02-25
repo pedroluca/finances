@@ -4,9 +4,10 @@ interface DashboardStatsProps {
   totalCards: number
   totalLimit: number
   currentMonthExpense: number
+  hideValues: boolean
 }
 
-export function DashboardStats({ totalCards, totalLimit, currentMonthExpense }: DashboardStatsProps) {
+export function DashboardStats({ totalCards, totalLimit, currentMonthExpense, hideValues }: DashboardStatsProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-3 md:mb-6">
       <div className="bg-white dark:bg-gray-800 rounded-xl col-span-full md:col-span-1 shadow-sm p-4 md:p-6 transition-colors">
@@ -32,7 +33,7 @@ export function DashboardStats({ totalCards, totalLimit, currentMonthExpense }: 
               Limite Total
             </p>
             <p className="text-lg md:text-3xl font-bold text-gray-900 dark:text-white mt-1 md:mt-2">
-              R$ {totalLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {hideValues ? 'R$ ••••' : `R$ ${totalLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </p>
           </div>
           <div className="w-10 md:w-12 h-10 md:h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
@@ -48,11 +49,9 @@ export function DashboardStats({ totalCards, totalLimit, currentMonthExpense }: 
               Gasto do Mês
             </p>
             <p className="text-lg md:text-3xl font-bold text-gray-900 dark:text-white mt-1 md:mt-2">
-              R${' '}
-              {currentMonthExpense.toLocaleString('pt-BR', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              {hideValues
+                ? 'R$ ••••'
+                : `R$ ${currentMonthExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </p>
           </div>
           <div className="w-10 md:w-12 h-10 md:h-12 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center">

@@ -15,12 +15,18 @@ export default function Dashboard() {
   const { cards, setCards, setCategories, setAuthors, monthlyTotals, setMonthlyTotals } = useAppStore()
 
   const [isLoading, setIsLoading] = useState(true)
+  const [hideValues, setHideValues] = useState(localStorage.getItem('hideValues') === 'true')
 
   const activeCards = cards as CardWithBalance[]
 
   const totalLimit = activeCards
     .filter((card) => !card.is_shared)
     .reduce((sum, card) => sum + Number(card.card_limit ?? 0), 0)
+
+  const toggleHideValues = () => {
+    setHideValues((prev) => !prev)
+    localStorage.setItem('hideValues', String(!hideValues))
+  }
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -113,6 +119,8 @@ export default function Dashboard() {
         userName={user?.name || ''}
         userEmail={user?.email || ''}
         onLogout={logout}
+        hideValues={hideValues}
+        onToggleHideValues={toggleHideValues}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -120,13 +128,15 @@ export default function Dashboard() {
           totalCards={activeCards.length}
           totalLimit={totalLimit}
           currentMonthExpense={getCurrentMonthExpense()}
+          hideValues={hideValues}
         />
 
-        <DashboardCardsList cards={activeCards} />
+        <DashboardCardsList cards={activeCards} hideValues={hideValues} />
 
         <DashboardUpcomingPayments
           cards={activeCards}
           monthlyTotals={monthlyTotals}
+          hideValues={hideValues}
         />
       </main>
     </div>
