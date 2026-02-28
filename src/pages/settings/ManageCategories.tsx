@@ -108,7 +108,7 @@ export default function ManageCategories() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8  py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/settings')}
@@ -121,7 +121,7 @@ export default function ManageCategories() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
 
         {/* Minhas categorias */}
         <section>
