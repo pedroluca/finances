@@ -424,8 +424,8 @@ export default function ManageSubscriptions() {
       {/* ── Modal de formulário ── */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {editingId !== null ? 'Editar assinatura' : 'Nova assinatura'}
               </h2>
@@ -437,6 +437,7 @@ export default function ManageSubscriptions() {
               </button>
             </div>
 
+            <div className="overflow-y-auto flex-1">
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
               {formError && (
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-800 dark:text-red-400">
@@ -650,9 +651,11 @@ export default function ManageSubscriptions() {
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }
@@ -698,10 +701,10 @@ function SubscriptionCard({ sub, onEdit, onDelete, isConfirmingDelete, onConfirm
             <div className="flex items-center gap-1">
               {!isConfirmingDelete ? (
                 <>
-                  <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition" title="Editar">
+                  <button onClick={onEdit} className="cursor-pointer p-1.5 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition" title="Editar">
                     <Pencil className="w-4 h-4" />
                   </button>
-                  <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Excluir">
+                  <button onClick={onDelete} className="cursor-pointer p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Excluir">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </>
