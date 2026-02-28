@@ -370,29 +370,14 @@ export default function AddItem() {
                 <option value={String(SUBSCRIPTION_CATEGORY_ID)}>🔄 Assinaturas (recorrente)</option>
               </select>
 
-              {/* Aviso inline quando Assinaturas for selecionada */}
+              {/* Nota informativa quando Assinaturas for selecionada */}
               {categoryId === String(SUBSCRIPTION_CATEGORY_ID) && (
-                <div className="mt-3 bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
-                      <Repeat className="w-4 h-4 text-purple-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-purple-900">Isso é uma assinatura recorrente?</p>
-                      <p className="text-xs text-purple-700 mt-1">
-                        Na página de Assinaturas você cadastra uma vez e ela é adicionada automaticamente na fatura todo mês, sem precisar fazer nada.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => navigate('/settings/subscriptions')}
-                        className="mt-2 text-xs font-semibold text-purple-600 hover:text-purple-800 underline underline-offset-2"
-                      >
-                        Gerenciar Assinaturas →
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <p className="mt-2 text-xs text-purple-600 flex items-center gap-1">
+                  <Repeat className="w-3 h-3" />
+                  Será cadastrada como assinatura recorrente e aparecerá na página de Assinaturas.
+                </p>
               )}
+
             </div>
 
             {/* Autor */}
