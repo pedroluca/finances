@@ -1,6 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { Repeat, ChevronRight, RefreshCw } from 'lucide-react'
 import type { Subscription } from '../../types/database'
+import type { BillingCycle } from '../../types/database'
+
+function toMonthlyEquivalent(amount: number, cycle?: BillingCycle): number {
+  if (cycle === 'annual')     return amount / 12;
+  if (cycle === 'semiannual') return amount / 6;
+  return amount;
+}
 
 interface DashboardSubscriptionsProps {
   subscriptions: Subscription[]
@@ -12,7 +19,7 @@ export function DashboardSubscriptions({ subscriptions, hideValues }: DashboardS
 
   const active = subscriptions.filter((s) => s.active)
   const hasSubscriptions = active.length > 0
-  const monthlyTotal = active.reduce((sum, s) => sum + s.amount, 0)
+  const monthlyTotal = active.reduce((sum, s) => sum + toMonthlyEquivalent(s.amount, s.billing_cycle), 0)
 
   // Pega a próxima renovação mais próxima
   const nextRenewal = hasSubscriptions

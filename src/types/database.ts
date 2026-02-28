@@ -225,6 +225,8 @@ export interface CreateInstallmentDTO {
   current_installment?: number;
 }
 
+export type BillingCycle = 'monthly' | 'semiannual' | 'annual';
+
 export interface Subscription {
   id: number;
   user_id: number;
@@ -240,6 +242,7 @@ export interface Subscription {
   category_icon: string | null;
   category_color: string | null;
   billing_day: number;
+  billing_cycle: BillingCycle;
   next_billing_date: string;
   active: boolean;
   notes: string | null;
@@ -255,6 +258,7 @@ export interface CreateSubscriptionDTO {
   author_id: number;
   category_id?: number | null;
   billing_day: number;
+  billing_cycle?: BillingCycle;
   notes?: string | null;
   assignments?: { author_id: number; amount: number }[];
 }
@@ -268,6 +272,7 @@ export interface UpdateSubscriptionDTO {
   author_id?: number;
   category_id?: number | null;
   billing_day?: number;
+  billing_cycle?: BillingCycle;
   notes?: string | null;
   active?: boolean;
   assignments?: { author_id: number; amount: number }[];

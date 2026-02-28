@@ -4,7 +4,25 @@ import { ArrowLeft, Plus, RefreshCw, Pencil, Trash2, X, ChevronDown, Repeat, Ale
 import { useAuthStore } from '../../store/auth.store';
 import { useAppStore } from '../../store/app.store';
 import { phpApiRequest } from '../../lib/api';
-import type { Subscription, CreateSubscriptionDTO, UpdateSubscriptionDTO } from '../../types/database';
+import type { Subscription, CreateSubscriptionDTO, UpdateSubscriptionDTO, BillingCycle } from '../../types/database';
+
+// ── billing cycle helpers ─────────────────────────────────────────────────────
+const CYCLE_OPTIONS: { value: BillingCycle; label: string; shortLabel: string }[] = [
+  { value: 'monthly',    label: 'Mensal (todo mês)',         shortLabel: '/mês'       },
+  { value: 'semiannual', label: 'Semestral (a cada 6 meses)', shortLabel: '/semestre'  },
+  { value: 'annual',     label: 'Anual (uma vez por ano)',    shortLabel: '/ano'       },
+];
+
+function cycleShortLabel(cycle?: BillingCycle): string {
+  return CYCLE_OPTIONS.find((o) => o.value === (cycle ?? 'monthly'))?.shortLabel ?? '/mês';
+}
+
+/** Converte o valor bruto de uma assinatura para equivalente mensal */
+function toMonthlyEquivalent(amount: number, cycle?: BillingCycle): number {
+  if (cycle === 'annual')     return amount / 12;
+  if (cycle === 'semiannual') return amount / 6;
+  return amount;
+}
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -78,6 +96,7 @@ export default function ManageSubscriptions() {
   const [fAmountDisplay, setFAmountDisplay] = useState('');
   const [fCardId, setFCardId]               = useState('');
   const [fBillingDay, setFBillingDay]       = useState('5');
+  const [fBillingCycle, setFBillingCycle]   = useState<BillingCycle>('monthly');
   const [fNotes, setFNotes]                 = useState('');
   const [fActive, setFActive]               = useState(true);
   const [formError, setFormError]           = useState('');
@@ -156,6 +175,7 @@ export default function ManageSubscriptions() {
     setFCardId('');
     setFAuthorId(defaultAuthor ? String(defaultAuthor.id) : '');
     setFBillingDay('5');
+    setFBillingCycle('monthly');
     setFNotes('');
     setFActive(true);
     setIsSplit(false);
@@ -178,6 +198,7 @@ export default function ManageSubscriptions() {
     setFCardId(String(sub.card_id));
     setFAuthorId(String(sub.author_id));
     setFBillingDay(String(sub.billing_day));
+    setFBillingCycle(sub.billing_cycle ?? 'monthly');
     setFNotes(sub.notes ?? '');
     setFActive(sub.active);
     setIsSplit(false);
@@ -234,6 +255,7 @@ export default function ManageSubscriptions() {
           author_id: authorIdVal,
           category_id: 7, // sempre Assinaturas
           billing_day: billingDayVal,
+          billing_cycle: fBillingCycle,
           notes: fNotes.trim() || null,
           active: fActive,
           assignments: assignmentsPayload,
@@ -258,6 +280,7 @@ export default function ManageSubscriptions() {
           author_id: authorIdVal,
           category_id: 7,
           billing_day: billingDayVal,
+          billing_cycle: fBillingCycle,
           notes: fNotes.trim() || null,
           assignments: assignmentsPayload,
         };
@@ -304,7 +327,8 @@ export default function ManageSubscriptions() {
 
   const activeList   = subscriptions.filter((s) => s.active);
   const inactiveList = subscriptions.filter((s) => !s.active);
-  const monthlyTotal = activeList.reduce((acc, s) => acc + s.amount, 0);
+  // Equivalente mensal: anual ÷ 12, semestral ÷ 6, mensal = valor bruto
+  const monthlyTotal = activeList.reduce((acc, s) => acc + toMonthlyEquivalent(s.amount, s.billing_cycle), 0);
 
   // ── render ─────────────────────────────────────────────────────────────────
 
@@ -345,7 +369,7 @@ export default function ManageSubscriptions() {
           <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 text-white shadow-lg">
             <div className="flex items-center gap-3 mb-1">
               <Repeat className="w-5 h-5 opacity-80" />
-              <span className="text-purple-200 text-sm font-medium">Total mensal em assinaturas</span>
+              <span className="text-purple-200 text-sm font-medium">Equivalente mensal em assinaturas</span>
             </div>
             <p className="text-3xl font-bold">{formatAmount(monthlyTotal)}</p>
             <p className="text-purple-300 text-sm mt-1">{activeList.length} assinatura{activeList.length !== 1 ? 's' : ''} ativa{activeList.length !== 1 ? 's' : ''}</p>
@@ -465,7 +489,7 @@ export default function ManageSubscriptions() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Valor mensal *
+                    Valor por cobrança *
                   </label>
                   <input
                     type="text"
@@ -484,13 +508,41 @@ export default function ManageSubscriptions() {
                     type="number"
                     value={fBillingDay}
                     onChange={(e) => setFBillingDay(e.target.value)}
-                    min="1" max="28"
-                    placeholder="Ex: 5"
+                    min="1" max="31"
+                    placeholder="Ex: 28"
                     className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
                     required
                   />
                   <p className="text-xs text-gray-400 mt-1">Cai na fatura mais próxima deste dia</p>
                 </div>
+              </div>
+
+              {/* Ciclo de cobrança */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Ciclo de cobrança *
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {CYCLE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFBillingCycle(opt.value)}
+                      className={`cursor-pointer px-3 py-2.5 rounded-lg border text-xs font-medium transition text-center ${
+                        fBillingCycle === opt.value
+                          ? 'bg-purple-600 border-purple-600 text-white'
+                          : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-purple-400'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {fBillingCycle !== 'monthly' && parseFloat(fAmount) > 0 && (
+                  <p className="text-xs text-purple-500 dark:text-purple-400 mt-1.5">
+                    ≈ {formatAmount(toMonthlyEquivalent(parseFloat(fAmount), fBillingCycle))}/mês
+                  </p>
+                )}
               </div>
 
               {/* Cartão — usa card_id (field da view card_available_balance) */}
@@ -688,11 +740,16 @@ function SubscriptionCard({ sub, onEdit, onDelete, isConfirmingDelete, onConfirm
               <h3 className="font-semibold text-gray-900 dark:text-white truncate">{sub.description}</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 {sub.card_name} · {sub.author_name}{sub.billing_day ? ` · Dia ${sub.billing_day}` : ''}
+                {sub.billing_cycle && sub.billing_cycle !== 'monthly' && (
+                  <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 font-medium">
+                    {sub.billing_cycle === 'annual' ? 'Anual' : 'Semestral'}
+                  </span>
+                )}
               </p>
             </div>
             <div className="text-right shrink-0">
               <p className="font-bold text-gray-900 dark:text-white">{formatAmount(sub.amount)}</p>
-              <p className="text-xs text-gray-400">/mês</p>
+              <p className="text-xs text-gray-400">{cycleShortLabel(sub.billing_cycle)}</p>
             </div>
           </div>
 

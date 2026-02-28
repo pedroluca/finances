@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, type FormEvent } from "react"
+import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "../store/auth.store"
 import { useAppStore } from "../store/app.store"
 import { phpApiRequest } from "../lib/api"
@@ -13,7 +14,10 @@ import {
   X,
   Calculator,
   AlertCircle,
+  Repeat,
 } from "lucide-react"
+
+const SUBSCRIPTION_CATEGORY_ID = 7
 
 interface AddItemModalProps {
   card: CardWithBalance
@@ -36,6 +40,7 @@ export default function AddItemModal({
   isAuthorLocked = false,
 }: AddItemModalProps) {
   const { user } = useAuthStore()
+  const navigate = useNavigate()
   const { categories, setCategories, authors, setAuthors, addAuthor } =
     useAppStore()
   const [isDataLoading, setIsDataLoading] = useState(false)
@@ -447,190 +452,222 @@ export default function AddItemModal({
                 ))}
               </select>
             </div>
-            
-            {/* Divisão de Despesa */}
-            {!isAuthorLocked && (
-              <div className="border-t border-b border-gray-200 dark:border-gray-700 py-4 my-4">
-                <div className="flex items-center gap-2 mb-4">
-                <input
-                    type="checkbox"
-                    id="isSplitAdd"
-                    checked={isSplit}
-                    onChange={(e) => setIsSplit(e.target.checked)}
-                    className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                />
-                <label
-                    htmlFor="isSplitAdd"
-                    className="text-sm font-medium text-gray-700 dark:text-white select-none cursor-pointer"
-                >
-                    Dividir despesa entre pessoas
-                </label>
-                </div>
 
-                {!isSplit ? (
-                    <div>
-                    <label
-                        htmlFor="author"
-                        className="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-                    >
-                        <User className="w-4 h-4 inline mr-2" />
-                        Quem comprou?
-                    </label>
-                    {isAuthorLocked ? (
-                        <div className="w-full px-4 py-3 border border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 rounded-lg">
-                            {defaultAuthor?.name || 'Carregando...'}
-                        </div>
-                    ) : !showNewAuthor ? (
-                        <>
-                        <select
-                            id="author"
-                            value={authorId}
-                            onChange={(e) => setAuthorId(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        >
-                            <option value="" className="dark:bg-gray-800">
-                            Selecione...
-                            </option>
-                            {availableAuthors.map((author) => (
-                            <option
-                                key={author.id}
-                                value={author.id}
-                                className="dark:bg-gray-800"
-                            >
-                                {author.name} {author.is_owner ? "(Você)" : ""}
-                            </option>
-                            ))}
-                        </select>
-                        <button
-                            type="button"
-                            onClick={() => setShowNewAuthor(true)}
-                            className="mt-2 cursor-pointer text-sm text-primary-600 hover:text-primary-700 dark:text-white flex items-center gap-1"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Adicionar nova pessoa
-                        </button>
-                        </>
-                    ) : (
-                        <>
-                        <input
-                            type="text"
-                            value={newAuthorName}
-                            onChange={(e) => setNewAuthorName(e.target.value)}
-                            placeholder="Nome da pessoa"
-                            className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => {
-                            setShowNewAuthor(false)
-                            setNewAuthorName("")
-                            }}
-                            className="mt-2 text-sm cursor-pointer text-gray-600 dark:text-white hover:text-gray-700"
-                        >
-                            Cancelar
-                        </button>
-                        </>
-                    )}
+            {/* Quando Assinatura é selecionada: esconder o form e redirecionar */}
+            {categoryId === String(SUBSCRIPTION_CATEGORY_ID) ? (
+              <div className="mt-2 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 p-5 text-center space-y-3">
+                <div className="flex justify-center">
+                  <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
+                    <Repeat className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </div>
+                <p className="text-sm font-semibold text-purple-800 dark:text-purple-300">
+                  Assinaturas têm configurações especiais
+                </p>
+                <p className="text-xs text-purple-600 dark:text-purple-400">
+                  Ciclo de cobrança, dia de vencimento e renovação automática só ficam disponíveis na página de Assinaturas.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { onClose(); navigate('/settings/subscriptions'); }}
+                  className="w-full cursor-pointer px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition font-medium text-sm"
+                >
+                  Ir para Assinaturas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCategoryId('')}
+                  className="w-full cursor-pointer px-4 py-2 text-sm text-purple-600 dark:text-purple-400 hover:underline"
+                >
+                  Voltar e escolher outra categoria
+                </button>
+              </div>
+            ) : (
+              <>
+                {!isAuthorLocked && (
+                  <div className="border-t border-b border-gray-200 dark:border-gray-700 py-4 my-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <input
+                        type="checkbox"
+                        id="isSplitAdd"
+                        checked={isSplit}
+                        onChange={(e) => setIsSplit(e.target.checked)}
+                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                      />
+                      <label
+                        htmlFor="isSplitAdd"
+                        className="text-sm font-medium text-gray-700 dark:text-white select-none cursor-pointer"
+                      >
+                        Dividir despesa entre pessoas
+                      </label>
                     </div>
-                ) : (
-                    <div className="space-y-3 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Autores e Valores</span>
-                            <button 
-                                type="button"
-                                onClick={distributeEqually}
-                                className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-1"
-                                title="Distribuir igualmente entre selecionados"
+
+                    {!isSplit ? (
+                      <div>
+                        <label
+                          htmlFor="author"
+                          className="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+                        >
+                          <User className="w-4 h-4 inline mr-2" />
+                          Quem comprou?
+                        </label>
+                        {isAuthorLocked ? (
+                          <div className="w-full px-4 py-3 border border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 rounded-lg">
+                            {defaultAuthor?.name || 'Carregando...'}
+                          </div>
+                        ) : !showNewAuthor ? (
+                          <>
+                            <select
+                              id="author"
+                              value={authorId}
+                              onChange={(e) => setAuthorId(e.target.value)}
+                              className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             >
-                                <Calculator size={14} /> Distribuir
+                              <option value="" className="dark:bg-gray-800">
+                                Selecione...
+                              </option>
+                              {availableAuthors.map((author) => (
+                                <option
+                                  key={author.id}
+                                  value={author.id}
+                                  className="dark:bg-gray-800"
+                                >
+                                  {author.name} {author.is_owner ? "(Você)" : ""}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => setShowNewAuthor(true)}
+                              className="mt-2 cursor-pointer text-sm text-primary-600 hover:text-primary-700 dark:text-white flex items-center gap-1"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Adicionar nova pessoa
                             </button>
+                          </>
+                        ) : (
+                          <>
+                            <input
+                              type="text"
+                              value={newAuthorName}
+                              onChange={(e) => setNewAuthorName(e.target.value)}
+                              placeholder="Nome da pessoa"
+                              className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowNewAuthor(false)
+                                setNewAuthorName("")
+                              }}
+                              className="mt-2 text-sm cursor-pointer text-gray-600 dark:text-white hover:text-gray-700"
+                            >
+                              Cancelar
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Autores e Valores</span>
+                          <button
+                            type="button"
+                            onClick={distributeEqually}
+                            className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-1"
+                            title="Distribuir igualmente entre selecionados"
+                          >
+                            <Calculator size={14} /> Distribuir
+                          </button>
                         </div>
-                        
+
                         {availableAuthors.map(author => {
-                            const isSelected = assignments.some(a => a.author_id === author.id)
-                            const assignment = assignments.find(a => a.author_id === author.id)
-                            
-                            return (
-                                <div key={author.id} className="flex items-center gap-3">
-                                    <div className="flex items-center gap-2 flex-1">
-                                        <input
-                                            type="checkbox"
-                                            checked={isSelected}
-                                            onChange={() => toggleAuthorInSplit(author.id)}
-                                            className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                                        />
-                                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                                            {author.name} {author.is_owner ? "(Você)" : ""}
-                                        </span>
-                                    </div>
-                                    {isSelected && (
-                                        <div className="w-32">
-                                            <input
-                                                type="text"
-                                                value={`R$ ${(assignment?.amount || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                                                onChange={(e) => updateAssignmentAmount(author.id, e.target.value)}
-                                                className="w-full px-2 py-1 text-right text-sm border border-gray-300 dark:text-white rounded focus:ring-indigo-500"
-                                            />
-                                        </div>
-                                    )}
+                          const isSelected = assignments.some(a => a.author_id === author.id)
+                          const assignment = assignments.find(a => a.author_id === author.id)
+
+                          return (
+                            <div key={author.id} className="flex items-center gap-3">
+                              <div className="flex items-center gap-2 flex-1">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => toggleAuthorInSplit(author.id)}
+                                  className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                                />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">
+                                  {author.name} {author.is_owner ? "(Você)" : ""}
+                                </span>
+                              </div>
+                              {isSelected && (
+                                <div className="w-32">
+                                  <input
+                                    type="text"
+                                    value={`R$ ${(assignment?.amount || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                                    onChange={(e) => updateAssignmentAmount(author.id, e.target.value)}
+                                    className="w-full px-2 py-1 text-right text-sm border border-gray-300 dark:text-white rounded focus:ring-indigo-500"
+                                  />
                                 </div>
-                            )
+                              )}
+                            </div>
+                          )
                         })}
 
                         <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Dividido:</span>
-                            <span className={`text-sm font-bold ${Math.abs(getSplitTotal() - parseFloat(amount || '0')) < 0.05 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                R$ {formatCurrency(getSplitTotal())}
-                            </span>
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Dividido:</span>
+                          <span className={`text-sm font-bold ${Math.abs(getSplitTotal() - parseFloat(amount || '0')) < 0.05 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            R$ {formatCurrency(getSplitTotal())}
+                          </span>
                         </div>
                         {Math.abs(getSplitTotal() - parseFloat(amount || '0')) >= 0.05 && (
-                            <p className="text-xs text-red-500 flex items-center gap-1">
-                                <AlertCircle size={12} /> O total dividido deve ser igual ao valor do item.
-                            </p>
+                          <p className="text-xs text-red-500 flex items-center gap-1">
+                            <AlertCircle size={12} /> O total dividido deve ser igual ao valor do item.
+                          </p>
                         )}
-                    </div>
+                      </div>
+                    )}
+                  </div>
                 )}
-            </div>
-            )}
 
-            {/* Data da Compra */}
-            <div>
-              <label
-                htmlFor="date"
-                className="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-              >
-                <Calendar className="w-4 h-4 inline mr-2" />
-                Data da Compra
-              </label>
-              <input
-                type="date"
-                id="date"
-                value={purchaseDate}
-                onChange={(e) => setPurchaseDate(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-            </div>
-            {/* Botões */}
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 cursor-pointer px-6 py-3 border border-gray-300 text-gray-700 dark:text-gray-300 dark:hover:text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 cursor-pointer px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? "Salvando..." : "Adicionar"}
-              </button>
-            </div>
-            {error && (
-              <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-2 text-sm text-red-800 text-center">
-                {error}
-              </div>
+                {/* Data da Compra */}
+                <div>
+                  <label
+                    htmlFor="date"
+                    className="block text-sm font-medium text-gray-700 dark:text-white mb-2"
+                  >
+                    <Calendar className="w-4 h-4 inline mr-2" />
+                    Data da Compra
+                  </label>
+                  <input
+                    type="date"
+                    id="date"
+                    value={purchaseDate}
+                    onChange={(e) => setPurchaseDate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+                {/* Botões */}
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex-1 cursor-pointer px-6 py-3 border border-gray-300 text-gray-700 dark:text-gray-300 dark:hover:text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex-1 cursor-pointer px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? "Salvando..." : "Adicionar"}
+                  </button>
+                </div>
+                {error && (
+                  <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-2 text-sm text-red-800 text-center">
+                    {error}
+                  </div>
+                )}
+              </>
             )}
           </form>
         )}
