@@ -1281,10 +1281,19 @@ export default function CardDetails() {
         onClose={() => setShowDeleteItemsModal(false)}
         onConfirm={confirmDeleteItems}
         title="Excluir Itens?"
-        message={`Tem certeza que deseja excluir ${selectedItems.size} item(ns)?`}
+        message={(() => {
+          const hasInstallment = items.some(
+            (item) => selectedItems.has(item.id) && item.is_installment
+          )
+          const base = `Tem certeza que deseja excluir ${selectedItems.size} item(ns)?`
+          return hasInstallment
+            ? `${base}\n\n⚠️ Um ou mais itens selecionados são parcelados. Todas as parcelas (pagas ou futuras) também serão apagadas.`
+            : base
+        })()}
         confirmText="Excluir"
         isDestructive
       />
+
 
       {/* Edit Item Modal */}
       {/* Add Item Modal */}
