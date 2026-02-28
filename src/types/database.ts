@@ -224,3 +224,52 @@ export interface CreateInstallmentDTO {
   start_year: number;
   current_installment?: number;
 }
+
+export interface Subscription {
+  id: number;
+  user_id: number;
+  description: string;
+  amount: number;
+  card_id: number;
+  card_name: string;
+  card_color: string;
+  author_id: number;
+  author_name: string;
+  category_id: number | null;
+  category_name: string | null;
+  category_icon: string | null;
+  category_color: string | null;
+  billing_day: number;
+  next_billing_date: string;
+  active: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSubscriptionDTO {
+  user_id: number;
+  description: string;
+  amount: number;
+  card_id: number;
+  author_id: number;
+  category_id?: number | null;
+  billing_day: number;
+  notes?: string | null;
+  assignments?: { author_id: number; amount: number }[];
+}
+
+export interface UpdateSubscriptionDTO {
+  id: number;
+  user_id: number;
+  description?: string;
+  amount?: number;
+  card_id?: number;
+  author_id?: number;
+  category_id?: number | null;
+  billing_day?: number;
+  notes?: string | null;
+  active?: boolean;
+  assignments?: { author_id: number; amount: number }[];
+}
+

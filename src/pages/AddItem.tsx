@@ -3,7 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useAppStore } from '../store/app.store';
 import { phpApiRequest } from '../lib/api';
-import { ArrowLeft, DollarSign, FileText, Calendar, Tag, User, Plus } from 'lucide-react';
+import { ArrowLeft, DollarSign, FileText, Calendar, Tag, User, Plus, Repeat } from 'lucide-react';
+
+const SUBSCRIPTION_CATEGORY_ID = 7;
 
 export default function AddItem() {
   const navigate = useNavigate();
@@ -360,12 +362,37 @@ export default function AddItem() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">Sem categoria</option>
-                {categories.map((cat) => (
+                {categories.filter((cat) => cat.id !== SUBSCRIPTION_CATEGORY_ID).map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.icon} {cat.name}
                   </option>
                 ))}
+                <option value={String(SUBSCRIPTION_CATEGORY_ID)}>🔄 Assinaturas (recorrente)</option>
               </select>
+
+              {/* Aviso inline quando Assinaturas for selecionada */}
+              {categoryId === String(SUBSCRIPTION_CATEGORY_ID) && (
+                <div className="mt-3 bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
+                      <Repeat className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-purple-900">Isso é uma assinatura recorrente?</p>
+                      <p className="text-xs text-purple-700 mt-1">
+                        Na página de Assinaturas você cadastra uma vez e ela é adicionada automaticamente na fatura todo mês, sem precisar fazer nada.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => navigate('/settings/subscriptions')}
+                        className="mt-2 text-xs font-semibold text-purple-600 hover:text-purple-800 underline underline-offset-2"
+                      >
+                        Gerenciar Assinaturas →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Autor */}

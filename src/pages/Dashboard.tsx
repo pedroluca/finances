@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth.store'
 import { useAppStore } from '../store/app.store'
-import type { CardWithBalance } from '../types/database'
+import type { CardWithBalance, Subscription } from '../types/database'
 import { phpApiRequest } from '../lib/api'
 import { DashboardHeader } from '../components/dashboard/d-header'
 import { DashboardStats } from '../components/dashboard/d-stats'
@@ -16,6 +16,7 @@ export default function Dashboard() {
 
   const [isLoading, setIsLoading] = useState(true)
   const [hideValues, setHideValues] = useState(localStorage.getItem('hideValues') === 'true')
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
 
   const activeCards = orderedCards() as CardWithBalance[]
 
@@ -38,17 +39,19 @@ export default function Dashboard() {
       if (!user?.id) return
       try {
         setIsLoading(true)
-        const [cardsData, categoriesData, authorsData, monthlyTotalsData, cardOrderData] = await Promise.all([
+        const [cardsData, categoriesData, authorsData, monthlyTotalsData, cardOrderData, subsData] = await Promise.all([
           phpApiRequest('cards.php', { method: 'GET' }),
           phpApiRequest('categories.php', { method: 'GET' }),
           phpApiRequest('authors.php', { method: 'GET' }),
           phpApiRequest('invoices.php?action=monthlyTotals', { method: 'GET' }),
           phpApiRequest(`card_order.php?user_id=${user?.id}`, { method: 'GET' }),
+          phpApiRequest(`subscriptions.php?user_id=${user?.id}`, { method: 'GET' }),
         ])
         setCards(cardsData)
         setCategories(categoriesData)
         setAuthors(authorsData)
         setMonthlyTotals(monthlyTotalsData)
+        if (subsData?.success) setSubscriptions(subsData.data ?? [])
         // cardOrderData = [{ card_id, position }]
         if (Array.isArray(cardOrderData) && cardOrderData.length > 0) {
           setCardOrder(cardOrderData.map((o: { card_id: number }) => o.card_id))
@@ -134,6 +137,7 @@ export default function Dashboard() {
           totalLimit={totalLimit}
           currentMonthExpense={getCurrentMonthExpense()}
           hideValues={hideValues}
+          subscriptions={subscriptions}
         />
 
         <DashboardCardsList cards={activeCards} hideValues={hideValues} />

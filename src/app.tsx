@@ -11,6 +11,7 @@ import Settings from './pages/Settings'
 import ManageAuthors from './pages/ManageAuthors'
 import ManageCardOrder from './pages/settings/ManageCardOrder'
 import ManageCategories from './pages/settings/ManageCategories'
+import ManageSubscriptions from './pages/settings/ManageSubscriptions'
 
 function App() {
   const { isAuthenticated, verifyAuth } = useAuthStore()
@@ -68,6 +69,10 @@ function App() {
         <Route
           path="/settings/categories"
           element={isAuthenticated ? <ManageCategories /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/settings/subscriptions"
+          element={isAuthenticated ? <ManageSubscriptions /> : <Navigate to="/login" />}
         />
 
         {/* Default redirect */}
