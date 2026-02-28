@@ -334,26 +334,17 @@ export default function ManageSubscriptions() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-      {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
-          <button
-            onClick={() => navigate('/settings')}
-            className="cursor-pointer p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1 min-w-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/settings')}
+              className="cursor-pointer p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Assinaturas</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Renovações automáticas cadastradas</p>
           </div>
-          <button
-            onClick={openCreate}
-            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition font-medium text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Nova</span>
-          </button>
         </div>
       </header>
 
@@ -403,6 +394,15 @@ export default function ManageSubscriptions() {
 
         {!isLoading && activeList.length > 0 && (
           <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Ativas</h2>
+              <button
+                onClick={openCreate}
+                className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition cursor-pointer"
+              >
+                <Plus className="w-4 h-4" /> Nova
+              </button>
+            </div>
             {activeList.map((sub) => (
               <SubscriptionCard
                 key={sub.id}
