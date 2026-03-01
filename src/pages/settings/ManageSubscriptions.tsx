@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, RefreshCw, Pencil, Trash2, X, ChevronDown, Repeat, AlertCircle, Calculator } from 'lucide-react';
+import { ArrowLeft, Plus, RefreshCw, Pencil, Trash2, X, ChevronDown, Repeat, AlertCircle, Calculator, Pause, Play } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { useAppStore } from '../../store/app.store';
 import { phpApiRequest } from '../../lib/api';
@@ -88,7 +88,12 @@ export default function ManageSubscriptions() {
   const [editingId, setEditingId]         = useState<number | null>(null);
   const [deletingId, setDeletingId]       = useState<number | null>(null);
   const [showInactive, setShowInactive]   = useState(false);
+  const [showPaused, setShowPaused]       = useState(true);
   const [globalError, setGlobalError]     = useState('');
+
+  // ── filters ───────────────────────────────────────────────────────────────
+  const [filterAuthor, setFilterAuthor]   = useState<number | null>(null);
+  const [filterCycle, setFilterCycle]     = useState<BillingCycle | null>(null);
 
   // ── form state ────────────────────────────────────────────────────────────
   const [fDescription, setFDescription]     = useState('');
@@ -325,10 +330,44 @@ export default function ManageSubscriptions() {
     }
   }
 
-  const activeList   = subscriptions.filter((s) => s.active);
+  // ── pause ─────────────────────────────────────────────────────────────────
+
+  async function handlePause(sub: Subscription) {
+    if (!user) return;
+    try {
+      const res = await phpApiRequest('subscriptions.php', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: sub.id, user_id: user.id, paused: !sub.paused }),
+      });
+      if (res?.success) {
+        setSubscriptions((prev) => prev.map((s) => s.id === sub.id ? res.data : s));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  // ── computed lists ────────────────────────────────────────────────────────
+
+  const filteredAll = useMemo(() => {
+    return subscriptions
+      .filter((s) => s.active)
+      .filter((s) => filterAuthor === null || s.author_id === filterAuthor)
+      .filter((s) => filterCycle === null || s.billing_cycle === filterCycle);
+  }, [subscriptions, filterAuthor, filterCycle]);
+
+  const activeList   = filteredAll.filter((s) => !s.paused);
+  const pausedList   = filteredAll.filter((s) => s.paused);
   const inactiveList = subscriptions.filter((s) => !s.active);
   // Equivalente mensal: anual ÷ 12, semestral ÷ 6, mensal = valor bruto
   const monthlyTotal = activeList.reduce((acc, s) => acc + toMonthlyEquivalent(s.amount, s.billing_cycle), 0);
+
+  // Autores únicos entre as assinaturas ativas (para filtro)
+  const authorOptions = useMemo(() => {
+    const ids = new Set(subscriptions.filter((s) => s.active).map((s) => s.author_id));
+    return authors.filter((a) => ids.has(a.id));
+  }, [subscriptions, authors]);
 
   // ── render ─────────────────────────────────────────────────────────────────
 
@@ -355,7 +394,58 @@ export default function ManageSubscriptions() {
           </div>
         )}
 
-        {/* Summary card */}
+        {/* Filter bar */}
+        {!isLoading && subscriptions.some((s) => s.active) && (
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mr-1">Filtrar:</span>
+
+            {/* Author filter */}
+            {authorOptions.length > 1 && (
+              <div className="flex flex-wrap gap-1">
+                <button
+                  onClick={() => setFilterAuthor(null)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                    filterAuthor === null
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Todos
+                </button>
+                {authorOptions.map((a) => (
+                  <button
+                    key={a.id}
+                    onClick={() => setFilterAuthor(filterAuthor === a.id ? null : a.id)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                      filterAuthor === a.id
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {a.name}{a.is_owner ? ' (você)' : ''}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Cycle filter */}
+            <div className="flex flex-wrap gap-1 ml-auto">
+              {CYCLE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setFilterCycle(filterCycle === opt.value ? null : opt.value)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                    filterCycle === opt.value
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {opt.shortLabel.replace('/', '')}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {!isLoading && activeList.length > 0 && (
           <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 text-white shadow-lg">
             <div className="flex items-center gap-3 mb-1">
@@ -373,7 +463,7 @@ export default function ManageSubscriptions() {
           </div>
         )}
 
-        {!isLoading && subscriptions.length === 0 && (
+        {!isLoading && activeList.length === 0 && pausedList.length === 0 && subscriptions.length === 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-12 text-center">
             <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Repeat className="w-8 h-8 text-purple-600 dark:text-purple-400" />
@@ -409,11 +499,42 @@ export default function ManageSubscriptions() {
                 sub={sub}
                 onEdit={() => openEdit(sub)}
                 onDelete={() => setDeletingId(sub.id)}
+                onPause={() => handlePause(sub)}
                 isConfirmingDelete={deletingId === sub.id}
                 onConfirmDelete={() => handleDelete(sub.id)}
                 onCancelDelete={() => setDeletingId(null)}
               />
             ))}
+          </div>
+        )}
+
+        {/* Paused subscriptions */}
+        {!isLoading && pausedList.length > 0 && (
+          <div>
+            <button
+              onClick={() => setShowPaused((v) => !v)}
+              className="flex items-center gap-2 text-sm text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-medium transition mb-2"
+            >
+              <ChevronDown className={`w-4 h-4 transition-transform ${showPaused ? 'rotate-180' : ''}`} />
+              <Pause className="w-3.5 h-3.5" />
+              {pausedList.length} pausada{pausedList.length !== 1 ? 's' : ''}
+            </button>
+            {showPaused && (
+              <div className="space-y-3">
+                {pausedList.map((sub) => (
+                  <SubscriptionCard
+                    key={sub.id}
+                    sub={sub}
+                    onEdit={() => openEdit(sub)}
+                    onDelete={() => setDeletingId(sub.id)}
+                    onPause={() => handlePause(sub)}
+                    isConfirmingDelete={deletingId === sub.id}
+                    onConfirmDelete={() => handleDelete(sub.id)}
+                    onCancelDelete={() => setDeletingId(null)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -434,6 +555,7 @@ export default function ManageSubscriptions() {
                     sub={sub}
                     onEdit={() => openEdit(sub)}
                     onDelete={() => setDeletingId(sub.id)}
+                    onPause={() => {}}
                     isConfirmingDelete={deletingId === sub.id}
                     onConfirmDelete={() => handleDelete(sub.id)}
                     onCancelDelete={() => setDeletingId(null)}
@@ -718,14 +840,17 @@ interface SubscriptionCardProps {
   sub: Subscription;
   onEdit: () => void;
   onDelete: () => void;
+  onPause: () => void;
   isConfirmingDelete: boolean;
   onConfirmDelete: () => void;
   onCancelDelete: () => void;
 }
 
-function SubscriptionCard({ sub, onEdit, onDelete, isConfirmingDelete, onConfirmDelete, onCancelDelete }: SubscriptionCardProps) {
+function SubscriptionCard({ sub, onEdit, onDelete, onPause, isConfirmingDelete, onConfirmDelete, onCancelDelete }: SubscriptionCardProps) {
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 transition-all ${!sub.active ? 'opacity-60' : ''}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 transition-all ${
+      !sub.active ? 'opacity-60' : sub.paused ? 'opacity-75 border border-amber-200 dark:border-amber-800' : ''
+    }`}>
       <div className="flex items-start gap-4">
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 mt-0.5"
@@ -737,7 +862,12 @@ function SubscriptionCard({ sub, onEdit, onDelete, isConfirmingDelete, onConfirm
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="font-semibold text-gray-900 dark:text-white truncate">{sub.description}</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white truncate flex items-center gap-2">
+                {sub.description}
+                {sub.paused && (
+                  <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">Pausada</span>
+                )}
+              </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 {sub.card_name} · {sub.author_name}{sub.billing_day ? ` · Dia ${sub.billing_day}` : ''}
                 {sub.billing_cycle && sub.billing_cycle !== 'monthly' && (
@@ -754,10 +884,27 @@ function SubscriptionCard({ sub, onEdit, onDelete, isConfirmingDelete, onConfirm
           </div>
 
           <div className="flex items-center justify-between mt-3 gap-2">
-            <RenewalBadge nextBillingDate={sub.next_billing_date} />
+            {sub.paused ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                <Pause className="w-3 h-3" /> Pausada
+              </span>
+            ) : (
+              <RenewalBadge nextBillingDate={sub.next_billing_date} />
+            )}
             <div className="flex items-center gap-1">
               {!isConfirmingDelete ? (
                 <>
+                  <button
+                    onClick={onPause}
+                    className={`cursor-pointer p-1.5 rounded-lg transition ${
+                      sub.paused
+                        ? 'text-amber-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
+                        : 'text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                    }`}
+                    title={sub.paused ? 'Retomar' : 'Pausar'}
+                  >
+                    {sub.paused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                  </button>
                   <button onClick={onEdit} className="cursor-pointer p-1.5 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition" title="Editar">
                     <Pencil className="w-4 h-4" />
                   </button>
@@ -768,12 +915,8 @@ function SubscriptionCard({ sub, onEdit, onDelete, isConfirmingDelete, onConfirm
               ) : (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500 dark:text-gray-400">Excluir?</span>
-                  <button onClick={onCancelDelete} className="px-3 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                    Não
-                  </button>
-                  <button onClick={onConfirmDelete} className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg transition">
-                    Sim
-                  </button>
+                  <button onClick={onCancelDelete} className="px-3 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Não</button>
+                  <button onClick={onConfirmDelete} className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg transition">Sim</button>
                 </div>
               )}
             </div>

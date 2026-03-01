@@ -245,6 +245,7 @@ export interface Subscription {
   billing_cycle: BillingCycle;
   next_billing_date: string;
   active: boolean;
+  paused: boolean;
   notes: string | null;
   created_at: string;
   updated_at: string;
