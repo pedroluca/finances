@@ -1,6 +1,12 @@
 import { useNavigate } from 'react-router-dom'
 import { CreditCard, DollarSign, TrendingDown, Repeat } from 'lucide-react'
-import type { Subscription } from '../../types/database'
+import type { Subscription, BillingCycle } from '../../types/database'
+
+function toMonthlyEquivalent(amount: number, cycle?: BillingCycle): number {
+  if (cycle === 'annual')     return amount / 12
+  if (cycle === 'semiannual') return amount / 6
+  return amount
+}
 
 interface DashboardStatsProps {
   totalCards: number
@@ -8,13 +14,18 @@ interface DashboardStatsProps {
   currentMonthExpense: number
   hideValues: boolean
   subscriptions: Subscription[]
+  ownerAuthorId?: number
 }
 
-export function DashboardStats({ totalCards, totalLimit, currentMonthExpense, hideValues, subscriptions }: DashboardStatsProps) {
+export function DashboardStats({ totalCards, totalLimit, currentMonthExpense, hideValues, subscriptions, ownerAuthorId }: DashboardStatsProps) {
   const navigate = useNavigate()
 
-  const activeSubscriptions = subscriptions.filter((s) => s.active)
-  const monthlySubTotal = activeSubscriptions.reduce((sum, s) => sum + s.amount, 0)
+  const activeSubscriptions = subscriptions.filter((s) =>
+    s.active &&
+    !s.paused &&
+    (ownerAuthorId == null || s.author_id === ownerAuthorId)
+  )
+  const monthlySubTotal = activeSubscriptions.reduce((sum, s) => sum + toMonthlyEquivalent(s.amount, s.billing_cycle), 0)
   const hasSubscriptions = activeSubscriptions.length > 0
 
   return (

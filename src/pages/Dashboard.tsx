@@ -12,13 +12,15 @@ import { DashboardUpcomingPayments } from '../components/dashboard/d-upcoming-pa
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, logout, isAuthenticated } = useAuthStore()
-  const { setCards, setCategories, setAuthors, monthlyTotals, setMonthlyTotals, setCardOrder, orderedCards } = useAppStore()
+  const { setCards, setCategories, setAuthors, monthlyTotals, setMonthlyTotals, setCardOrder, orderedCards, authors } = useAppStore()
 
   const [isLoading, setIsLoading] = useState(true)
   const [hideValues, setHideValues] = useState(localStorage.getItem('hideValues') === 'true')
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
 
   const activeCards = orderedCards() as CardWithBalance[]
+  const ownerAuthor = authors.find((a) => a.is_owner)
+  const ownerAuthorId = ownerAuthor?.id
 
   const totalLimit = activeCards
     .filter((card) => !card.is_shared)
@@ -138,6 +140,7 @@ export default function Dashboard() {
           currentMonthExpense={getCurrentMonthExpense()}
           hideValues={hideValues}
           subscriptions={subscriptions}
+          ownerAuthorId={ownerAuthorId}
         />
 
         <DashboardCardsList cards={activeCards} hideValues={hideValues} />
