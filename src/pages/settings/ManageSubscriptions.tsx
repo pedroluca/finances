@@ -404,7 +404,7 @@ export default function ManageSubscriptions() {
               <div className="flex flex-wrap gap-1">
                 <button
                   onClick={() => setFilterAuthor(null)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                  className={`cursor-pointer px-3 py-1 rounded-full text-xs font-medium transition ${
                     filterAuthor === null
                       ? 'bg-purple-600 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -416,7 +416,7 @@ export default function ManageSubscriptions() {
                   <button
                     key={a.id}
                     onClick={() => setFilterAuthor(filterAuthor === a.id ? null : a.id)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                    className={`cursor-pointer px-3 py-1 rounded-full text-xs font-medium capitalize transition ${
                       filterAuthor === a.id
                         ? 'bg-purple-600 text-white'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -434,7 +434,7 @@ export default function ManageSubscriptions() {
                 <button
                   key={opt.value}
                   onClick={() => setFilterCycle(filterCycle === opt.value ? null : opt.value)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                  className={`cursor-pointer px-3 py-1 rounded-full text-xs font-medium capitalize transition ${
                     filterCycle === opt.value
                       ? 'bg-purple-600 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
