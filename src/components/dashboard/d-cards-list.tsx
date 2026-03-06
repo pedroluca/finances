@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CreditCard, Plus, Nfc } from 'lucide-react'
+import { CreditCard, Plus, Nfc, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { CardWithBalance } from '../../types/database'
 import { ScrollIndicator } from '../ui/scroll-indicator'
 
@@ -9,12 +9,15 @@ interface DashboardCardsListProps {
   hideValues: boolean
 }
 
+const DESKTOP_CARDS_PER_PAGE = 3
+
 export function DashboardCardsList({ cards, hideValues }: DashboardCardsListProps) {
   const navigate = useNavigate()
+  // mobile: índice do cartão atual | desktop: índice do primeiro cartão da página
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
   const cardsContainerRef = useRef<HTMLDivElement>(null)
 
-  const scrollToCard = (index: number) => {
+  const scrollToCard = useCallback((index: number) => {
     if (!cardsContainerRef.current) return
     const container = cardsContainerRef.current
     const cardWidth = container.children[0]?.clientWidth || 0
@@ -25,6 +28,23 @@ export function DashboardCardsList({ cards, hideValues }: DashboardCardsListProp
       behavior: 'smooth',
     })
     setCurrentCardIndex(index)
+  }, [])
+
+  // Índices dos 3 cartões atualmente visíveis no desktop
+  const visibleStart = currentCardIndex
+  const visibleEnd = Math.min(currentCardIndex + DESKTOP_CARDS_PER_PAGE - 1, cards.length - 1)
+
+  const canGoPrev = currentCardIndex > 0
+  const canGoNext = currentCardIndex + DESKTOP_CARDS_PER_PAGE < cards.length
+
+  const goToPrevPage = () => {
+    scrollToCard(Math.max(0, currentCardIndex - DESKTOP_CARDS_PER_PAGE))
+  }
+
+  const goToNextPage = () => {
+    // Garante que o último grupo sempre mostra exatamente 3 cartões
+    const maxStart = Math.max(0, cards.length - DESKTOP_CARDS_PER_PAGE)
+    scrollToCard(Math.min(maxStart, currentCardIndex + DESKTOP_CARDS_PER_PAGE))
   }
 
   return (
@@ -58,6 +78,29 @@ export function DashboardCardsList({ cards, hideValues }: DashboardCardsListProp
         </div>
       ) : (
         <div className="relative">
+          {/* Botões de seta — visíveis apenas no desktop e se tiver mais de 3 cartões */}
+          {cards.length > DESKTOP_CARDS_PER_PAGE && (
+            <>
+              <button
+                onClick={goToPrevPage}
+                disabled={!canGoPrev}
+                className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 items-center justify-center w-9 h-9 rounded-full bg-white dark:bg-gray-700 shadow-md border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                aria-label="Cartões anteriores"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={goToNextPage}
+                disabled={!canGoNext}
+                className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 items-center justify-center w-9 h-9 rounded-full bg-white dark:bg-gray-700 shadow-md border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                aria-label="Próximos cartões"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </>
+          )}
+
+          {/* Container de cartões */}
           <div
             ref={cardsContainerRef}
             onScroll={(e) => {
@@ -68,7 +111,7 @@ export function DashboardCardsList({ cards, hideValues }: DashboardCardsListProp
               const index = Math.round(scrollLeft / (cardWidth + gap))
               setCurrentCardIndex(Math.min(cards.length - 1, Math.max(0, index)))
             }}
-            className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 md:pb-0 md:mx-0 md:px-0 md:overflow-visible scrollbar-hide"
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide"
           >
             {cards.map((card) => {
               const availableLimit = Number(card.available_balance)
@@ -76,7 +119,7 @@ export function DashboardCardsList({ cards, hideValues }: DashboardCardsListProp
                 <button
                   key={card.card_id}
                   onClick={() => navigate(`/cards/${card.card_id}`)}
-                  className="relative w-[85vw] sm:w-[350px] md:w-full shrink-0 snap-center cursor-pointer aspect-[1.586/1] rounded-2xl p-6 text-white shadow-xl transition-transform hover:scale-[1.02] hover:shadow-2xl overflow-hidden group text-left"
+                  className="relative w-[85vw] sm:w-[350px] md:w-[calc((100%-2rem)/3)] shrink-0 snap-center cursor-pointer aspect-[1.586/1] rounded-2xl p-6 text-white shadow-xl transition-transform hover:scale-[1.02] hover:shadow-2xl overflow-hidden group text-left"
                   style={{
                     background: `linear-gradient(135deg, ${card.color} 0%, ${card.color}dd 100%)`,
                     boxShadow: `0 4px 24px -8px ${card.color}80`,
@@ -134,7 +177,7 @@ export function DashboardCardsList({ cards, hideValues }: DashboardCardsListProp
             })}
           </div>
 
-          {/* Scroll Indicator for Mobile */}
+          {/* Mobile: 1 dot por cartão */}
           <div className="md:hidden mt-4 flex justify-center">
             <ScrollIndicator
               total={cards.length}
@@ -142,6 +185,27 @@ export function DashboardCardsList({ cards, hideValues }: DashboardCardsListProp
               onSelect={scrollToCard}
             />
           </div>
+
+          {/* Desktop: todos os dots, os 3 visíveis ficam destacados simultaneamente */}
+          {cards.length > DESKTOP_CARDS_PER_PAGE && (
+            <div className="hidden md:flex mt-4 justify-center items-center gap-2">
+              {Array.from({ length: cards.length }, (_, i) => {
+                const isActive = i >= visibleStart && i <= visibleEnd
+                return (
+                  <button
+                    key={i}
+                    onClick={() => scrollToCard(i)}
+                    className={`h-3 transition-all duration-300 ease-in-out cursor-pointer rounded-sm outline-none focus:outline-none ${
+                      isActive
+                        ? 'w-6 bg-purple-600 opacity-100'
+                        : 'w-3 bg-purple-200/50 hover:bg-purple-300/50'
+                    }`}
+                    aria-label={`Ir para cartão ${i + 1}`}
+                  />
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
