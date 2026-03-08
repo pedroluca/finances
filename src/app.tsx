@@ -6,7 +6,6 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import AddCard from './pages/AddCard'
 import CardDetails from './pages/CardDetails'
-import AddItem from './pages/AddItem'
 import Settings from './pages/Settings'
 import ManageAuthors from './pages/ManageAuthors'
 import ManageCardOrder from './pages/settings/ManageCardOrder'
@@ -49,10 +48,6 @@ function App() {
         <Route
           path="/cards/:cardId/edit"
           element={isAuthenticated ? <AddCard /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/cards/:cardId/items/new"
-          element={isAuthenticated ? <AddItem /> : <Navigate to="/login" />}
         />
         <Route
           path="/settings"
