@@ -585,7 +585,7 @@ export default function ManageSubscriptions() {
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1">
+            <div className="overflow-y-auto flex-1 custom-scrollbar">
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
               {formError && (
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-800 dark:text-red-400">

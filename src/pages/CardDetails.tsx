@@ -1123,7 +1123,7 @@ export default function CardDetails() {
       {/* Author Filter Modal */}
       {showAuthorFilter && (
         <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full max-h-[80vh] flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md lg:max-w-4xl w-full max-h-[80vh] flex flex-col">
             <div className="p-6 pb-4 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -1131,7 +1131,7 @@ export default function CardDetails() {
                 </h3>
                 <button
                   onClick={() => setShowAuthorFilter(false)}
-                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                  className="cursor-pointer p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -1142,81 +1142,81 @@ export default function CardDetails() {
               scrollbarWidth: 'thin',
               scrollbarColor: 'rgba(156, 163, 175, 0.3) transparent'
             }}>
-              <div className="space-y-3">
-              <button
-                onClick={() => {
-                  setSelectedAuthorFilter(null)
-                  setShowAuthorFilter(false)
-                }}
-                className={`w-full p-4 rounded-lg text-left transition border-2 ${
-                  selectedAuthorFilter === null
-                    ? "border-purple-600 bg-purple-50 dark:bg-purple-900/20"
-                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <User className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      Todas as Pessoas
-                    </span>
-                  </div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {items.length} {items.length === 1 ? "item" : "itens"}
-                  </span>
-                </div>
-              </button>
-
-              {authorTotals.map((author) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
-                  key={author.id}
                   onClick={() => {
-                    setSelectedAuthorFilter(author.id)
+                    setSelectedAuthorFilter(null)
                     setShowAuthorFilter(false)
                   }}
-                  className={`w-full cursor-pointer p-4 rounded-lg text-left transition border-2 ${
-                    selectedAuthorFilter === author.id
+                  className={`w-full p-4 rounded-lg text-left transition border-2 ${
+                    selectedAuthorFilter === null
                       ? "border-purple-600 bg-purple-50 dark:bg-purple-900/20"
                       : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {author.name}
-                    </span>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {author.itemCount}{" "}
-                      {author.itemCount === 1 ? "item" : "itens"}
-                    </span>
-                  </div>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">
-                        Total:
-                      </span>
-                      <span className={`font-semibold ${author.unpaidTotal == 0 ? "text-green-600 dark:text-green-400" : "text-gray-900 dark:text-white"}`}>
-                        R${" "}
-                        {author.total.toLocaleString("pt-BR", {
-                          minimumFractionDigits: 2,
-                        })}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <User className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        Todas as Pessoas
                       </span>
                     </div>
-                    {author.unpaidTotal > 0 && (
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {items.length} {items.length === 1 ? "item" : "itens"}
+                    </span>
+                  </div>
+                </button>
+
+                {authorTotals.map((author) => (
+                  <button
+                    key={author.id}
+                    onClick={() => {
+                      setSelectedAuthorFilter(author.id)
+                      setShowAuthorFilter(false)
+                    }}
+                    className={`w-full cursor-pointer p-4 rounded-lg text-left transition border-2 ${
+                      selectedAuthorFilter === author.id
+                        ? "border-purple-600 bg-purple-50 dark:bg-purple-900/20"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {author.name}
+                      </span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {author.itemCount}{" "}
+                        {author.itemCount === 1 ? "item" : "itens"}
+                      </span>
+                    </div>
+                    <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">
-                          A pagar:
+                          Total:
                         </span>
-                        <span className="font-semibold text-red-600 dark:text-red-400">
+                        <span className={`font-semibold ${author.unpaidTotal == 0 ? "text-green-600 dark:text-green-400" : "text-gray-900 dark:text-white"}`}>
                           R${" "}
-                          {author.unpaidTotal.toLocaleString("pt-BR", {
+                          {author.total.toLocaleString("pt-BR", {
                             minimumFractionDigits: 2,
                           })}
                         </span>
                       </div>
-                    )}
-                  </div>
-                </button>
-              ))}
+                      {author.unpaidTotal > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">
+                            A pagar:
+                          </span>
+                          <span className="font-semibold text-red-600 dark:text-red-400">
+                            R${" "}
+                            {author.unpaidTotal.toLocaleString("pt-BR", {
+                              minimumFractionDigits: 2,
+                            })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
           </div>

@@ -304,7 +304,7 @@ export default function AddItemModal({
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.5)]">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-lg w-full p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md lg:max-w-4xl w-full p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
         <button
           onClick={onClose}
           className="absolute cursor-pointer top-4 right-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
@@ -319,7 +319,7 @@ export default function AddItemModal({
             Carregando dados...
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Descrição */}
             <div>
               <label
