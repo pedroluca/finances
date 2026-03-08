@@ -11,6 +11,7 @@ import {
   Tag,
   User,
   Plus,
+  Minus,
   X,
   Calculator,
   AlertCircle,
@@ -366,7 +367,21 @@ export default function AddItemModal({
                 >
                   Parcelas
                 </label>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = Math.max(1, Number(installments) - 1);
+                      setInstallments(val.toString());
+                      setIsInstallment(val > 1);
+                      if (val < Number(currentInstallment)) {
+                        setCurrentInstallment("1");
+                      }
+                    }}
+                    className="cursor-pointer p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <Minus className="w-5 h-5" />
+                  </button>
                   <input
                     type="number"
                     id="installments"
@@ -381,15 +396,26 @@ export default function AddItemModal({
                     }}
                     min="1"
                     max="24"
-                    className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-4 py-3 text-center border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = Math.min(24, Number(installments) + 1);
+                      setInstallments(val.toString());
+                      setIsInstallment(val > 1);
+                    }}
+                    className="cursor-pointer p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
                 </div>
                 {isInstallment && (
                   <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                     {Number(installments)}x de R${" "}
                     {(
                       parseFloat(amount || "0") / Number(installments)
-                    ).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    ).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 )}
               </div>

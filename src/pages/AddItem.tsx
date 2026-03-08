@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useAppStore } from '../store/app.store';
 import { phpApiRequest } from '../lib/api';
-import { ArrowLeft, DollarSign, FileText, Calendar, Tag, User, Plus, Repeat } from 'lucide-react';
+import { ArrowLeft, DollarSign, FileText, Calendar, Tag, User, Plus, Repeat, Minus } from 'lucide-react';
 
 const SUBSCRIPTION_CATEGORY_ID = 7;
 
@@ -300,7 +300,21 @@ export default function AddItem() {
                 <label htmlFor="installments" className="block text-sm font-medium text-gray-700 mb-2">
                   Parcelas
                 </label>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = Math.max(1, Number(installments) - 1);
+                      setInstallments(val.toString());
+                      setIsInstallment(val > 1);
+                      if (val < Number(currentInstallment)) {
+                        setCurrentInstallment('1');
+                      }
+                    }}
+                    className="cursor-pointer p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <Minus className="w-5 h-5" />
+                  </button>
                   <input
                     type="number"
                     id="installments"
@@ -316,13 +330,24 @@ export default function AddItem() {
                     }}
                     min="1"
                     max="24"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-4 py-3 text-center border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = Math.min(24, Number(installments) + 1);
+                      setInstallments(val.toString());
+                      setIsInstallment(val > 1);
+                    }}
+                    className="cursor-pointer p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
                 </div>
                 {isInstallment && (
                   <p className="text-xs text-gray-500 mt-1">
                     {Number(installments)}x de R${' '}
-                    {(parseFloat(amount || '0') / Number(installments)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    {(parseFloat(amount || '0') / Number(installments)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 )}
               </div>
