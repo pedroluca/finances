@@ -185,7 +185,7 @@ export default function AddCard() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
           <button
             onClick={() => navigate(isEditMode ? `/cards/${cardId}` : '/dashboard')}
             className="p-2 cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
@@ -204,7 +204,7 @@ export default function AddCard() {
       </div>
 
       {/* Form */}
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
           {error && (
             <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
@@ -212,87 +212,89 @@ export default function AddCard() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Nome do Cartão */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <CreditCard className="w-4 h-4 inline mr-2" />
-                Nome do Cartão
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Nubank, Itaú, C6..."
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                required
-                autoFocus
-              />
-            </div>
-
-            {/* Limite do Cartão */}
-            <div>
-              <label htmlFor="limit" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <DollarSign className="w-4 h-4 inline mr-2" />
-                Limite do Cartão
-              </label>
-              <input
-                type="number"
-                id="limit"
-                value={cardLimit}
-                onChange={(e) => setCardLimit(e.target.value)}
-                placeholder="Ex: 5000.00"
-                step="0.01"
-                min="0"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                required
-              />
-            </div>
-
-            {/* Datas */}
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className='lg:order-0'>
+              {/* Nome do Cartão */}
               <div>
-                <label htmlFor="closing" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-2" />
-                  Dia de Fechamento
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <CreditCard className="w-4 h-4 inline mr-2" />
+                  Nome do Cartão
                 </label>
                 <input
-                  type="number"
-                  id="closing"
-                  value={closingDay}
-                  onChange={(e) => setClosingDay(e.target.value)}
-                  placeholder="Ex: 15"
-                  min="1"
-                  max="31"
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ex: Nubank, Itaú, C6..."
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                   required
+                  autoFocus
                 />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Dia 1 a 31</p>
               </div>
 
+              {/* Limite do Cartão */}
               <div>
-                <label htmlFor="due" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-2" />
-                  Dia de Vencimento
+                <label htmlFor="limit" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <DollarSign className="w-4 h-4 inline mr-2" />
+                  Limite do Cartão
                 </label>
                 <input
                   type="number"
-                  id="due"
-                  value={dueDay}
-                  onChange={(e) => setDueDay(e.target.value)}
-                  placeholder="Ex: 25"
-                  min="1"
-                  max="31"
+                  id="limit"
+                  value={cardLimit}
+                  onChange={(e) => setCardLimit(e.target.value)}
+                  placeholder="Ex: 5000.00"
+                  step="0.01"
+                  min="0"
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                   required
                 />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Dia 1 a 31</p>
+              </div>
+
+              {/* Datas */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="closing" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <Calendar className="w-4 h-4 inline mr-2" />
+                    Dia de Fechamento
+                  </label>
+                  <input
+                    type="number"
+                    id="closing"
+                    value={closingDay}
+                    onChange={(e) => setClosingDay(e.target.value)}
+                    placeholder="Ex: 15"
+                    min="1"
+                    max="31"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Dia 1 a 31</p>
+                </div>
+
+                <div>
+                  <label htmlFor="due" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <Calendar className="w-4 h-4 inline mr-2" />
+                    Dia de Vencimento
+                  </label>
+                  <input
+                    type="number"
+                    id="due"
+                    value={dueDay}
+                    onChange={(e) => setDueDay(e.target.value)}
+                    placeholder="Ex: 25"
+                    min="1"
+                    max="31"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Dia 1 a 31</p>
+                </div>
               </div>
             </div>
 
             {/* Cor do Cartão */}
-            <div>
+            <div className='lg:order-2 lg:col-span-full'>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 <Palette className="w-4 h-4 inline mr-2" />
                 Cor do Cartão
@@ -319,7 +321,7 @@ export default function AddCard() {
             </div>
 
             {/* Preview do Cartão */}
-            <div>
+            <div className='lg:order-1'>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Preview
               </label>
@@ -346,7 +348,7 @@ export default function AddCard() {
             </div>
 
             {/* Botões */}
-            <div className="flex gap-3 pt-4">
+            <div className="lg:order-3 lg:col-span-full flex items-end gap-3 pt-4">
               <button
                 type="button"
                 onClick={() => navigate(isEditMode ? `/cards/${cardId}` : '/dashboard')}
