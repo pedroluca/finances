@@ -271,8 +271,8 @@ export default function EditItemModal({
           </div>
 
           {/* Divisão de Despesa */}
-          <div className="border-t border-b border-gray-200 dark:border-gray-700 py-4 my-4">
-            <div className="flex items-center gap-2 mb-4">
+          <div className="lg:row-span-2 flex flex-col justify-between border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-2 mb-4 lg:mt-7">
               <input
                 type="checkbox"
                 id="isSplit"
@@ -392,7 +392,7 @@ export default function EditItemModal({
           </div>
 
           {/* Botões */}
-          <div className="flex gap-3 pt-4">
+          <div className="lg:col-span-full flex gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
