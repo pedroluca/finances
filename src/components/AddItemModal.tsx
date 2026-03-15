@@ -101,9 +101,13 @@ export default function AddItemModal({
   
   const [newAuthorName, setNewAuthorName] = useState("")
   const [showNewAuthor, setShowNewAuthor] = useState(false)
-  const [purchaseDate, setPurchaseDate] = useState(
-    new Date().toISOString().split("T")[0]
-  )
+  const [purchaseDate, setPurchaseDate] = useState(() => {
+    const now = new Date()
+    const yyyy = now.getFullYear()
+    const mm = String(now.getMonth() + 1).padStart(2, "0")
+    const dd = String(now.getDate()).padStart(2, "0")
+    return `${yyyy}-${mm}-${dd}`
+  })
   const [isInstallment, setIsInstallment] = useState(false)
   const [installments, setInstallments] = useState("1")
   const [currentInstallment, setCurrentInstallment] = useState("1")
