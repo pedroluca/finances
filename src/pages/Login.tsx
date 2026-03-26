@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../store/auth.store'
 import { LogIn, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react'
-import logo from '../assets/logo.png'
+import logo from '../assets/logo-branca.png'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -40,7 +40,7 @@ export default function Login() {
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 dark:bg-zinc-800 rounded-full mb-4 transition-colors">
               {/* <LogIn className="w-8 h-8 text-primary-600 dark:text-purple-400" /> */}
-              <img src={logo} alt="Logo do Finances" />
+              <img src={logo} className='p-1' alt="Logo do Finances" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               Bem-vindo ao Finances
