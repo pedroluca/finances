@@ -22,7 +22,7 @@ export function DashboardHeader({ userName, userEmail, onLogout, hideValues, onT
         <div className="flex items-center justify-between h-16">
           {/* Logo e Title - Desktop */}
           <div className="hidden sm:flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/30"> {/* from #9810fa to #155dfc */}
               <img 
                 src={LogoImg} 
                 alt="Finances" 
