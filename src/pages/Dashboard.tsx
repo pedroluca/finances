@@ -8,6 +8,7 @@ import { DashboardHeader } from '../components/dashboard/d-header'
 import { DashboardStats } from '../components/dashboard/d-stats'
 import { DashboardCardsList } from '../components/dashboard/d-cards-list'
 import { DashboardUpcomingPayments } from '../components/dashboard/d-upcoming-payments'
+import { AndroidInstallBanner } from '../components/AndroidInstallBanner'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -151,6 +152,8 @@ export default function Dashboard() {
           hideValues={hideValues}
         />
       </main>
+
+      <AndroidInstallBanner />
     </div>
   )
 }

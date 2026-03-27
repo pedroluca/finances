@@ -12,6 +12,12 @@ import ManageCardOrder from './pages/settings/ManageCardOrder'
 import ManageCategories from './pages/settings/ManageCategories'
 import ManageSubscriptions from './pages/settings/ManageSubscriptions'
 
+// Redirect simples para o download do APK
+function DownloadRedirect() {
+  window.location.href = 'https://pedroluca.dev.br/downloads/Finances.apk'
+  return null
+}
+
 function App() {
   const { isAuthenticated, verifyAuth } = useAuthStore()
 
@@ -69,6 +75,9 @@ function App() {
           path="/settings/subscriptions"
           element={isAuthenticated ? <ManageSubscriptions /> : <Navigate to="/login" />}
         />
+
+        {/* Download APK */}
+        <Route path="/download" element={<DownloadRedirect />} />
 
         {/* Default redirect */}
         <Route
