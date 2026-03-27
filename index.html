@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="dark">
   <head>
     <meta charset="UTF-8" />
     
@@ -21,8 +21,24 @@
     <meta name="apple-mobile-web-app-title" content="Finances" />
     
     <!-- Theme color -->
-    <meta name="theme-color" content="#573fec" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#1f2937" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#1f2937" />
+
+    <!-- Aplica o tema ANTES do React montar para evitar flash branco -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('theme');
+          // Padrão: dark. Só muda para light se explicitamente salvo.
+          if (saved === 'light') {
+            document.documentElement.classList.remove('dark');
+          } else {
+            document.documentElement.classList.add('dark');
+          }
+        } catch(e) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     
     <!-- Descrição -->
     <meta name="description" content="Seu dashboard de controle de faturas" />
