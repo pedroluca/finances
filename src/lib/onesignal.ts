@@ -13,14 +13,23 @@ declare global {
 }
 
 /**
- * Envia o playerId do OneSignal para a API e salva no localStorage.
+ * Verifica se há um token de autenticação válido no localStorage.
  */
-async function syncPlayerId(playerId: string): Promise<void> {
-  if (!playerId) return;
+function isAuthenticated(): boolean {
+  try {
+    const authStorage = localStorage.getItem('auth-storage');
+    if (!authStorage) return false;
+    const parsed = JSON.parse(authStorage);
+    return !!parsed?.state?.token;
+  } catch {
+    return false;
+  }
+}
 
-  localStorage.setItem(STORAGE_KEY, playerId);
-  console.log('[OneSignal] Player ID salvo no localStorage:', playerId);
-
+/**
+ * Envia o playerId para a API (sem verificação de auth — usar internamente).
+ */
+async function sendToApi(playerId: string): Promise<void> {
   try {
     await phpApiRequest('update_push_id.php', {
       method: 'POST',
@@ -34,13 +43,46 @@ async function syncPlayerId(playerId: string): Promise<void> {
 }
 
 /**
+ * Salva o playerId no localStorage imediatamente (sempre).
+ * Só chama a API se o usuário já estiver autenticado —
+ * caso contrário, o ID fica "pendente" até syncPendingPlayerId() ser chamado.
+ */
+async function saveAndMaybeSync(playerId: string): Promise<void> {
+  if (!playerId) return;
+
+  localStorage.setItem(STORAGE_KEY, playerId);
+  console.log('[OneSignal] Player ID salvo no localStorage:', playerId);
+
+  if (!isAuthenticated()) {
+    console.log('[OneSignal] Usuário não autenticado ainda. ID salvo como pendente.');
+    return;
+  }
+
+  await sendToApi(playerId);
+}
+
+/**
+ * Chame esta função logo após o login bem-sucedido.
+ * Se houver um Player ID pendente no localStorage, ele será enviado para a API.
+ */
+export async function syncPendingPlayerId(): Promise<void> {
+  const pendingId = localStorage.getItem(STORAGE_KEY);
+  if (!pendingId) {
+    console.log('[OneSignal] Nenhum Player ID pendente para sincronizar.');
+    return;
+  }
+  console.log('[OneSignal] Sincronizando Player ID pendente após login:', pendingId);
+  await sendToApi(pendingId);
+}
+
+/**
  * Registra a função global `window.onReceivePlayerId` para ser chamada
  * pela WebView Android quando o OneSignal estiver pronto.
  */
 export function registerOneSignalReceiver(): void {
   window.onReceivePlayerId = (playerId: string) => {
     console.log('[OneSignal] Player ID recebido via WebView:', playerId);
-    syncPlayerId(playerId);
+    saveAndMaybeSync(playerId);
   };
 
   console.log('[OneSignal] window.onReceivePlayerId registrado.');
@@ -64,7 +106,7 @@ export function tryFetchPlayerIdFromAndroid(): void {
   const playerId = window.AndroidApp.getPlayerId();
   if (playerId) {
     console.log('[OneSignal] Player ID obtido manualmente via AndroidApp.getPlayerId:', playerId);
-    syncPlayerId(playerId);
+    saveAndMaybeSync(playerId);
   } else {
     console.warn('[OneSignal] AndroidApp.getPlayerId() retornou vazio.');
   }

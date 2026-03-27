@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '../types/database';
 import { phpApiRequest } from '../lib/api';
+import { syncPendingPlayerId } from '../lib/onesignal';
 
 interface AuthState {
   user: Omit<User, 'password_hash'> | null;
@@ -40,6 +41,8 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               isLoading: false,
             });
+            // Sincroniza o Player ID do OneSignal pendente (recebido antes do login)
+            syncPendingPlayerId();
             return { success: true };
           }
           set({ isLoading: false });
