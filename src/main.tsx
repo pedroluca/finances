@@ -4,6 +4,10 @@ import './index.css'
 import App from './app'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ToastProvider } from './components/Toast'
+import { initOneSignal } from './lib/onesignal'
+
+// Registra o receiver global do OneSignal o quanto antes
+initOneSignal();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

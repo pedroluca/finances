@@ -17,12 +17,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('theme') as Theme | null;
     if (savedTheme) return savedTheme;
-    
-    // Verifica preferência do sistema
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    return 'light';
+
+    // No Android WebView a media query prefers-color-scheme pode não funcionar.
+    // Usamos 'dark' como padrão quando não há preferência salva.
+    return 'dark';
   });
 
   useEffect(() => {
