@@ -11,6 +11,8 @@ import ManageAuthors from './pages/ManageAuthors'
 import ManageCardOrder from './pages/settings/ManageCardOrder'
 import ManageCategories from './pages/settings/ManageCategories'
 import ManageSubscriptions from './pages/settings/ManageSubscriptions'
+import Privacy from './pages/Privacy'
+import DeleteAccount from './pages/DeleteAccount'
 
 // Redirect simples para o download do APK
 function DownloadRedirect() {
@@ -75,6 +77,10 @@ function App() {
           path="/settings/subscriptions"
           element={isAuthenticated ? <ManageSubscriptions /> : <Navigate to="/login" />}
         />
+
+        {/* Public static pages */}
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/delete-account" element={<DeleteAccount />} />
 
         {/* Download APK */}
         <Route path="/download" element={<DownloadRedirect />} />
