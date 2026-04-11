@@ -14,7 +14,7 @@ import ManageSubscriptions from './pages/settings/ManageSubscriptions'
 import Privacy from './pages/Privacy'
 import DeleteAccount from './pages/DeleteAccount'
 
-// Redirect simples para o download do APK
+// Redirect simples para o download do APK 
 function DownloadRedirect() {
   window.location.href = 'https://pedroluca.dev.br/downloads/Finances.apk'
   return null
