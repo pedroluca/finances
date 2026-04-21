@@ -144,7 +144,7 @@ export default function Dashboard() {
           ownerAuthorId={ownerAuthorId}
         />
 
-        <DashboardCardsList cards={activeCards} hideValues={hideValues} />
+        <DashboardCardsList cards={activeCards} hideValues={hideValues} monthlyTotals={monthlyTotals} />
 
         <DashboardUpcomingPayments
           cards={activeCards}
