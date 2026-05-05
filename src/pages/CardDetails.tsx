@@ -58,9 +58,7 @@ export default function CardDetails() {
   )
   const [showEditModal, setShowEditModal] = useState(false)
   const [showAuthorFilter, setShowAuthorFilter] = useState(false)
-  const [selectedAuthorFilter, setSelectedAuthorFilter] = useState<
-    number | null
-  >(null)
+  const [selectedAuthorFilter, setSelectedAuthorFilter] = useState<Set<number>>(new Set())
   const [showAddItemModal, setShowAddItemModal] = useState(false)
   const [allUnpaidItems, setAllUnpaidItems] = useState<InvoiceItemWithDetails[]>([])
   const [modalInvoiceId, setModalInvoiceId] = useState<number | null>(null)
@@ -499,10 +497,11 @@ export default function CardDetails() {
         Array.from(selectedItems).map((itemId) => {
           const payload: any = { id: itemId, is_paid: true }
           
-          if (selectedAuthorFilter) {
+          if (selectedAuthorFilter.size === 1) {
+             const authorId = Array.from(selectedAuthorFilter)[0]
              const originalItem = items.find(i => i.id === itemId)
-             if (originalItem && originalItem.assignments && originalItem.assignments.some(a => a.author_id === selectedAuthorFilter)) {
-                 payload.author_id = selectedAuthorFilter
+             if (originalItem && originalItem.assignments && originalItem.assignments.some(a => a.author_id === authorId)) {
+                 payload.author_id = authorId
              }
           }
 
@@ -673,10 +672,11 @@ export default function CardDetails() {
       return { amount: 0, authorName: item.author_name, isPaid: false }
     }
 
-    // L\u00f3gica original para filtro por autor
-    if (selectedAuthorFilter) {
+    // Lógica para filtro por autor
+    if (selectedAuthorFilter.size === 1) {
+       const authorId = Array.from(selectedAuthorFilter)[0]
        if (item.assignments && item.assignments.length > 0) {
-           const userAssignment = item.assignments.find(a => a.author_id === selectedAuthorFilter);
+           const userAssignment = item.assignments.find(a => a.author_id === authorId);
            if (userAssignment) {
                return {
                    amount: Number(userAssignment.amount),
@@ -686,7 +686,7 @@ export default function CardDetails() {
            }
            return { amount: 0, authorName: item.author_name, isPaid: false }
        }
-       if (item.author_id === selectedAuthorFilter) {
+       if (item.author_id === authorId) {
            return { amount: Number(item.amount), authorName: item.author_name, isPaid: item.is_paid }
        }
     }
@@ -701,11 +701,11 @@ export default function CardDetails() {
   }
 
   const filteredItems = items.filter((item) => {
-    if (selectedAuthorFilter) {
+    if (selectedAuthorFilter.size > 0) {
         if (item.assignments && item.assignments.length > 0) {
-             return item.assignments.some(a => a.author_id === selectedAuthorFilter);
+             return item.assignments.some(a => selectedAuthorFilter.has(a.author_id));
         }
-        return item.author_id === selectedAuthorFilter;
+        return selectedAuthorFilter.has(item.author_id)
     }
     return true
   })
@@ -716,8 +716,8 @@ export default function CardDetails() {
   }, 0)
 
   const paidAmount = filteredItems.reduce((sum, item) => {
-      // Se tiver filtro de autor, usa a lógica do filtro
-      if (selectedAuthorFilter) {
+      // Se tiver filtro de autor único, usa a lógica do filtro
+      if (selectedAuthorFilter.size === 1) {
           const { amount, isPaid } = getDisplayDetails(item);
           return sum + (isPaid ? amount : 0);
       }
@@ -874,9 +874,9 @@ export default function CardDetails() {
           </div>
           <div className="grid grid-cols-3 gap-2 sm:gap-4">
             <div>
-              <p className="text-xs opacity-80">Total Fatura {selectedAuthorFilter && (
+              <p className="text-xs opacity-80">Total Fatura {selectedAuthorFilter.size > 0 && (
                 <span className="truncate max-w-[100px]">
-                  de {authors.find((a) => a.id === selectedAuthorFilter)?.name}
+                  ({selectedAuthorFilter.size} pessoa{selectedAuthorFilter.size > 1 ? 's' : ''})
                 </span>
               )}</p>
               <p className="text-sm sm:text-lg font-semibold">
@@ -951,19 +951,20 @@ export default function CardDetails() {
                 )
               })()}
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
-                Total: {filteredItems.length}
+                Total: {filteredItems.length} ite{filteredItems.length !== 1 ? 'ns' : 'm'}
               </h2>
-              {selectedAuthorFilter && (
+              {selectedAuthorFilter.size > 0 && Array.from(selectedAuthorFilter).map((authorId) => (
                 <button
-                  onClick={() => setSelectedAuthorFilter(null)}
-                  className="px-2 py-1 cursor-pointer bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-lg text-xs flex items-center gap-1 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition"
+                  key={authorId}
+                  onClick={() => setSelectedAuthorFilter((prev) => { const next = new Set(prev); next.delete(authorId); return next })}
+                  className="px-2 py-1 cursor-pointer bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-lg text-xs flex items-center gap-1 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition flex-shrink-0"
                 >
-                  <span className="truncate max-w-[100px]">
-                    {authors.find((a) => a.id === selectedAuthorFilter)?.name}
+                  <span className="truncate max-w-[80px]">
+                    {authors.find((a) => a.id === authorId)?.name}
                   </span>
                   <X className="w-3 h-3 flex-shrink-0" />
                 </button>
-              )}
+              ))}
             </div>
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               {selectedItems.size > 0 && !card.is_shared && (
@@ -1044,7 +1045,7 @@ export default function CardDetails() {
 
                   // Calcular se há pagamento parcial (quando não está filtrado e não está totalmente pago)
                   let partialPaid = 0;
-                  if (!selectedAuthorFilter && !displayIsPaid && item.assignments) {
+                  if (selectedAuthorFilter.size === 0 && !displayIsPaid && item.assignments) {
                       partialPaid = item.assignments
                         .filter(a => a.is_paid)
                         .reduce((s, a) => s + Number(a.amount), 0);
@@ -1149,11 +1150,16 @@ export default function CardDetails() {
       {showAuthorFilter && (
         <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md lg:max-w-4xl w-full max-h-[80vh] flex flex-col">
-            <div className="p-6 pb-4 flex-shrink-0">
+            <div className="p-4 flex-shrink-0">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Filtrar por Pessoa
-                </h3>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Filtrar por Pessoa
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Selecione uma ou mais pessoas
+                  </p>
+                </div>
                 <button
                   onClick={() => setShowAuthorFilter(false)}
                   className="cursor-pointer p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
@@ -1163,18 +1169,16 @@ export default function CardDetails() {
               </div>
             </div>
 
-            <div className="overflow-y-auto pl-6 pr-3 pb-6 flex-1" style={{
+            <div className="overflow-y-auto px-4 pb-4 flex-1" style={{
               scrollbarWidth: 'thin',
               scrollbarColor: 'rgba(156, 163, 175, 0.3) transparent'
             }}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {/* Todas as Pessoas — limpa o filtro */}
                 <button
-                  onClick={() => {
-                    setSelectedAuthorFilter(null)
-                    setShowAuthorFilter(false)
-                  }}
-                  className={`w-full p-4 rounded-lg text-left transition border-2 ${
-                    selectedAuthorFilter === null
+                  onClick={() => setSelectedAuthorFilter(new Set())}
+                  className={`w-full col-span-full p-3 rounded-2xl text-left transition border-2 ${
+                    selectedAuthorFilter.size === 0
                       ? "border-purple-600 bg-purple-50 dark:bg-purple-900/20"
                       : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                   }`}
@@ -1192,57 +1196,82 @@ export default function CardDetails() {
                   </div>
                 </button>
 
-                {authorTotals.map((author) => (
-                  <button
-                    key={author.id}
-                    onClick={() => {
-                      setSelectedAuthorFilter(author.id)
-                      setShowAuthorFilter(false)
-                    }}
-                    className={`w-full cursor-pointer p-4 rounded-lg text-left transition border-2 ${
-                      selectedAuthorFilter === author.id
-                        ? "border-purple-600 bg-purple-50 dark:bg-purple-900/20"
-                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {author.name}
-                      </span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {author.itemCount}{" "}
-                        {author.itemCount === 1 ? "item" : "itens"}
-                      </span>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">
-                          Total:
-                        </span>
-                        <span className={`font-semibold ${author.unpaidTotal == 0 ? "text-green-600 dark:text-green-400" : "text-gray-900 dark:text-white"}`}>
-                          R${" "}
-                          {author.total.toLocaleString("pt-BR", {
-                            minimumFractionDigits: 2,
-                          })}
+                {authorTotals.map((author) => {
+                  const isChecked = selectedAuthorFilter.has(author.id)
+                  return (
+                    <button
+                      key={author.id}
+                      onClick={() => {
+                        setSelectedAuthorFilter((prev) => {
+                          const next = new Set(prev)
+                          if (next.has(author.id)) {
+                            next.delete(author.id)
+                          } else {
+                            next.add(author.id)
+                          }
+                          return next
+                        })
+                      }}
+                      className={`w-full cursor-pointer p-3 rounded-2xl text-left transition border-2 ${
+                        isChecked
+                          ? "border-purple-600 bg-purple-50 dark:bg-purple-900/20"
+                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {author.name}
+                          </span>
+                        </div>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {author.itemCount}{" "}
+                          {author.itemCount === 1 ? "item" : "itens"}
                         </span>
                       </div>
-                      {author.unpaidTotal > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-600 dark:text-gray-400">
-                            A pagar:
-                          </span>
-                          <span className="font-semibold text-red-600 dark:text-red-400">
+                      <div className="text-sm">
+                        <div className="flex gap-2">
+                          {author.unpaidTotal > 0 && (
+                            <span className="font-semibold text-red-600 dark:text-red-400">
+                              R${" "}
+                              {author.unpaidTotal.toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </span>
+                          )}
+                          {author.unpaidTotal > 0 && (
+                            <span className="text-gray-600 dark:text-gray-400">
+                            /
+                            </span>
+                          )}
+                          <span className={`font-semibold ${author.unpaidTotal == 0 ? "text-green-600 dark:text-green-400" : "text-gray-900 dark:text-white"}`}>
                             R${" "}
-                            {author.unpaidTotal.toLocaleString("pt-BR", {
+                            {author.total.toLocaleString("pt-BR", {
                               minimumFractionDigits: 2,
                             })}
                           </span>
                         </div>
-                      )}
-                    </div>
-                  </button>
-                ))}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
+            </div>
+
+            {/* Footer com botão Aplicar */}
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 flex items-center justify-between gap-3">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {selectedAuthorFilter.size === 0
+                  ? "Todas as pessoas"
+                  : `${selectedAuthorFilter.size} pessoa${selectedAuthorFilter.size > 1 ? 's' : ''} selecionada${selectedAuthorFilter.size > 1 ? 's' : ''}`
+                }
+              </span>
+              <button
+                onClick={() => setShowAuthorFilter(false)}
+                className="px-5 py-2 cursor-pointer bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium"
+              >
+                Aplicar
+              </button>
             </div>
           </div>
         </div>
