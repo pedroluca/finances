@@ -951,7 +951,7 @@ export default function CardDetails() {
                 )
               })()}
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
-                Itens da Fatura ({filteredItems.length})
+                Total: {filteredItems.length}
               </h2>
               {selectedAuthorFilter && (
                 <button
@@ -989,7 +989,7 @@ export default function CardDetails() {
                       Excluir {selectedItems.size}
                     </span>
                     <span className="sm:hidden">
-                      Del ({selectedItems.size})
+                      ({selectedItems.size})
                     </span>
                   </button>
                 </>
@@ -1001,7 +1001,6 @@ export default function CardDetails() {
                 >
                   <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span className="hidden sm:inline">Filtrar por Pessoa</span>
-                  <span className="sm:hidden">Filtrar</span>
                 </button>
               )}
               <button
@@ -1010,7 +1009,6 @@ export default function CardDetails() {
               >
                 <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span className="hidden sm:inline">Adicionar Item</span>
-                <span className="sm:hidden">Novo</span>
               </button>
             </div>
           </div>
