@@ -13,6 +13,7 @@ import {
   Trash2,
   Calendar,
   CheckCircle,
+  MinusCircle,
   Circle,
   Edit,
   Check,
@@ -923,6 +924,32 @@ export default function CardDetails() {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-6 transition-colors">
           <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
             <div className="flex items-center gap-2 min-w-0">
+              {/* Select All — only show when there are visible items */}
+              {filteredItems.length > 0 && (() => {
+                const allSelected = filteredItems.every((i) => selectedItems.has(i.id))
+                const someSelected = !allSelected && filteredItems.some((i) => selectedItems.has(i.id))
+                return (
+                  <button
+                    title={allSelected ? "Desmarcar todos" : "Selecionar todos"}
+                    onClick={() => {
+                      if (allSelected) {
+                        setSelectedItems(new Set())
+                      } else {
+                        setSelectedItems(new Set(filteredItems.map((i) => i.id)))
+                      }
+                    }}
+                    className="flex-shrink-0 cursor-pointer"
+                  >
+                    {allSelected ? (
+                      <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+                    ) : someSelected ? (
+                      <MinusCircle className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+                    ) : (
+                      <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
+                    )}
+                  </button>
+                )
+              })()}
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
                 Itens da Fatura ({filteredItems.length})
               </h2>
@@ -1029,19 +1056,19 @@ export default function CardDetails() {
                   return (
                     <div
                       key={item.id}
-                    style={{
-                      animation: `slideInFromRight 0.25s ease-out ${Math.min(
-                        index * 0.02,
-                        0.3
-                      )}s both`,
-                    }}
-                    className={`flex items-start sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 border-2 rounded-lg transition cursor-pointer ${
-                      selectedItems.has(item.id)
-                        ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20"
-                        : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
-                    onClick={() => toggleSelectItem(item.id)}
-                  >
+                      style={{
+                        animation: `slideInFromRight 0.25s ease-out ${Math.min(
+                          index * 0.02,
+                          0.3
+                        )}s both`,
+                      }}
+                      className={`flex items-start sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 border-2 rounded-lg transition cursor-pointer ${
+                        selectedItems.has(item.id)
+                          ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20"
+                          : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      }`}
+                      onClick={() => toggleSelectItem(item.id)}
+                    >
                     <div className="flex-shrink-0 mt-0.5 sm:mt-0">
                       {selectedItems.has(item.id) ? (
                         <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
