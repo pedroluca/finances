@@ -221,7 +221,7 @@ export function DashboardCardsList({ cards, monthlyTotals, hideValues }: Dashboa
                                 <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-sky-400 shadow-sm shrink-0" />
                                 <span className="opacity-90">Atual</span>
                               </div>
-                              <span className="font-bold text-[10px] md:text-xs normal-case drop-shadow-sm ml-[10px] md:ml-[12px]">
+                              <span className="font-bold text-[10px] md:text-xs normal-case drop-shadow-sm md:ml-[12px]">
                                 {hideValues ? '••••' : `R$ ${currentInvoiceAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                               </span>
                             </div>
@@ -241,7 +241,7 @@ export function DashboardCardsList({ cards, monthlyTotals, hideValues }: Dashboa
                                 <span className="opacity-90">Disp.</span>
                                 <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-400 shadow-sm shrink-0" />
                               </div>
-                              <span className="font-bold text-[10px] md:text-xs normal-case drop-shadow-sm mr-[10px] md:mr-[12px]">
+                              <span className="font-bold text-[10px] md:text-xs normal-case drop-shadow-sm md:mr-[12px]">
                                 {hideValues ? '••••' : `R$ ${availableLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                               </span>
                             </div>
