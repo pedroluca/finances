@@ -299,7 +299,16 @@ export default function Billings() {
       />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Contas</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Contas</h1>
+
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Nova
+          </button>
+        </div>
 
         {globalError && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-red-800 dark:text-red-400 text-sm">
@@ -311,7 +320,7 @@ export default function Billings() {
           <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 text-white shadow-lg">
             <div className="flex items-center gap-3 mb-1">
               <Receipt className="w-5 h-5 opacity-80" />
-              <span className="text-purple-200 text-sm font-medium">Total em contas (cobrança atual)</span>
+              <span className="text-purple-200 text-sm font-medium">Total em contas</span>
             </div>
             <p className="text-3xl font-bold">{hideValues ? 'R$ ••••' : formatAmount(monthlyTotal)}</p>
             <p className="text-purple-300 text-sm mt-1">{activeList.length} conta{activeList.length !== 1 ? 's' : ''} ativa{activeList.length !== 1 ? 's' : ''}</p>
@@ -347,12 +356,6 @@ export default function Billings() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Ativas</h2>
-              <button
-                onClick={openCreate}
-                className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition cursor-pointer"
-              >
-                <Plus className="w-4 h-4" /> Nova
-              </button>
             </div>
             {activeList.map((bill) => (
               <BillCard
