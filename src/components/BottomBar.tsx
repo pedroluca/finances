@@ -12,7 +12,7 @@ const navItems = [
 
 const itemWidth = 80
 const itemHeight = 54
-const gap = 12
+const gap = 8
 
 export function BottomBar() {
   const { isAuthenticated } = useAuthStore()
