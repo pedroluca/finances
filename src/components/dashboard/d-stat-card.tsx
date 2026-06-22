@@ -16,7 +16,7 @@ export function StatCard({ label, value, icon: Icon, iconBgClassName, iconColorC
   return (
     <Wrapper
       onClick={onClick}
-      className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm px-2.5 py-4 md:p-6 transition-colors ${
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm px-2.5 py-4 md:px-3 transition-colors ${
         onClick ? 'transition-all hover:shadow-md text-left cursor-pointer group' : ''
       }`}
     >
@@ -31,7 +31,7 @@ export function StatCard({ label, value, icon: Icon, iconBgClassName, iconColorC
             {label}
           </p>
           {typeof value === 'string' || typeof value === 'number' ? (
-            <p className="text-base md:text-3xl font-bold text-gray-900 dark:text-white md:mt-2 truncate">
+            <p className="text-base md:text-xl font-bold text-gray-900 dark:text-white truncate">
               {value}
             </p>
           ) : (
