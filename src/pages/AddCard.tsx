@@ -4,8 +4,11 @@ import { useAuthStore } from '../store/auth.store'
 import { useAppStore } from '../store/app.store'
 import { phpApiRequest } from '../lib/api'
 import type { CardWithBalance } from '../types/database'
-import { ArrowLeft, CreditCard, DollarSign, Calendar, Palette, Check } from 'lucide-react'
+import { ArrowLeft, CreditCard, DollarSign, Calendar, Palette, Check, Plus, Minus } from 'lucide-react'
 import { labelClass, inputClass } from '../lib/formStyles'
+
+const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => i + 1)
+const LIMIT_STEP = 100
 
 const CARD_COLORS = [
   { name: 'Azul', value: '#3B82F6' },
@@ -82,6 +85,11 @@ export default function AddCard() {
 
     loadCard()
   }, [isEditMode, cardId, cards])
+
+  const adjustLimit = (delta: number) => {
+    const current = parseFloat(cardLimit) || 0
+    setCardLimit(String(Math.max(0, current + delta)))
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -241,17 +249,33 @@ export default function AddCard() {
                 <DollarSign className="w-3.5 h-3.5" />
                 Limite do Cartão
               </label>
-              <input
-                type="number"
-                id="limit"
-                value={cardLimit}
-                onChange={(e) => setCardLimit(e.target.value)}
-                placeholder="Ex: 5000.00"
-                step="0.01"
-                min="0"
-                className={inputClass('purple')}
-                required
-              />
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => adjustLimit(-LIMIT_STEP)}
+                  className="cursor-pointer p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <input
+                  type="number"
+                  id="limit"
+                  value={cardLimit}
+                  onChange={(e) => setCardLimit(e.target.value)}
+                  placeholder="Ex: 5000.00"
+                  step="0.01"
+                  min="0"
+                  className="w-full px-2 py-2 text-sm text-center border border-gray-300 dark:border-gray-600 dark:bg-gray-900/40 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => adjustLimit(LIMIT_STEP)}
+                  className="cursor-pointer p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Datas */}
@@ -261,18 +285,18 @@ export default function AddCard() {
                   <Calendar className="w-3.5 h-3.5" />
                   Dia de Fechamento
                 </label>
-                <input
-                  type="number"
+                <select
                   id="closing"
                   value={closingDay}
                   onChange={(e) => setClosingDay(e.target.value)}
-                  placeholder="Ex: 15"
-                  min="1"
-                  max="31"
                   className={inputClass('purple')}
                   required
-                />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Dia 1 a 31</p>
+                >
+                  <option value="">Selecione...</option>
+                  {DAY_OPTIONS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -280,18 +304,18 @@ export default function AddCard() {
                   <Calendar className="w-3.5 h-3.5" />
                   Dia de Vencimento
                 </label>
-                <input
-                  type="number"
+                <select
                   id="due"
                   value={dueDay}
                   onChange={(e) => setDueDay(e.target.value)}
-                  placeholder="Ex: 25"
-                  min="1"
-                  max="31"
                   className={inputClass('purple')}
                   required
-                />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Dia 1 a 31</p>
+                >
+                  <option value="">Selecione...</option>
+                  {DAY_OPTIONS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
