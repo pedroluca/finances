@@ -921,7 +921,7 @@ export default function CardDetails() {
         </div>
 
         <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2 px-1">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Últimos lançamentos</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Últimos Lançamentos</h2>
 
           
           <button

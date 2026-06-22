@@ -113,6 +113,32 @@ export default function Dashboard() {
 
     })
 
+    bills.forEach((bill) => {
+      if (!bill.active) return
+      if (ownerAuthorId != null && bill.author_id != null && bill.author_id !== ownerAuthorId) return
+
+      // Mesma regra de ciclo vigente usada no backend (recurring_lib.php): se o
+      // vencimento deste mês já passou, a cobrança relevante é a do mês seguinte.
+      let cycleMonth = todayMonth
+      let cycleYear = todayYear
+      if (todayDay > bill.due_day) {
+        if (cycleMonth === 12) {
+          cycleMonth = 1
+          cycleYear += 1
+        } else {
+          cycleMonth += 1
+        }
+      }
+
+      const charge = (bill.charges ?? []).find(
+        (c) => c.reference_month === cycleMonth && c.reference_year === cycleYear,
+      )
+      if (!charge) return
+
+      const amount = charge.is_paid ? charge.paid_amount : charge.amount
+      if (amount != null) totalExpense += Number(amount)
+    })
+
     return totalExpense
   }
 
