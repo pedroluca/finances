@@ -17,13 +17,9 @@ import {
 } from "lucide-react"
 import CategoryBadgeSelector from "./CategoryBadgeSelector"
 import AuthorSplitSection, { type SplitAssignment } from "./AuthorSplitSection"
+import { labelClass, inputClass } from "../lib/formStyles"
 
 const SUBSCRIPTION_CATEGORY_ID = 7
-
-const labelClass =
-  "flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
-const inputClass =
-  "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-900/40 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:text-gray-400"
 
 interface AddItemModalProps {
   card: CardWithBalance
@@ -301,7 +297,7 @@ export default function AddItemModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Ex: Compras no supermercado"
-                className={inputClass}
+                className={inputClass()}
                 autoFocus
                 required
               />
@@ -320,7 +316,7 @@ export default function AddItemModal({
                   value={displayAmount}
                   onChange={(e) => handleAmountChange(e.target.value)}
                   placeholder="R$ 0,00"
-                  className={inputClass}
+                  className={inputClass()}
                   required
                 />
               </div>
@@ -394,7 +390,7 @@ export default function AddItemModal({
                   id="date"
                   value={purchaseDate}
                   onChange={(e) => setPurchaseDate(e.target.value)}
-                  className={inputClass}
+                  className={inputClass()}
                 />
               </div>
               {isInstallment && (
@@ -409,7 +405,7 @@ export default function AddItemModal({
                     onChange={(e) => setCurrentInstallment(e.target.value)}
                     min="1"
                     max={installments}
-                    className={inputClass}
+                    className={inputClass()}
                   />
                 </div>
               )}
@@ -451,7 +447,7 @@ export default function AddItemModal({
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Alguma anotação sobre esse item..."
                 rows={2}
-                className={`${inputClass} resize-none`}
+                className={`${inputClass()} resize-none`}
               />
             </div>
 
@@ -516,7 +512,7 @@ export default function AddItemModal({
                           value={newAuthorName}
                           onChange={(e) => setNewAuthorName(e.target.value)}
                           placeholder="Nome da pessoa"
-                          className={inputClass}
+                          className={inputClass()}
                           autoFocus
                         />
                         <button

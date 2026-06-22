@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from "react"
 import { User, Calculator, AlertCircle } from "lucide-react"
 import Switch from "./Switch"
+import { accentBg, accentText, pillClass, type Accent } from "../lib/formStyles"
 import type { Author } from "../types/database"
 
 export interface SplitAssignment {
@@ -22,6 +23,7 @@ interface AuthorSplitSectionProps {
   lockedAuthorName?: string
   /** Renderizado abaixo dos badges, apenas no modo de seleção única (ex: adicionar nova pessoa) */
   footer?: ReactNode
+  accent?: Accent
 }
 
 const formatCurrency = (val: number) =>
@@ -40,6 +42,7 @@ export default function AuthorSplitSection({
   isLocked,
   lockedAuthorName,
   footer,
+  accent = "indigo",
 }: AuthorSplitSectionProps) {
   const orderedAuthors = useMemo(() => {
     if (!defaultAuthorId) return authors
@@ -81,13 +84,6 @@ export default function AuthorSplitSection({
   const splitTotal = assignments.reduce((acc, curr) => acc + curr.amount, 0)
   const splitMismatch = Math.abs(splitTotal - totalAmount) >= 0.05
 
-  const pill = (active: boolean) =>
-    `px-2.5 py-1 cursor-pointer rounded-full text-xs font-medium border transition-colors flex-shrink-0 flex items-center gap-1 ${
-      active
-        ? "bg-indigo-600 border-indigo-600 text-white"
-        : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-    }`
-
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -101,6 +97,7 @@ export default function AuthorSplitSection({
             checked={isSplit}
             onChange={onIsSplitChange}
             label="Gasto compartilhado"
+            accent={accent}
           />
         )}
       </div>
@@ -120,7 +117,7 @@ export default function AuthorSplitSection({
                     key={author.id}
                     type="button"
                     onClick={() => onAuthorIdChange(String(author.id))}
-                    className={pill(selected)}
+                    className={pillClass(selected, accent)}
                   >
                     {author.name} {author.is_owner ? "(Você)" : ""}
                   </button>
@@ -132,7 +129,7 @@ export default function AuthorSplitSection({
                 return (
                   <div
                     key={author.id}
-                    className="flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs font-medium bg-indigo-600 text-white"
+                    className={`flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs font-medium text-white ${accentBg(accent)}`}
                   >
                     <button
                       type="button"
@@ -156,7 +153,7 @@ export default function AuthorSplitSection({
                   key={author.id}
                   type="button"
                   onClick={() => toggleAuthorInSplit(author.id)}
-                  className={pill(false)}
+                  className={pillClass(false, accent)}
                 >
                   + {author.name}
                 </button>
@@ -172,7 +169,7 @@ export default function AuthorSplitSection({
                 <button
                   type="button"
                   onClick={distributeEqually}
-                  className="text-xs cursor-pointer text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-1"
+                  className={`text-xs cursor-pointer flex items-center gap-1 ${accentText(accent)}`}
                   title="Distribuir igualmente entre selecionados"
                 >
                   <Calculator size={13} /> Distribuir igualmente

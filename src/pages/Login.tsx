@@ -2,8 +2,9 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../store/auth.store'
-import { LogIn, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import logo from '../assets/logo-branca.png'
+import { labelClass } from '../lib/formStyles'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -63,7 +64,7 @@ export default function Login() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                className={labelClass}
               >
                 Email
               </label>
@@ -76,7 +77,7 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-purple-500 focus:border-transparent outline-none transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  className="block w-full pl-10 pr-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-purple-500 focus:border-transparent outline-none transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-500"
                   placeholder="seu@email.com"
                   disabled={isLoading}
                   autoFocus
@@ -87,7 +88,7 @@ export default function Login() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                className={labelClass}
               >
                 Senha
               </label>
@@ -100,7 +101,7 @@ export default function Login() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-purple-500 focus:border-transparent outline-none transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  className="block w-full pl-10 pr-10 py-2.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-purple-500 focus:border-transparent outline-none transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-500"
                   placeholder="••••••••"
                   disabled={isLoading}
                 />
@@ -121,7 +122,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 px-4 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white py-2.5 px-4 rounded-lg font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               style={{ backgroundColor: isLoading ? undefined : '#573fec' }}
             >
               {isLoading ? 'Entrando...' : 'Entrar'}

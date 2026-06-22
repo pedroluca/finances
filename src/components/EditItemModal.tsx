@@ -4,17 +4,13 @@ import { useAppStore } from "../store/app.store"
 import type { InvoiceItemWithDetails } from "../types/database"
 import CategoryBadgeSelector from "./CategoryBadgeSelector"
 import AuthorSplitSection, { type SplitAssignment } from "./AuthorSplitSection"
+import { labelClass, inputClass } from "../lib/formStyles"
 
 interface EditItemModalProps {
   item: InvoiceItemWithDetails
   onClose: () => void
   onSave: (updatedItem: Partial<InvoiceItemWithDetails>) => Promise<void>
 }
-
-const labelClass =
-  "flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
-const inputClass =
-  "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-900/40 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:text-gray-400"
 
 export default function EditItemModal({
   item,
@@ -182,7 +178,7 @@ export default function EditItemModal({
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className={inputClass}
+              className={inputClass()}
               required
             />
           </div>
@@ -199,7 +195,7 @@ export default function EditItemModal({
                 value={displayAmount}
                 onChange={(e) => handleAmountChange(e.target.value)}
                 placeholder="R$ 0,00"
-                className={inputClass}
+                className={inputClass()}
                 required
               />
               {item.is_installment && (
@@ -217,7 +213,7 @@ export default function EditItemModal({
                 type="date"
                 value={purchaseDate}
                 onChange={(e) => setPurchaseDate(e.target.value)}
-                className={inputClass}
+                className={inputClass()}
               />
             </div>
           </div>
@@ -246,7 +242,7 @@ export default function EditItemModal({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Alguma anotação sobre esse item..."
               rows={2}
-              className={`${inputClass} resize-none`}
+              className={`${inputClass()} resize-none`}
             />
           </div>
 

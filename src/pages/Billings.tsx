@@ -8,6 +8,8 @@ import { useAppStore } from '../store/app.store'
 import { phpApiRequest } from '../lib/api'
 import { DashboardHeader } from '../components/dashboard/d-header'
 import type { Bill, BillCharge, CreateBillDTO, UpdateBillDTO } from '../types/database'
+import { labelClass, inputClass } from '../lib/formStyles'
+import Switch from '../components/Switch'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -429,32 +431,28 @@ export default function Billings() {
 
                 {/* Descrição */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Nome da conta *
-                  </label>
+                  <label className={labelClass}>Nome da conta *</label>
                   <input
                     type="text"
                     value={fDescription}
                     onChange={(e) => setFDescription(e.target.value)}
                     placeholder="Ex: Internet, Energia, Aluguel..."
                     autoFocus
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
+                    className={inputClass('purple')}
                     required
                   />
                 </div>
 
                 {/* Dia de vencimento */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Dia de vencimento *
-                  </label>
+                  <label className={labelClass}>Dia de vencimento *</label>
                   <input
                     type="number"
                     value={fDueDay}
                     onChange={(e) => setFDueDay(e.target.value)}
                     min="1" max="31"
                     placeholder="Ex: 10"
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
+                    className={inputClass('purple')}
                     required
                   />
                 </div>
@@ -465,13 +463,7 @@ export default function Billings() {
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Conta recorrente</span>
                     <p className="text-xs text-gray-400 mt-0.5">Repete todo mês automaticamente</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setFIsRecurring((v) => !v)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${fIsRecurring ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-                  >
-                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ${fIsRecurring ? 'translate-x-5' : 'translate-x-0'}`} />
-                  </button>
+                  <Switch checked={fIsRecurring} onChange={setFIsRecurring} accent="purple" />
                 </div>
 
                 {/* Valor fixo */}
@@ -481,32 +473,24 @@ export default function Billings() {
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Valor sempre igual</span>
                       <p className="text-xs text-gray-400 mt-0.5">Ex: internet. Desligue para contas que oscilam, como energia.</p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setFIsFixedAmount((v) => !v)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${fIsFixedAmount ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-                    >
-                      <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ${fIsFixedAmount ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
+                    <Switch checked={fIsFixedAmount} onChange={setFIsFixedAmount} accent="purple" />
                   </div>
 
                   {fIsFixedAmount ? (
                     <div className="mt-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                        Valor fixo *
-                      </label>
+                      <label className={labelClass}>Valor fixo *</label>
                       <input
                         type="text"
                         value={fDefaultAmountDisplay}
                         onChange={(e) => handleDefaultAmountChange(e.target.value)}
                         placeholder="R$ 0,00"
-                        className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
+                        className={inputClass('purple')}
                         required
                       />
                     </div>
                   ) : editingId === null && (
                     <div className="mt-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                      <label className={labelClass}>
                         Valor desta cobrança <span className="text-gray-400 font-normal">(opcional, se já souber)</span>
                       </label>
                       <input
@@ -514,7 +498,7 @@ export default function Billings() {
                         value={fInitialAmountDisplay}
                         onChange={(e) => handleInitialAmountChange(e.target.value)}
                         placeholder="R$ 0,00 — deixe em branco se ainda não sabe"
-                        className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
+                        className={inputClass('purple')}
                       />
                     </div>
                   )}
@@ -522,13 +506,13 @@ export default function Billings() {
 
                 {/* Categoria */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  <label className={labelClass}>
                     Categoria <span className="text-gray-400 font-normal">(opcional)</span>
                   </label>
                   <select
                     value={fCategoryId}
                     onChange={(e) => setFCategoryId(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
+                    className={inputClass('purple')}
                   >
                     <option value="">Sem categoria</option>
                     {categories.map((c) => (
@@ -539,13 +523,13 @@ export default function Billings() {
 
                 {/* Responsável */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  <label className={labelClass}>
                     Quem paga <span className="text-gray-400 font-normal">(opcional)</span>
                   </label>
                   <select
                     value={fAuthorId}
                     onChange={(e) => setFAuthorId(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
+                    className={inputClass('purple')}
                   >
                     <option value="">Não definido</option>
                     {authors.map((a) => (
@@ -556,7 +540,7 @@ export default function Billings() {
 
                 {/* Observações */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  <label className={labelClass}>
                     Observações <span className="text-gray-400 font-normal">(opcional)</span>
                   </label>
                   <textarea
@@ -564,7 +548,7 @@ export default function Billings() {
                     onChange={(e) => setFNotes(e.target.value)}
                     rows={2}
                     placeholder="Ex: conta da casa, plano residencial..."
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm resize-none"
+                    className={`${inputClass('purple')} resize-none`}
                   />
                 </div>
 
@@ -572,13 +556,7 @@ export default function Billings() {
                 {editingId !== null && (
                   <div className="flex items-center justify-between py-3 border-t border-gray-100 dark:border-gray-700">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Conta ativa</span>
-                    <button
-                      type="button"
-                      onClick={() => setFActive((v) => !v)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${fActive ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-                    >
-                      <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ${fActive ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
+                    <Switch checked={fActive} onChange={setFActive} accent="purple" />
                   </div>
                 )}
 

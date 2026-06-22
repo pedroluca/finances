@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, RefreshCw, Pencil, Trash2, X, ChevronDown, Repeat, AlertCircle, Calculator, Pause, Play } from 'lucide-react';
+import { ArrowLeft, Plus, RefreshCw, Pencil, Trash2, X, ChevronDown, Repeat, AlertCircle, Pause, Play } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { useAppStore } from '../../store/app.store';
 import { phpApiRequest } from '../../lib/api';
 import type { Subscription, CreateSubscriptionDTO, UpdateSubscriptionDTO, BillingCycle, CardWithBalance } from '../../types/database';
+import { labelClass, inputClass, pillClass } from '../../lib/formStyles';
+import Switch from '../../components/Switch';
+import AuthorSplitSection, { type SplitAssignment } from '../../components/AuthorSplitSection';
 
 // ── billing cycle helpers ─────────────────────────────────────────────────────
 const CYCLE_OPTIONS: { value: BillingCycle; label: string; shortLabel: string }[] = [
@@ -112,7 +115,7 @@ export default function ManageSubscriptions() {
   // Split / assignments (igual ao AddItemModal)
   const [isSplit, setIsSplit]           = useState(false);
   const [fAuthorId, setFAuthorId]       = useState('');
-  const [assignments, setAssignments]   = useState<{ author_id: number; amount: number }[]>([]);
+  const [assignments, setAssignments]   = useState<SplitAssignment[]>([]);
 
   // ── load data ─────────────────────────────────────────────────────────────
 
@@ -145,31 +148,6 @@ export default function ManageSubscriptions() {
   const defaultAuthor = useMemo(() => authors.find((a) => a.is_owner), [authors]);
 
   // ── split helpers ─────────────────────────────────────────────────────────
-
-  const toggleAuthorInSplit = (authorId: number) => {
-    const exists = assignments.find((a) => a.author_id === authorId);
-    if (exists) {
-      setAssignments(assignments.filter((a) => a.author_id !== authorId));
-    } else {
-      setAssignments([...assignments, { author_id: authorId, amount: 0 }]);
-    }
-  };
-
-  const updateAssignmentAmount = (authId: number, val: string) => {
-    const numbers = val.replace(/\D/g, '');
-    const numValue = numbers === '' ? 0 : parseInt(numbers) / 100;
-    setAssignments(assignments.map((a) => a.author_id === authId ? { ...a, amount: numValue } : a));
-  };
-
-  const distributeEqually = () => {
-    if (assignments.length === 0) return;
-    const total = parseFloat(fAmount);
-    if (isNaN(total)) return;
-    const splitValue = Number((total / assignments.length).toFixed(2));
-    const totalDistributed = splitValue * (assignments.length - 1);
-    const lastValue = Number((total - totalDistributed).toFixed(2));
-    setAssignments(assignments.map((a, i) => ({ ...a, amount: i === assignments.length - 1 ? lastValue : splitValue })));
-  };
 
   const getSplitTotal = () => assignments.reduce((acc, curr) => acc + curr.amount, 0);
 
@@ -431,7 +409,7 @@ export default function ManageSubscriptions() {
             )}
 
             {/* Cycle filter */}
-            <div className="flex flex-wrap gap-1 ml-auto">
+            <div className="flex flex-wrap gap-1">
               {CYCLE_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
@@ -595,46 +573,40 @@ export default function ManageSubscriptions() {
 
               {/* Descrição */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Nome da assinatura *
-                </label>
+                <label className={labelClass}>Nome da assinatura *</label>
                 <input
                   type="text"
                   value={fDescription}
                   onChange={(e) => setFDescription(e.target.value)}
                   placeholder="Ex: Netflix, Spotify, iCloud..."
                   autoFocus
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
+                  className={inputClass('purple')}
                   required
                 />
               </div>
 
               {/* Valor + Dia */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Valor por cobrança *
-                  </label>
+                  <label className={labelClass}>Valor por cobrança *</label>
                   <input
                     type="text"
                     value={fAmountDisplay}
                     onChange={(e) => handleAmountChange(e.target.value)}
                     placeholder="R$ 0,00"
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
+                    className={inputClass('purple')}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Dia de cobrança *
-                  </label>
+                  <label className={labelClass}>Dia de cobrança *</label>
                   <input
                     type="number"
                     value={fBillingDay}
                     onChange={(e) => setFBillingDay(e.target.value)}
                     min="1" max="31"
                     placeholder="Ex: 28"
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
+                    className={inputClass('purple')}
                     required
                   />
                   <p className="text-xs text-gray-400 mt-1">Cai na fatura mais próxima deste dia</p>
@@ -643,20 +615,14 @@ export default function ManageSubscriptions() {
 
               {/* Ciclo de cobrança */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Ciclo de cobrança *
-                </label>
-                <div className="grid grid-cols-3 gap-2">
+                <label className={labelClass}>Ciclo de cobrança *</label>
+                <div className="flex flex-wrap gap-1.5">
                   {CYCLE_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
                       onClick={() => setFBillingCycle(opt.value)}
-                      className={`cursor-pointer px-3 py-2.5 rounded-lg border text-xs font-medium transition text-center ${
-                        fBillingCycle === opt.value
-                          ? 'bg-purple-600 border-purple-600 text-white'
-                          : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-purple-400'
-                      }`}
+                      className={pillClass(fBillingCycle === opt.value, 'purple')}
                     >
                       {opt.label}
                     </button>
@@ -671,13 +637,11 @@ export default function ManageSubscriptions() {
 
               {/* Cartão — usa card_id (field da view card_available_balance) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Cartão *
-                </label>
+                <label className={labelClass}>Cartão *</label>
                 <select
                   value={fCardId}
                   onChange={(e) => setFCardId(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
+                  className={inputClass('purple')}
                   required
                 >
                   <option value="">Selecione o cartão...</option>
@@ -695,96 +659,25 @@ export default function ManageSubscriptions() {
                 </select>
               </div>
 
-              {/* Divisão de despesa (igual ao AddItemModal) */}
+              {/* Divisão de despesa */}
               <div className="border-t border-b border-gray-200 dark:border-gray-700 py-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <input
-                    type="checkbox"
-                    id="splitSub"
-                    checked={isSplit}
-                    onChange={(e) => { setIsSplit(e.target.checked); setAssignments([]); }}
-                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                  />
-                  <label htmlFor="splitSub" className="text-sm font-medium text-gray-700 dark:text-gray-300 select-none cursor-pointer">
-                    Dividir entre pessoas
-                  </label>
-                </div>
-
-                {!isSplit ? (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                      Quem paga *
-                    </label>
-                    <select
-                      value={fAuthorId}
-                      onChange={(e) => setFAuthorId(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
-                      required
-                    >
-                      <option value="">Selecione...</option>
-                      {authors.map((a) => (
-                        <option key={a.id} value={a.id}>{a.name}{a.is_owner ? ' (Você)' : ''}</option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <div className="space-y-3 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Autores e Valores</span>
-                      <button
-                        type="button"
-                        onClick={distributeEqually}
-                        className="text-xs text-purple-600 hover:text-purple-800 dark:text-purple-400 flex items-center gap-1"
-                        title="Distribuir igualmente"
-                      >
-                        <Calculator className="w-3.5 h-3.5" /> Distribuir
-                      </button>
-                    </div>
-                    {authors.map((author) => {
-                      const isSelected = assignments.some((a) => a.author_id === author.id);
-                      const assignment = assignments.find((a) => a.author_id === author.id);
-                      return (
-                        <div key={author.id} className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 flex-1">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleAuthorInSplit(author.id)}
-                              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                            />
-                            <span className="text-sm text-gray-700 dark:text-gray-300">
-                              {author.name}{author.is_owner ? ' (Você)' : ''}
-                            </span>
-                          </div>
-                          {isSelected && (
-                            <input
-                              type="text"
-                              value={`R$ ${(assignment?.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                              onChange={(e) => updateAssignmentAmount(author.id, e.target.value)}
-                              className="w-32 px-2 py-1 text-right text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded focus:ring-purple-500 outline-none"
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
-                    <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Dividido:</span>
-                      <span className={`text-sm font-bold ${Math.abs(getSplitTotal() - parseFloat(fAmount || '0')) < 0.05 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        R$ {formatCurrency(getSplitTotal())}
-                      </span>
-                    </div>
-                    {Math.abs(getSplitTotal() - parseFloat(fAmount || '0')) >= 0.05 && (
-                      <p className="text-xs text-red-500 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> O total dividido deve ser igual ao valor mensal.
-                      </p>
-                    )}
-                  </div>
-                )}
+                <AuthorSplitSection
+                  authors={authors}
+                  defaultAuthorId={defaultAuthor?.id}
+                  totalAmount={parseFloat(fAmount || '0')}
+                  authorId={fAuthorId}
+                  onAuthorIdChange={setFAuthorId}
+                  isSplit={isSplit}
+                  onIsSplitChange={(v) => { setIsSplit(v); setAssignments([]); }}
+                  assignments={assignments}
+                  onAssignmentsChange={setAssignments}
+                  accent="purple"
+                />
               </div>
 
               {/* Observações */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <label className={labelClass}>
                   Observações <span className="text-gray-400 font-normal">(opcional)</span>
                 </label>
                 <textarea
@@ -792,7 +685,7 @@ export default function ManageSubscriptions() {
                   onChange={(e) => setFNotes(e.target.value)}
                   rows={2}
                   placeholder="Ex: conta familiar, plano premium..."
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm resize-none"
+                  className={`${inputClass('purple')} resize-none`}
                 />
               </div>
 
@@ -800,13 +693,7 @@ export default function ManageSubscriptions() {
               {editingId !== null && (
                 <div className="flex items-center justify-between py-3 border-t border-gray-100 dark:border-gray-700">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Assinatura ativa</span>
-                  <button
-                    type="button"
-                    onClick={() => setFActive((v) => !v)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${fActive ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-                  >
-                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ${fActive ? 'translate-x-5' : 'translate-x-0'}`} />
-                  </button>
+                  <Switch checked={fActive} onChange={setFActive} accent="purple" />
                 </div>
               )}
 
