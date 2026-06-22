@@ -283,23 +283,24 @@ export default function Billings() {
 
   // ── render ────────────────────────────────────────────────────────────────
 
+  function toggleHideValues() {
+    setHideValues((prev) => !prev)
+    localStorage.setItem('hideValues', String(!hideValues))
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors pb-16 lg:pb-0">
-      <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="cursor-pointer p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Contas</h1>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader
+        userName={user?.name || ''}
+        userEmail={user?.email || ''}
+        onLogout={logout}
+        hideValues={hideValues}
+        onToggleHideValues={toggleHideValues}
+      />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Contas</h1>
+
         {globalError && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-red-800 dark:text-red-400 text-sm">
             {globalError}
@@ -312,7 +313,7 @@ export default function Billings() {
               <Receipt className="w-5 h-5 opacity-80" />
               <span className="text-purple-200 text-sm font-medium">Total em contas (cobrança atual)</span>
             </div>
-            <p className="text-3xl font-bold">{formatAmount(monthlyTotal)}</p>
+            <p className="text-3xl font-bold">{hideValues ? 'R$ ••••' : formatAmount(monthlyTotal)}</p>
             <p className="text-purple-300 text-sm mt-1">{activeList.length} conta{activeList.length !== 1 ? 's' : ''} ativa{activeList.length !== 1 ? 's' : ''}</p>
           </div>
         )}
@@ -357,6 +358,7 @@ export default function Billings() {
               <BillCard
                 key={bill.id}
                 bill={bill}
+                hideValues={hideValues}
                 onEdit={() => openEdit(bill)}
                 onDelete={() => setDeletingId(bill.id)}
                 isConfirmingDelete={deletingId === bill.id}
@@ -383,6 +385,7 @@ export default function Billings() {
                   <BillCard
                     key={bill.id}
                     bill={bill}
+                    hideValues={hideValues}
                     onEdit={() => openEdit(bill)}
                     onDelete={() => setDeletingId(bill.id)}
                     isConfirmingDelete={deletingId === bill.id}
@@ -606,6 +609,7 @@ export default function Billings() {
 
 interface BillCardProps {
   bill: Bill
+  hideValues: boolean
   onEdit: () => void
   onDelete: () => void
   isConfirmingDelete: boolean
@@ -614,7 +618,7 @@ interface BillCardProps {
   onUpdateCharge: (chargeId: number, payload: Record<string, unknown>) => void
 }
 
-function BillCard({ bill, onEdit, onDelete, isConfirmingDelete, onConfirmDelete, onCancelDelete, onUpdateCharge }: BillCardProps) {
+function BillCard({ bill, hideValues, onEdit, onDelete, isConfirmingDelete, onConfirmDelete, onCancelDelete, onUpdateCharge }: BillCardProps) {
   const charge = relevantCharge(bill.charges)
   const [editingAmount, setEditingAmount] = useState(false)
   const [amountDisplay, setAmountDisplay] = useState('')
@@ -667,7 +671,7 @@ function BillCard({ bill, onEdit, onDelete, isConfirmingDelete, onConfirmDelete,
 
             <div className="text-right shrink-0">
               {charge && charge.amount !== null ? (
-                <p className="font-bold text-gray-900 dark:text-white">{formatAmount(charge.amount)}</p>
+                <p className="font-bold text-gray-900 dark:text-white">{hideValues ? 'R$ ••••' : formatAmount(charge.amount)}</p>
               ) : (
                 <button
                   onClick={startEditAmount}

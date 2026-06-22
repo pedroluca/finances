@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, CreditCard } from 'lucide-react'
 import type { Bill, CardWithBalance, MonthlyTotal } from '../../types/database'
 
 interface UpcomingPayment {
@@ -206,7 +206,7 @@ export function DashboardUpcomingPayments({ cards, monthlyTotals, bills, hideVal
               onClick={payment.onClick}
               className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/60 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer text-left"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {payment.kind === 'bill' ? (
                   <div
                     className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-base"
@@ -216,9 +216,11 @@ export function DashboardUpcomingPayments({ cards, monthlyTotals, bills, hideVal
                   </div>
                 ) : (
                   <div
-                    className="w-3 h-10 rounded-full shrink-0"
+                    className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-base"
                     style={{ backgroundColor: payment.color }}
-                  />
+                  >
+                    <CreditCard className="w-5 h-5 text-white" />
+                  </div>
                 )}
                 <div>
                   <div className="flex items-center gap-2">
