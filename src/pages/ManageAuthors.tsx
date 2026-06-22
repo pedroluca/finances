@@ -40,8 +40,8 @@ export default function ManageAuthors() {
     if (!user) return
     setIsLoading(true)
     try {
-      const data = await phpApiRequest(`authors.php?user_id=${user.id}`)
-      setAuthors(data)
+      const data: Author[] = await phpApiRequest(`authors.php?user_id=${user.id}`)
+      setAuthors([...data].sort((a, b) => Number(b.is_owner) - Number(a.is_owner)))
     } catch (error) {
       console.error('Erro ao carregar autores:', error)
       showToast('Erro ao carregar pessoas', 'error')
@@ -177,74 +177,73 @@ export default function ManageAuthors() {
           </div>
 
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
-             {authors.map(author => (
-               <div key={author.id} className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                 <div className="flex items-start gap-4">
-                   <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
-                      <span className="font-semibold text-purple-700 dark:text-purple-300">
-                        {author.name.charAt(0).toUpperCase()}
-                      </span>
-                   </div>
-                   <div>
-                     <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                       {author.name}
-                       {author.is_owner ? (
-                         <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
-                           Você
-                         </span>
-                       ) : ''}
-                     </h4>
-                     {author.linked_user_email ? (
-                       <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400 mt-1">
-                         <LinkIcon className="w-3 h-3" />
-                         Vinculado a: {author.linked_user_email}
-                       </div>
-                     ) : !author.is_owner && (
-                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                         Não vinculado a nenhuma conta
-                       </p>
-                     )}
-                   </div>
-                 </div>
+            {authors.map(author => (
+              <div key={author.id} className="px-3 py-4 sm:p-6 flex items-center justify-between gap-1">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                    <span className="font-semibold text-purple-700 dark:text-purple-300">
+                      {author.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="">
+                    <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                      {author.name}
+                      {author.is_owner ? (
+                        <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
+                          Você
+                        </span>
+                      ) : ''}
+                    </h4>
+                    {author.linked_user_email ? (
+                      <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400 mt-1">
+                        <LinkIcon className="w-3 h-3" />
+                        {author.linked_user_email}
+                      </div>
+                    ) : !author.is_owner && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Não vinculado
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-                 {!author.is_owner && (
-                   <div className="flex items-center gap-2 self-end sm:self-auto">
-                     {author.linked_user_email ? (
-                       <button
-                         onClick={() => setConfirmUnlink({ show: true, author })}
-                         className="cursor-pointer p-2 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-lg transition"
-                         title="Desvincular conta"
-                       >
-                         <Unlink className="w-4 h-4" />
-                       </button>
-                     ) : (
-                       <button
-                         onClick={() => {
-                           setSelectedAuthor(author)
-                           setShowLinkModal(true)
-                         }}
-                         className="cursor-pointer flex items-center gap-2 px-3 py-1.5 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition border border-purple-200 dark:border-purple-800"
-                       >
-                         <UserPlus className="w-4 h-4" />
-                         Vincular Conta
-                       </button>
-                     )}
-                     <button
-                       onClick={() => setConfirmDelete({ show: true, author })}
-                       className="cursor-pointer p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                       title="Excluir pessoa"
-                     >
-                       <Trash2 className="w-4 h-4" />
-                     </button>
-                   </div>
-                 )}
-               </div>
-             ))}
-             {authors.length === 0 && !isLoading && (
-               <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                 Nenhuma pessoa cadastrada.
-               </div>
-             )}
+                {!author.is_owner && (
+                  <div className="flex items-center gap-1">
+                    {author.linked_user_email ? (
+                      <button
+                        onClick={() => setConfirmUnlink({ show: true, author })}
+                        className="cursor-pointer p-2 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-lg transition"
+                        title="Desvincular conta"
+                      >
+                        <Unlink className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setSelectedAuthor(author)
+                          setShowLinkModal(true)
+                        }}
+                        className="cursor-pointer flex items-center p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition border border-purple-200 dark:border-purple-800"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setConfirmDelete({ show: true, author })}
+                      className="cursor-pointer p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                      title="Excluir pessoa"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+            {authors.length === 0 && !isLoading && (
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                Nenhuma pessoa cadastrada.
+              </div>
+            )}
           </div>
         </div>
       </main>
