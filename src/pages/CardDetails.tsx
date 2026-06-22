@@ -920,6 +920,20 @@ export default function CardDetails() {
           </div>
         </div>
 
+        <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2 px-1">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Últimos lançamentos</h2>
+
+          
+          <button
+            onClick={handleAddItemClick}
+            className="flex items-center cursor-pointer gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-xs sm:text-base"
+          >
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="">Novo</span>
+          </button>
+        </div>
+
+
         {/* Items List */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-6 transition-colors">
           <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
@@ -1004,13 +1018,6 @@ export default function CardDetails() {
                   <span className="hidden sm:inline">Filtrar por Pessoa</span>
                 </button>
               )}
-              <button
-                onClick={handleAddItemClick}
-                className="flex items-center cursor-pointer gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-xs sm:text-base"
-              >
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="hidden sm:inline">Adicionar Item</span>
-              </button>
             </div>
           </div>
 

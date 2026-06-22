@@ -9,16 +9,21 @@ import {
   FileText,
   Calendar,
   Tag,
-  User,
   Plus,
   Minus,
   X,
-  Calculator,
-  AlertCircle,
   Repeat,
+  MessageSquare,
 } from "lucide-react"
+import CategoryBadgeSelector from "./CategoryBadgeSelector"
+import AuthorSplitSection, { type SplitAssignment } from "./AuthorSplitSection"
 
 const SUBSCRIPTION_CATEGORY_ID = 7
+
+const labelClass =
+  "flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+const inputClass =
+  "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-900/40 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:text-gray-400"
 
 interface AddItemModalProps {
   card: CardWithBalance
@@ -45,12 +50,12 @@ export default function AddItemModal({
   const { categories, setCategories, authors, setAuthors, addAuthor } =
     useAppStore()
   const [isDataLoading, setIsDataLoading] = useState(false)
-  
+
   // Use cardOwnerAuthors se fornecido (para cartões compartilhados), senão use authors do store
   const availableAuthors = cardOwnerAuthors || authors
-  
+
   const defaultAuthor = useMemo(
-    () => linkedAuthorId 
+    () => linkedAuthorId
       ? availableAuthors.find((a) => a.id === linkedAuthorId)
       : availableAuthors.find((a) => a.is_owner),
     [availableAuthors, linkedAuthorId]
@@ -86,19 +91,18 @@ export default function AddItemModal({
   const [displayAmount, setDisplayAmount] = useState("")
   const [categoryId, setCategoryId] = useState("")
   const [authorId, setAuthorId] = useState("")
-  
+  const [notes, setNotes] = useState("")
+
   // Split logic
   const [isSplit, setIsSplit] = useState(false)
-  const [assignments, setAssignments] = useState<
-    { author_id: number; amount: number }[]
-  >([])
+  const [assignments, setAssignments] = useState<SplitAssignment[]>([])
 
   useEffect(() => {
     if (defaultAuthor && !authorId) {
       setAuthorId(defaultAuthor.id.toString())
     }
   }, [defaultAuthor, authorId])
-  
+
   const [newAuthorName, setNewAuthorName] = useState("")
   const [showNewAuthor, setShowNewAuthor] = useState(false)
   const [purchaseDate, setPurchaseDate] = useState(() => {
@@ -130,50 +134,7 @@ export default function AddItemModal({
     setDisplayAmount(`R$ ${formatted}`)
   }
 
-  // Helpers para Split
-  const toggleAuthorInSplit = (toggledAuthorId: number) => {
-    const exists = assignments.find((a) => a.author_id === toggledAuthorId)
-    if (exists) {
-      setAssignments(assignments.filter((a) => a.author_id !== toggledAuthorId))
-    } else {
-      setAssignments([
-        ...assignments,
-        { author_id: toggledAuthorId, amount: 0 },
-      ])
-    }
-  }
-
-  const updateAssignmentAmount = (authId: number, val: string) => {
-    const numbers = val.replace(/\D/g, "")
-    const numValue = numbers === "" ? 0 : parseInt(numbers) / 100
-
-    setAssignments(
-      assignments.map((a) =>
-        a.author_id === authId ? { ...a, amount: numValue } : a
-      )
-    )
-  }
-
-  const distributeEqually = () => {
-    if (assignments.length === 0) return
-    const total = parseFloat(amount)
-    if (isNaN(total)) return
-
-    const splitValue = Number((total / assignments.length).toFixed(2))
-    const totalDistributed = splitValue * (assignments.length - 1)
-    const lastValue = Number((total - totalDistributed).toFixed(2))
-
-    setAssignments(
-      assignments.map((a, index) => ({
-        ...a,
-        amount: index === assignments.length - 1 ? lastValue : splitValue,
-      }))
-    )
-  }
-
-  const getSplitTotal = () => {
-    return assignments.reduce((acc, curr) => acc + curr.amount, 0)
-  }
+  const getSplitTotal = () => assignments.reduce((acc, curr) => acc + curr.amount, 0)
 
   const formatCurrency = (val: number) => {
     return val.toLocaleString("pt-BR", {
@@ -247,6 +208,7 @@ export default function AddItemModal({
     }
 
     const assignmentsPayload = isSplit ? assignments : []
+    const notesValue = notes.trim() || null
 
     try {
       setIsLoading(true)
@@ -266,6 +228,7 @@ export default function AddItemModal({
           ...(categoryId ? { category_id: Number(categoryId) } : {}),
           purchase_date: purchaseDate,
           current_installment: Number(currentInstallment),
+          notes: notesValue,
           assignments: assignmentsPayload
         }
         console.log("Enviando parcelado:", payload)
@@ -291,6 +254,7 @@ export default function AddItemModal({
             author_id: selectedAuthorId,
             ...(categoryId ? { category_id: Number(categoryId) } : {}),
             purchase_date: purchaseDate,
+            notes: notesValue,
             assignments: assignmentsPayload
           }),
         })
@@ -307,30 +271,28 @@ export default function AddItemModal({
 
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.5)]">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md lg:max-w-4xl w-full p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
-        <button
-          onClick={onClose}
-          className="absolute cursor-pointer top-4 right-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-        >
-          <X className="w-6 h-6 text-gray-500" />
-        </button>
-        <h2 className="text-xl font-bold mb-4 dark:text-white">
-          Adicionar Item
-        </h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.5)] p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md lg:max-w-2xl relative animate-fade-in max-h-[92vh] overflow-y-auto custom-scrollbar">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl">
+          <h2 className="text-lg font-bold dark:text-white">Adicionar Item</h2>
+          <button
+            onClick={onClose}
+            className="p-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
         {isDataLoading ? (
           <div className="py-12 text-center text-gray-500">
             Carregando dados...
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="p-5 space-y-4">
             {/* Descrição */}
             <div>
-              <label
-                htmlFor="description"
-                className="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-              >
-                <FileText className="w-4 h-4 inline mr-2" />
+              <label htmlFor="description" className={labelClass}>
+                <FileText className="w-3.5 h-3.5" />
                 Descrição
               </label>
               <input
@@ -339,19 +301,17 @@ export default function AddItemModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Ex: Compras no supermercado"
-                className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className={inputClass}
                 autoFocus
                 required
               />
             </div>
+
             {/* Valor e Parcelamento */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label
-                  htmlFor="amount"
-                  className="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-                >
-                  <DollarSign className="w-4 h-4 inline mr-2" />
+                <label htmlFor="amount" className={labelClass}>
+                  <DollarSign className="w-3.5 h-3.5" />
                   Valor Total
                 </label>
                 <input
@@ -360,18 +320,15 @@ export default function AddItemModal({
                   value={displayAmount}
                   onChange={(e) => handleAmountChange(e.target.value)}
                   placeholder="R$ 0,00"
-                  className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className={inputClass}
                   required
                 />
               </div>
               <div>
-                <label
-                  htmlFor="installments"
-                  className="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-                >
+                <label htmlFor="installments" className={labelClass}>
                   Parcelas
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => {
@@ -382,9 +339,9 @@ export default function AddItemModal({
                         setCurrentInstallment("1");
                       }
                     }}
-                    className="cursor-pointer p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="cursor-pointer p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    <Minus className="w-5 h-5" />
+                    <Minus className="w-4 h-4" />
                   </button>
                   <input
                     type="number"
@@ -400,7 +357,7 @@ export default function AddItemModal({
                     }}
                     min="1"
                     max="24"
-                    className="w-full px-4 py-3 text-center border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full px-2 py-2 text-sm text-center border border-gray-300 dark:border-gray-600 dark:bg-gray-900/40 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <button
                     type="button"
@@ -409,13 +366,13 @@ export default function AddItemModal({
                       setInstallments(val.toString());
                       setIsInstallment(val > 1);
                     }}
-                    className="cursor-pointer p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="cursor-pointer p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    <Plus className="w-5 h-5" />
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
                 {isInstallment && (
-                  <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {Number(installments)}x de R${" "}
                     {(
                       parseFloat(amount || "0") / Number(installments)
@@ -424,68 +381,83 @@ export default function AddItemModal({
                 )}
               </div>
             </div>
-            {/* Parcela Atual */}
-            {isInstallment && (
+
+            {/* Data da Compra e Parcela Atual */}
+            <div className={`grid gap-3 ${isInstallment ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}>
               <div>
-                <label
-                  htmlFor="currentInstallment"
-                  className="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-                >
-                  Parcela Atual
+                <label htmlFor="date" className={labelClass}>
+                  <Calendar className="w-3.5 h-3.5" />
+                  Data da Compra
                 </label>
                 <input
-                  type="number"
-                  id="currentInstallment"
-                  value={currentInstallment}
-                  onChange={(e) => setCurrentInstallment(e.target.value)}
-                  min="1"
-                  max={installments}
-                  className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  type="date"
+                  id="date"
+                  value={purchaseDate}
+                  onChange={(e) => setPurchaseDate(e.target.value)}
+                  className={inputClass}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Será criada a partir da parcela {currentInstallment} até a{" "}
-                  {installments} (
-                  {Number(installments) - Number(currentInstallment) + 1} parcela
-                  {Number(installments) - Number(currentInstallment) + 1 !== 1
-                    ? "s"
-                    : ""}
-                  )
-                </p>
               </div>
+              {isInstallment && (
+                <div>
+                  <label htmlFor="currentInstallment" className={labelClass}>
+                    Parcela Atual
+                  </label>
+                  <input
+                    type="number"
+                    id="currentInstallment"
+                    value={currentInstallment}
+                    onChange={(e) => setCurrentInstallment(e.target.value)}
+                    min="1"
+                    max={installments}
+                    className={inputClass}
+                  />
+                </div>
+              )}
+            </div>
+            {isInstallment && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">
+                Será criada a partir da parcela {currentInstallment} até a{" "}
+                {installments} (
+                {Number(installments) - Number(currentInstallment) + 1} parcela
+                {Number(installments) - Number(currentInstallment) + 1 !== 1
+                  ? "s"
+                  : ""}
+                )
+              </p>
             )}
+
             {/* Categoria */}
             <div>
-              <label
-                htmlFor="category"
-                className="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-              >
-                <Tag className="w-4 h-4 inline mr-2" />
+              <label className={labelClass}>
+                <Tag className="w-3.5 h-3.5" />
                 Categoria (Opcional)
               </label>
-              <select
-                id="category"
+              <CategoryBadgeSelector
+                categories={categories}
                 value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="" className="dark:bg-gray-800">
-                  Sem categoria
-                </option>
-                {categories.map((cat) => (
-                  <option
-                    key={cat.id}
-                    value={cat.id}
-                    className="dark:bg-gray-800"
-                  >
-                    {cat.icon} {cat.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setCategoryId}
+              />
+            </div>
+
+            {/* Observação */}
+            <div>
+              <label htmlFor="notes" className={labelClass}>
+                <MessageSquare className="w-3.5 h-3.5" />
+                Observação (Opcional)
+              </label>
+              <textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Alguma anotação sobre esse item..."
+                rows={2}
+                className={`${inputClass} resize-none`}
+              />
             </div>
 
             {/* Quando Assinatura é selecionada: esconder o form e redirecionar */}
             {categoryId === String(SUBSCRIPTION_CATEGORY_ID) ? (
-              <div className="mt-2 lg:col-span-full lg:max-w-lg lg:mx-auto rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 p-5 text-center space-y-3">
+              <div className="rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 p-5 text-center space-y-3">
                 <div className="flex justify-center">
                   <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
                     <Repeat className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -514,186 +486,73 @@ export default function AddItemModal({
               </div>
             ) : (
               <>
-                {!isAuthorLocked && (
-                  <div className="lg:row-span-2 border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-2 mb-4">
-                      <input
-                        type="checkbox"
-                        id="isSplitAdd"
-                        checked={isSplit}
-                        onChange={(e) => setIsSplit(e.target.checked)}
-                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                      />
-                      <label
-                        htmlFor="isSplitAdd"
-                        className="text-sm font-medium text-gray-700 dark:text-white select-none cursor-pointer"
+                {/* Pessoas / Divisão */}
+                <AuthorSplitSection
+                  authors={availableAuthors}
+                  defaultAuthorId={defaultAuthor?.id}
+                  totalAmount={parseFloat(amount || "0")}
+                  authorId={authorId}
+                  onAuthorIdChange={setAuthorId}
+                  isSplit={isSplit}
+                  onIsSplitChange={setIsSplit}
+                  assignments={assignments}
+                  onAssignmentsChange={setAssignments}
+                  isLocked={isAuthorLocked}
+                  lockedAuthorName={defaultAuthor?.name}
+                  footer={
+                    !showNewAuthor ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowNewAuthor(true)}
+                        className="mt-1 cursor-pointer text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 flex items-center gap-1"
                       >
-                        Dividir despesa entre pessoas
-                      </label>
-                    </div>
-
-                    {!isSplit ? (
-                      <div>
-                        <label
-                          htmlFor="author"
-                          className="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-                        >
-                          <User className="w-4 h-4 inline mr-2" />
-                          Quem comprou?
-                        </label>
-                        {isAuthorLocked ? (
-                          <div className="w-full px-4 py-3 border border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 rounded-lg">
-                            {defaultAuthor?.name || 'Carregando...'}
-                          </div>
-                        ) : !showNewAuthor ? (
-                          <>
-                            <select
-                              id="author"
-                              value={authorId}
-                              onChange={(e) => setAuthorId(e.target.value)}
-                              className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                            >
-                              <option value="" className="dark:bg-gray-800">
-                                Selecione...
-                              </option>
-                              {availableAuthors.map((author) => (
-                                <option
-                                  key={author.id}
-                                  value={author.id}
-                                  className="dark:bg-gray-800"
-                                >
-                                  {author.name} {author.is_owner ? "(Você)" : ""}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() => setShowNewAuthor(true)}
-                              className="mt-2 cursor-pointer text-sm text-primary-600 hover:text-primary-700 dark:text-white flex items-center gap-1"
-                            >
-                              <Plus className="w-4 h-4" />
-                              Adicionar nova pessoa
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <input
-                              type="text"
-                              value={newAuthorName}
-                              onChange={(e) => setNewAuthorName(e.target.value)}
-                              placeholder="Nome da pessoa"
-                              className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setShowNewAuthor(false)
-                                setNewAuthorName("")
-                              }}
-                              className="mt-2 text-sm cursor-pointer text-gray-600 dark:text-white hover:text-gray-700"
-                            >
-                              Cancelar
-                            </button>
-                          </>
-                        )}
-                      </div>
+                        <Plus className="w-3.5 h-3.5" />
+                        Adicionar nova pessoa
+                      </button>
                     ) : (
-                      <div className="space-y-3 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Autores e Valores</span>
-                          <button
-                            type="button"
-                            onClick={distributeEqually}
-                            className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-1"
-                            title="Distribuir igualmente entre selecionados"
-                          >
-                            <Calculator size={14} /> Distribuir
-                          </button>
-                        </div>
-
-                        {availableAuthors.map(author => {
-                          const isSelected = assignments.some(a => a.author_id === author.id)
-                          const assignment = assignments.find(a => a.author_id === author.id)
-
-                          return (
-                            <div key={author.id} className="flex items-center gap-3">
-                              <div className="flex items-center gap-2 flex-1">
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => toggleAuthorInSplit(author.id)}
-                                  className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                                />
-                                <span className="text-sm text-gray-700 dark:text-gray-300">
-                                  {author.name} {author.is_owner ? "(Você)" : ""}
-                                </span>
-                              </div>
-                              {isSelected && (
-                                <div className="w-32">
-                                  <input
-                                    type="text"
-                                    value={`R$ ${(assignment?.amount || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                                    onChange={(e) => updateAssignmentAmount(author.id, e.target.value)}
-                                    className="w-full px-2 py-1 text-right text-sm border border-gray-300 dark:text-white rounded focus:ring-indigo-500"
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })}
-
-                        <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Dividido:</span>
-                          <span className={`text-sm font-bold ${Math.abs(getSplitTotal() - parseFloat(amount || '0')) < 0.05 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                            R$ {formatCurrency(getSplitTotal())}
-                          </span>
-                        </div>
-                        {Math.abs(getSplitTotal() - parseFloat(amount || '0')) >= 0.05 && (
-                          <p className="text-xs text-red-500 flex items-center gap-1">
-                            <AlertCircle size={12} /> O total dividido deve ser igual ao valor do item.
-                          </p>
-                        )}
+                      <div className="flex items-center gap-2 mt-1">
+                        <input
+                          type="text"
+                          value={newAuthorName}
+                          onChange={(e) => setNewAuthorName(e.target.value)}
+                          placeholder="Nome da pessoa"
+                          className={inputClass}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowNewAuthor(false)
+                            setNewAuthorName("")
+                          }}
+                          className="text-xs cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex-shrink-0"
+                        >
+                          Cancelar
+                        </button>
                       </div>
-                    )}
-                  </div>
-                )}
+                    )
+                  }
+                />
 
-                {/* Data da Compra */}
-                <div>
-                  <label
-                    htmlFor="date"
-                    className="block text-sm font-medium text-gray-700 dark:text-white mb-2"
-                  >
-                    <Calendar className="w-4 h-4 inline mr-2" />
-                    Data da Compra
-                  </label>
-                  <input
-                    type="date"
-                    id="date"
-                    value={purchaseDate}
-                    onChange={(e) => setPurchaseDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 dark:text-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
                 {/* Botões */}
-                <div className="lg:col-span-full flex gap-3 pt-4">
+                <div className="flex gap-3 pt-2">
                   <button
                     type="button"
                     onClick={onClose}
-                    className="flex-1 cursor-pointer px-6 py-3 border border-gray-300 text-gray-700 dark:text-gray-300 dark:hover:text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    className="flex-1 cursor-pointer px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium text-sm"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="flex-1 cursor-pointer px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 cursor-pointer px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? "Salvando..." : "Adicionar"}
                   </button>
                 </div>
                 {error && (
-                  <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-2 text-sm text-red-800 text-center">
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-2 text-sm text-red-800 dark:text-red-300 text-center">
                     {error}
                   </div>
                 )}
