@@ -13,9 +13,9 @@ import { AndroidInstallBanner } from '../components/AndroidInstallBanner'
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, logout, isAuthenticated } = useAuthStore()
-  const { setCards, setCategories, setAuthors, monthlyTotals, setMonthlyTotals, setCardOrder, orderedCards, authors } = useAppStore()
+  const { cards, setCards, setCategories, setAuthors, monthlyTotals, setMonthlyTotals, setCardOrder, orderedCards, authors } = useAppStore()
 
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(cards.length === 0)
   const [hideValues, setHideValues] = useState(localStorage.getItem('hideValues') === 'true')
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [bills, setBills] = useState<Bill[]>([])
