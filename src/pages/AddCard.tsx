@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuthStore } from '../store/auth.store'
 import { useAppStore } from '../store/app.store'
 import { phpApiRequest } from '../lib/api'
+import type { CardWithBalance } from '../types/database'
 import { ArrowLeft, CreditCard, DollarSign, Calendar, Palette } from 'lucide-react'
 
 const CARD_COLORS = [
@@ -44,21 +45,21 @@ export default function AddCard() {
       try {
         setIsLoadingCard(true)
         // Try to find card in store first
-        const existingCard = cards.find(
-          (c) => ((c as any).card_id ?? c.id) === Number(cardId)
+        const existingCard = (cards as CardWithBalance[]).find(
+          (c) => (c.card_id ?? c.id) === Number(cardId)
         )
 
         if (existingCard) {
-          setName((existingCard as any).card_name ?? existingCard.name ?? '')
-          setCardLimit(String((existingCard as any).card_limit ?? 0))
+          setName(existingCard.card_name ?? existingCard.name ?? '')
+          setCardLimit(String(existingCard.card_limit ?? 0))
           setClosingDay(String(existingCard.closing_day ?? ''))
           setDueDay(String(existingCard.due_day ?? ''))
           setColor(existingCard.color ?? CARD_COLORS[0].value)
         } else {
           // Fetch from API if not in store
-          const cardsData = await phpApiRequest('cards.php', { method: 'GET' })
+          const cardsData: CardWithBalance[] = await phpApiRequest('cards.php', { method: 'GET' })
           if (Array.isArray(cardsData)) {
-            const card = cardsData.find((c: any) => (c.card_id ?? c.id) === Number(cardId))
+            const card = cardsData.find((c) => (c.card_id ?? c.id) === Number(cardId))
             if (card) {
               setName(card.card_name ?? card.name ?? '')
               setCardLimit(String(card.card_limit ?? 0))

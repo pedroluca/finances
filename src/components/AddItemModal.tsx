@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "../store/auth.store"
 import { useAppStore } from "../store/app.store"
 import { phpApiRequest } from "../lib/api"
-import type { CardWithBalance } from "../types/database"
+import type { Author, CardWithBalance } from "../types/database"
 import {
   DollarSign,
   FileText,
@@ -27,7 +27,7 @@ interface AddItemModalProps {
   onClose: () => void
   onItemAdded?: () => void
   linkedAuthorId?: number // ID do autor vinculado para cartões compartilhados
-  cardOwnerAuthors?: any[] // Autores da conta do dono do cartão (para compartilhados)
+  cardOwnerAuthors?: Author[] // Autores da conta do dono do cartão (para compartilhados)
   isAuthorLocked?: boolean // Se true, não permite alterar o autor (cartões compartilhados)
 }
 

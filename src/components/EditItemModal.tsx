@@ -171,7 +171,7 @@ export default function EditItemModal({
         amount: numericAmount,
         category_id: categoryId ? Number(categoryId) : null,
         author_id: Number(authorId), // Mantém o autor principal
-        purchase_date: (purchaseDate || null) as any,
+        purchase_date: (purchaseDate || null) as unknown as Date | null,
         assignments: isSplit
           ? assignments.map((a) => ({
               ...a,

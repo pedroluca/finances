@@ -5,6 +5,7 @@ import { BottomBar } from './components/BottomBar'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import Billings from './pages/Billings'
 import AddCard from './pages/AddCard'
 import CardDetails from './pages/CardDetails'
 import Settings from './pages/Settings'
@@ -45,6 +46,10 @@ function App() {
         <Route
           path="/dashboard"
           element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/billings"
+          element={isAuthenticated ? <Billings /> : <Navigate to="/login" />}
         />
         <Route
           path="/cards/new"

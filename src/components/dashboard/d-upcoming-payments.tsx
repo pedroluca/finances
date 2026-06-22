@@ -1,39 +1,35 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle2 } from 'lucide-react'
-import type { CardWithBalance, MonthlyTotal } from '../../types/database'
+import type { Bill, CardWithBalance, MonthlyTotal } from '../../types/database'
 
 interface UpcomingPayment {
-  cardId: number
-  cardName: string
-  cardColor: string
-  unpaidAmount: number   // valor da fatia do usuário
+  kind: 'card' | 'bill'
+  key: string
+  label: string
+  color: string
+  icon?: string | null
+  unpaidAmount: number   // valor a exibir (parte do usuário, no caso de cartão)
   totalAmount?: number   // total do cartão (só para cartões próprios)
   isShared: boolean
+  amountPending: boolean // conta variável sem valor definido ainda
   dueDate: Date
   isOverdue: boolean
   isDueToday: boolean
   isDueSoon: boolean
   diffDays: number
-  referenceMonth: number
-  referenceYear: number
+  subLabel: string
+  onClick: () => void
 }
 
-interface DashboardUpcomingPaymentsProps {
-  cards: CardWithBalance[]
-  monthlyTotals: MonthlyTotal[]
-  hideValues: boolean
-}
-
-function buildUpcomingPayments(
+function buildCardPayments(
   cards: CardWithBalance[],
   monthlyTotals: MonthlyTotal[],
   maxDays: number | null,
+  today: Date,
+  navigate: (path: string) => void,
 ): UpcomingPayment[] {
   if (!monthlyTotals || monthlyTotals.length === 0) return []
-
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
 
   const results: UpcomingPayment[] = []
 
@@ -76,24 +72,75 @@ function buildUpcomingPayments(
     // Vencidas sempre aparecem; futuras só se dentro do range
     if (maxDays !== null && diffDays > maxDays) return
 
+    const referenceLabel = new Date(invoice.reference_year, invoice.reference_month - 1)
+      .toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+
     results.push({
-      cardId,
-      cardName: card.card_name,
-      cardColor: card.color,
+      kind: 'card',
+      key: `card-${cardId}`,
+      label: card.card_name,
+      color: card.color,
       unpaidAmount: Number(invoice.user_unpaid_amount),
       totalAmount: invoice.is_shared_portion ? undefined : Number(invoice.unpaid_amount),
       isShared: !!card.is_shared,
+      amountPending: false,
       dueDate,
       isOverdue: diffDays < 0,
       isDueToday: diffDays === 0,
       isDueSoon: diffDays > 0 && diffDays <= 7,
       diffDays,
-      referenceMonth: invoice.reference_month,
-      referenceYear: invoice.reference_year,
+      subLabel: `fatura de ${referenceLabel}`,
+      onClick: () => navigate(`/cards/${cardId}`),
     })
   })
 
-  return results.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
+  return results
+}
+
+function buildBillPayments(
+  bills: Bill[],
+  maxDays: number | null,
+  today: Date,
+  navigate: (path: string) => void,
+): UpcomingPayment[] {
+  const results: UpcomingPayment[] = []
+
+  bills.forEach((bill) => {
+    if (!bill.active) return
+
+    const unpaidCharges = (bill.charges ?? [])
+      .filter((c) => !c.is_paid)
+      .sort((a, b) => (a.reference_year - b.reference_year) || (a.reference_month - b.reference_month))
+
+    if (unpaidCharges.length === 0) return
+    const charge = unpaidCharges[0]
+
+    const dueDate = new Date(charge.due_date + 'T00:00:00')
+    const diffMs = dueDate.getTime() - today.getTime()
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+
+    if (maxDays !== null && diffDays > maxDays) return
+
+    results.push({
+      kind: 'bill',
+      key: `bill-${charge.id}`,
+      label: bill.description,
+      color: bill.category_color ?? '#6366f1',
+      icon: bill.category_icon,
+      unpaidAmount: charge.amount ?? 0,
+      isShared: false,
+      amountPending: charge.amount === null,
+      dueDate,
+      isOverdue: diffDays < 0,
+      isDueToday: diffDays === 0,
+      isDueSoon: diffDays > 0 && diffDays <= 7,
+      diffDays,
+      subLabel: 'conta',
+      onClick: () => navigate('/billings'),
+    })
+  })
+
+  return results
 }
 
 const FILTERS: { label: string; value: number | null }[] = [
@@ -103,11 +150,24 @@ const FILTERS: { label: string; value: number | null }[] = [
   { label: '30d', value: 30 },
 ]
 
-export function DashboardUpcomingPayments({ cards, monthlyTotals, hideValues }: DashboardUpcomingPaymentsProps) {
+interface DashboardUpcomingPaymentsProps {
+  cards: CardWithBalance[]
+  monthlyTotals: MonthlyTotal[]
+  bills: Bill[]
+  hideValues: boolean
+}
+
+export function DashboardUpcomingPayments({ cards, monthlyTotals, bills, hideValues }: DashboardUpcomingPaymentsProps) {
   const navigate = useNavigate()
   const [filter, setFilter] = useState<number | null>(15)
 
-  const payments = buildUpcomingPayments(cards, monthlyTotals, filter)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const payments = [
+    ...buildCardPayments(cards, monthlyTotals, filter, today, navigate),
+    ...buildBillPayments(bills, filter, today, navigate),
+  ].sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:p-6 transition-colors">
@@ -142,19 +202,28 @@ export function DashboardUpcomingPayments({ cards, monthlyTotals, hideValues }: 
         <div className="space-y-3">
           {payments.map((payment) => (
             <button
-              key={payment.cardId}
-              onClick={() => navigate(`/cards/${payment.cardId}`)}
+              key={payment.key}
+              onClick={payment.onClick}
               className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/60 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer text-left"
             >
               <div className="flex items-center gap-3">
-                <div
-                  className="w-3 h-10 rounded-full shrink-0"
-                  style={{ backgroundColor: payment.cardColor }}
-                />
+                {payment.kind === 'bill' ? (
+                  <div
+                    className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-base"
+                    style={{ backgroundColor: `${payment.color}20` }}
+                  >
+                    {payment.icon ?? '🧾'}
+                  </div>
+                ) : (
+                  <div
+                    className="w-3 h-10 rounded-full shrink-0"
+                    style={{ backgroundColor: payment.color }}
+                  />
+                )}
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-gray-900 dark:text-white leading-tight">
-                      {payment.cardName}
+                      {payment.label}
                     </p>
                     {payment.isShared && (
                       <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400">
@@ -166,36 +235,43 @@ export function DashboardUpcomingPayments({ cards, monthlyTotals, hideValues }: 
                     Vence{' '}
                     {payment.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                     {' '}·{' '}
-                    fatura de{' '}
-                    {new Date(payment.referenceYear, payment.referenceMonth - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                    {payment.subLabel}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 shrink-0">
                 <div className="text-right">
-                  {/* Para cartões próprios: mostra "Sua parte" se for menor que o total */}
-                  {!payment.isShared && payment.totalAmount !== undefined && payment.totalAmount > payment.unpaidAmount ? (
-                    <>
-                      <p className="font-semibold text-gray-900 dark:text-white">
-                        {hideValues ? 'R$ ••••' : `R$ ${payment.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                      </p>
-                      <p className="text-[11px] text-gray-400 dark:text-gray-500">
-                        Sua parte:{' '}
-                        <span className="font-medium text-gray-600 dark:text-gray-300">
-                          {hideValues ? 'R$ ••••' : `R$ ${payment.unpaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                        </span>
-                      </p>
-                    </>
+                  {payment.amountPending ? (
+                    <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                      Valor a definir
+                    </span>
                   ) : (
                     <>
-                      {/* Para compartilhados ou quando o total = parte do usuário */}
-                      {payment.isShared && (
-                        <p className="text-[11px] text-gray-400 dark:text-gray-500 text-right">Sua parte</p>
+                      {/* Para cartões próprios: mostra "Sua parte" se for menor que o total */}
+                      {payment.kind === 'card' && !payment.isShared && payment.totalAmount !== undefined && payment.totalAmount > payment.unpaidAmount ? (
+                        <>
+                          <p className="font-semibold text-gray-900 dark:text-white">
+                            {hideValues ? 'R$ ••••' : `R$ ${payment.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                          </p>
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                            Sua parte:{' '}
+                            <span className="font-medium text-gray-600 dark:text-gray-300">
+                              {hideValues ? 'R$ ••••' : `R$ ${payment.unpaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                            </span>
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          {/* Para compartilhados ou quando o total = parte do usuário */}
+                          {payment.isShared && (
+                            <p className="text-[11px] text-gray-400 dark:text-gray-500 text-right">Sua parte</p>
+                          )}
+                          <p className="font-semibold text-gray-900 dark:text-white">
+                            {hideValues ? 'R$ ••••' : `R$ ${payment.unpaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                          </p>
+                        </>
                       )}
-                      <p className="font-semibold text-gray-900 dark:text-white">
-                        {hideValues ? 'R$ ••••' : `R$ ${payment.unpaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                      </p>
                     </>
                   )}
 

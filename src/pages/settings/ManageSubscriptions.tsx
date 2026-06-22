@@ -4,7 +4,7 @@ import { ArrowLeft, Plus, RefreshCw, Pencil, Trash2, X, ChevronDown, Repeat, Ale
 import { useAuthStore } from '../../store/auth.store';
 import { useAppStore } from '../../store/app.store';
 import { phpApiRequest } from '../../lib/api';
-import type { Subscription, CreateSubscriptionDTO, UpdateSubscriptionDTO, BillingCycle } from '../../types/database';
+import type { Subscription, CreateSubscriptionDTO, UpdateSubscriptionDTO, BillingCycle, CardWithBalance } from '../../types/database';
 
 // ── billing cycle helpers ─────────────────────────────────────────────────────
 const CYCLE_OPTIONS: { value: BillingCycle; label: string; shortLabel: string }[] = [
@@ -682,11 +682,12 @@ export default function ManageSubscriptions() {
                 >
                   <option value="">Selecione o cartão...</option>
                   {cards
-                    .filter((c) => c.active || (c as any).active === 1)
+                    .filter((c) => c.active || Number((c as CardWithBalance).active) === 1)
                     .map((c) => {
                       // A view retorna card_id e card_name; fallback para id/name se vier diferente
-                      const id   = (c as any).card_id ?? c.id;
-                      const name = (c as any).card_name ?? (c as any).name;
+                      const card = c as CardWithBalance;
+                      const id   = card.card_id ?? card.id;
+                      const name = card.card_name ?? card.name;
                       return (
                         <option key={id} value={id}>{name}</option>
                       );

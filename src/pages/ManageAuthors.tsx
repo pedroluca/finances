@@ -109,9 +109,9 @@ export default function ManageAuthors() {
       setSelectedAuthor(null)
       loadAuthors()
       showToast(response.message || 'Vínculo realizado com sucesso!', 'success')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao vincular:', error)
-      const errorMessage = error?.message || 'Erro ao vincular. Verifique o email e tente novamente.'
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao vincular. Verifique o email e tente novamente.'
       showToast(errorMessage, 'error')
       // NÃO fecha o modal em caso de erro para facilitar correção
     }

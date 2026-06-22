@@ -3,7 +3,7 @@ import AddItemModal from "../components/AddItemModal"
 import { useNavigate, useParams } from "react-router-dom"
 import { useAuthStore } from "../store/auth.store"
 import { useAppStore } from "../store/app.store"
-import type { CardWithBalance } from "../types/database"
+import type { Author, Category, CardWithBalance } from "../types/database"
 import { phpApiRequest } from "../lib/api"
 import EditItemModal from "../components/EditItemModal"
 import {
@@ -62,7 +62,7 @@ export default function CardDetails() {
   const [showAddItemModal, setShowAddItemModal] = useState(false)
   const [allUnpaidItems, setAllUnpaidItems] = useState<InvoiceItemWithDetails[]>([])
   const [modalInvoiceId, setModalInvoiceId] = useState<number | null>(null)
-  const [cardOwnerAuthors, setCardOwnerAuthors] = useState<any[]>([])
+  const [cardOwnerAuthors, setCardOwnerAuthors] = useState<Author[]>([])
 
   // Handle add item button click
   const handleAddItemClick = async () => {
@@ -228,7 +228,7 @@ export default function CardDetails() {
         setIsLoading(true)
         
         // Carrega categorias e autores se não estiverem na store
-        const promises: Promise<any>[] = []
+        const promises: Promise<unknown>[] = []
         
         // Sempre busca a fatura
         promises.push(phpApiRequest(`invoices.php?card_id=${card.card_id ?? card.id}`))
@@ -250,8 +250,8 @@ export default function CardDetails() {
 
         const [invoices, fetchedCategories, fetchedAuthors] = await Promise.all(promises)
 
-        if (fetchedCategories) setCategories(fetchedCategories)
-        if (fetchedAuthors) setAuthors(fetchedAuthors)
+        if (fetchedCategories) setCategories(fetchedCategories as Category[])
+        if (fetchedAuthors) setAuthors(fetchedAuthors as Author[])
 
         // Encontrar a fatura do mês/ano atual (usa currentMonth/currentYear calculados)
         const invoice = (invoices as (InvoiceWithCard & { items: InvoiceItemWithDetails[] })[]).find(
@@ -273,7 +273,7 @@ export default function CardDetails() {
               return true
             }
             // OU se o autor está nos assignments (item dividido)
-            return item.assignments?.some((assignment: any) => assignment.author_id === card.author_id_on_owner)
+            return item.assignments?.some((assignment) => assignment.author_id === card.author_id_on_owner)
           })
         }
 
@@ -326,7 +326,7 @@ export default function CardDetails() {
             return true
           }
           // OU se o autor está nos assignments (item dividido)
-          return item.assignments?.some((assignment: any) => assignment.author_id === card.author_id_on_owner)
+          return item.assignments?.some((assignment) => assignment.author_id === card.author_id_on_owner)
         })
       }
 
@@ -495,7 +495,7 @@ export default function CardDetails() {
     try {
       await Promise.all(
         Array.from(selectedItems).map((itemId) => {
-          const payload: any = { id: itemId, is_paid: true }
+          const payload: { id: number; is_paid: boolean; author_id?: number } = { id: itemId, is_paid: true }
           
           if (selectedAuthorFilter.size === 1) {
              const authorId = Array.from(selectedAuthorFilter)[0]
@@ -1394,7 +1394,7 @@ export default function CardDetails() {
                   if (item.author_id === card.author_id_on_owner) {
                     return true
                   }
-                  return item.assignments?.some((assignment: any) => assignment.author_id === card.author_id_on_owner)
+                  return item.assignments?.some((assignment) => assignment.author_id === card.author_id_on_owner)
                 })
               }
 

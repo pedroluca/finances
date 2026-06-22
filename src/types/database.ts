@@ -279,3 +279,92 @@ export interface UpdateSubscriptionDTO {
   assignments?: { author_id: number; amount: number }[];
 }
 
+// ── Contas (bills) ───────────────────────────────────────────────────────────
+// Contas pagas fora da fatura do cartão (ex: água, luz, internet, aluguel).
+// Podem ser recorrentes (repetem todo mês) ou avulsas, com valor fixo ou variável.
+
+export interface BillCharge {
+  id: number;
+  bill_id: number;
+  reference_month: number;
+  reference_year: number;
+  /** null = valor ainda não definido (conta variável pendente, ex: energia antes de chegar) */
+  amount: number | null;
+  due_date: string;
+  is_paid: boolean;
+  paid_amount: number | null;
+  paid_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  // Campos extras vindos da view bill_charge_details
+  bill_description?: string;
+  is_recurring?: boolean;
+  is_fixed_amount?: boolean;
+  author_id?: number | null;
+  author_name?: string | null;
+  category_name?: string | null;
+  category_icon?: string | null;
+  category_color?: string | null;
+  amount_pending?: boolean;
+}
+
+export interface Bill {
+  id: number;
+  user_id: number;
+  description: string;
+  category_id: number | null;
+  category_name: string | null;
+  category_icon: string | null;
+  category_color: string | null;
+  author_id: number | null;
+  author_name: string | null;
+  is_recurring: boolean;
+  is_fixed_amount: boolean;
+  default_amount: number | null;
+  due_day: number;
+  active: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  charges: BillCharge[];
+}
+
+export interface CreateBillDTO {
+  user_id: number;
+  description: string;
+  category_id?: number | null;
+  author_id?: number | null;
+  is_recurring?: boolean;
+  is_fixed_amount?: boolean;
+  default_amount?: number | null;
+  due_day: number;
+  notes?: string | null;
+  /** Valor já conhecido da primeira cobrança (útil pra contas variáveis) */
+  initial_amount?: number | null;
+}
+
+export interface UpdateBillDTO {
+  id: number;
+  user_id: number;
+  description?: string;
+  category_id?: number | null;
+  author_id?: number | null;
+  is_recurring?: boolean;
+  is_fixed_amount?: boolean;
+  default_amount?: number | null;
+  due_day?: number;
+  notes?: string | null;
+  active?: boolean;
+}
+
+export interface UpdateBillChargeDTO {
+  action: 'updateCharge';
+  charge_id: number;
+  user_id: number;
+  amount?: number | null;
+  is_paid?: boolean;
+  paid_amount?: number | null;
+  notes?: string | null;
+}
+

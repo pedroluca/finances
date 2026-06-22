@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth.store'
 import { useAppStore } from '../store/app.store'
-import type { CardWithBalance, Subscription } from '../types/database'
+import type { Bill, CardWithBalance, Subscription } from '../types/database'
 import { phpApiRequest } from '../lib/api'
 import { DashboardHeader } from '../components/dashboard/d-header'
 import { DashboardStats } from '../components/dashboard/d-stats'
@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [hideValues, setHideValues] = useState(localStorage.getItem('hideValues') === 'true')
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
+  const [bills, setBills] = useState<Bill[]>([])
 
   const activeCards = orderedCards() as CardWithBalance[]
   const ownerAuthor = authors.find((a) => a.is_owner)
@@ -42,19 +43,21 @@ export default function Dashboard() {
       if (!user?.id) return
       try {
         setIsLoading(true)
-        const [cardsData, categoriesData, authorsData, monthlyTotalsData, cardOrderData, subsData] = await Promise.all([
+        const [cardsData, categoriesData, authorsData, monthlyTotalsData, cardOrderData, subsData, billsData] = await Promise.all([
           phpApiRequest('cards.php', { method: 'GET' }),
           phpApiRequest('categories.php', { method: 'GET' }),
           phpApiRequest('authors.php', { method: 'GET' }),
           phpApiRequest('invoices.php?action=monthlyTotals', { method: 'GET' }),
           phpApiRequest(`card_order.php?user_id=${user?.id}`, { method: 'GET' }),
           phpApiRequest(`subscriptions.php?user_id=${user?.id}`, { method: 'GET' }),
+          phpApiRequest(`bills.php?user_id=${user?.id}`, { method: 'GET' }),
         ])
         setCards(cardsData)
         setCategories(categoriesData)
         setAuthors(authorsData)
         setMonthlyTotals(monthlyTotalsData)
         if (subsData?.success) setSubscriptions(subsData.data ?? [])
+        if (billsData?.success) setBills(billsData.data ?? [])
         // cardOrderData = [{ card_id, position }]
         if (Array.isArray(cardOrderData) && cardOrderData.length > 0) {
           setCardOrder(cardOrderData.map((o: { card_id: number }) => o.card_id))
@@ -149,6 +152,7 @@ export default function Dashboard() {
         <DashboardUpcomingPayments
           cards={activeCards}
           monthlyTotals={monthlyTotals}
+          bills={bills}
           hideValues={hideValues}
         />
       </main>

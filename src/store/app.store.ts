@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type {
   Card,
+  CardWithBalance,
   Category,
   Author,
   InvoiceWithCard,
@@ -104,7 +105,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { cards, cardOrder } = get();
     if (cardOrder.length === 0) return cards;
     // CardWithBalance vem da view com `card_id`; Card simples usa `id`
-    const getCardId = (c: Card) => (c as any).card_id ?? c.id;
+    const getCardId = (c: Card) => (c as CardWithBalance).card_id ?? c.id;
     const indexed = new Map(cards.map((c) => [getCardId(c), c]));
     const sorted = cardOrder
       .map((id) => indexed.get(id))
