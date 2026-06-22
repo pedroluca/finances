@@ -1,11 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Info, Users, ChevronRight, Sun, Moon, GripVertical, Tag, Repeat } from 'lucide-react'
+import { ArrowLeft, Info, Users, Sun, Moon, GripVertical, Tag, Repeat, LogOut } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
+import { useAuthStore } from '../store/auth.store'
+import SettingsCard from '../components/SettingsCard'
 import { version } from '../../package.json'
 
 export default function Settings() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
+  const { user, logout } = useAuthStore()
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors pb-16 lg:pb-0">
@@ -25,157 +28,85 @@ export default function Settings() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-4">
-        
-        {/* Navigation Cards */}
-        <Link
-          to="/settings/manage-authors"
-          className="block w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-colors p-4 md:p-6 hover:shadow-md cursor-pointer"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 p-3 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Gerenciar Pessoas
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Adicione pessoas que compartilham gastos com você e vincule suas contas.
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
-          </div>
-        </Link>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        {/* Perfil */}
+        <SettingsCard
+          icon={<span className="font-semibold text-lg text-blue-600 dark:text-blue-400">{user?.name?.charAt(0).toUpperCase()}</span>}
+          iconBgClassName="bg-blue-100 dark:bg-blue-900/30"
+          title={user?.name ?? ''}
+          description={user?.email}
+          truncateText
+          largeCard
+          action={{ type: 'button', icon: <LogOut className="w-5 h-5" />, onClick: logout, ariaLabel: 'Sair' }}
+        />
+
+        {/* Gerenciar Pessoas */}
+        <SettingsCard
+          icon={<Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />}
+          iconBgClassName="bg-purple-100 dark:bg-purple-900/30"
+          title="Gerenciar Pessoas"
+          description="Adicione pessoas que compartilham gastos com você e vincule suas contas."
+          action={{ type: 'link', to: '/settings/manage-authors' }}
+        />
 
         {/* Ordem dos Cartões */}
-        <Link
-          to="/settings/card-order"
-          className="block w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-colors p-4 md:p-6 hover:shadow-md cursor-pointer"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <GripVertical className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Ordem dos Cartões
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Defina a ordem em que os cartões aparecem no dashboard.
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
-          </div>
-        </Link>
+        <SettingsCard
+          icon={<GripVertical className="w-6 h-6 text-blue-600 dark:text-blue-400" />}
+          iconBgClassName="bg-blue-100 dark:bg-blue-900/30"
+          title="Ordem dos Cartões"
+          description="Defina a ordem em que os cartões aparecem."
+          action={{ type: 'link', to: '/settings/card-order' }}
+        />
 
         {/* Categorias */}
-        <Link
-          to="/settings/categories"
-          className="block w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-colors p-4 md:p-6 hover:shadow-md cursor-pointer"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 p-3 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <Tag className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Categorias
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Crie e gerencie suas categorias personalizadas.
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
-          </div>
-        </Link>
+        <SettingsCard
+          icon={<Tag className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />}
+          iconBgClassName="bg-emerald-100 dark:bg-emerald-900/30"
+          title="Categorias"
+          description="Crie e gerencie suas categorias personalizadas."
+          action={{ type: 'link', to: '/settings/categories' }}
+        />
 
         {/* Assinaturas */}
-        <Link
-          to="/settings/subscriptions"
-          className="block w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-colors p-4 md:p-6 hover:shadow-md cursor-pointer"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 p-3 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <Repeat className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Assinaturas
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Gerencie cobranças recorrentes mensais e renovações automáticas.
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
-          </div>
-        </Link>
+        <SettingsCard
+          icon={<Repeat className="w-6 h-6 text-purple-600 dark:text-purple-400" />}
+          iconBgClassName="bg-purple-100 dark:bg-purple-900/30"
+          title="Assinaturas"
+          description="Gerencie cobranças recorrentes mensais e renovações automáticas."
+          action={{ type: 'link', to: '/settings/subscriptions' }}
+        />
 
         {/* Aparência */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-colors p-4 md:p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-                {theme === 'dark'
-                  ? <Moon className="w-6 h-6 text-yellow-500 dark:text-yellow-400" />
-                  : <Sun className="w-6 h-6 text-yellow-500" />
-                }
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Aparência
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {theme === 'dark' ? 'Modo escuro ativado' : 'Modo claro ativado'}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={toggleTheme}
-              className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
-                theme === 'dark' ? 'bg-purple-600' : 'bg-gray-300'
-              }`}
-              aria-label="Alternar tema"
-            >
-              <span
-                className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                  theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
+        <SettingsCard
+          icon={
+            theme === 'dark'
+              ? <Moon className="w-6 h-6 text-yellow-500 dark:text-yellow-400" />
+              : <Sun className="w-6 h-6 text-yellow-500" />
+          }
+          iconBgClassName="bg-yellow-100 dark:bg-yellow-900/30"
+          title="Aparência"
+          description={theme === 'dark' ? 'Modo escuro ativado' : 'Modo claro ativado'}
+          action={{ type: 'toggle', checked: theme === 'dark', onChange: toggleTheme, ariaLabel: 'Alternar tema' }}
+        />
 
         {/* Sobre */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-colors p-4 md:p-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 p-3 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
-              <Info className="w-6 h-6 text-gray-500 dark:text-gray-400" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Sobre o Finances
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Sistema de gerenciamento de faturas de cartão de crédito.
-              </p>
-            </div>
-          </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            v{version} · Desenvolvido por{' '}
-            <Link to="https://pedroluca.dev.br" target="_blank" rel="noopener noreferrer" className="text-purple-600 dark:text-purple-400 hover:underline">
-              Pedro Luca Prates
-            </Link>
-          </p>
-        </div>
+        <SettingsCard
+          icon={<Info className="w-6 h-6 text-gray-500 dark:text-gray-400" />}
+          iconBgClassName="bg-gray-100 dark:bg-gray-700"
+          title="Sobre o Finances"
+          description="Sistema de gerenciamento de faturas de cartão de crédito."
+          action={{ type: 'none' }}
+          largeCard
+          footer={
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              v{version} · Desenvolvido por{' '}
+              <Link to="https://pedroluca.dev.br" target="_blank" rel="noopener noreferrer" className="text-purple-600 dark:text-purple-400 hover:underline">
+                Pedro Luca Prates
+              </Link>
+            </p>
+          }
+        />
       </main>
     </div>
   )
