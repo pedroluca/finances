@@ -55,11 +55,10 @@ export function DashboardCardsList({ cards, monthlyTotals, hideValues }: Dashboa
           Meus Cartões
         </h2>
         <button
-          onClick={() => navigate('/cards/new')}
-          className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition"
+          onClick={() => navigate('/cards')}
+          className="flex cursor-pointer items-center gap-2 px-4 py-1 text-sm border border-purple-700 bg-purple-700/10 text-purple-500 rounded-md transition"
         >
-          <Plus className="w-5 h-5" />
-          <span>Novo Cartão</span>
+          <span>Ver todos</span>
         </button>
       </div>
 
@@ -112,7 +111,7 @@ export function DashboardCardsList({ cards, monthlyTotals, hideValues }: Dashboa
               const index = Math.round(scrollLeft / (cardWidth + gap))
               setCurrentCardIndex(Math.min(cards.length - 1, Math.max(0, index)))
             }}
-            className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide"
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide"
           >
             {cards.map((card) => {
               const availableLimit = Number(card.available_balance) || 0
@@ -256,7 +255,7 @@ export function DashboardCardsList({ cards, monthlyTotals, hideValues }: Dashboa
           </div>
 
           {/* Mobile: 1 dot por cartão */}
-          <div className="md:hidden mt-4 flex justify-center">
+          <div className="md:hidden flex justify-center">
             <ScrollIndicator
               total={cards.length}
               current={currentCardIndex}
@@ -266,7 +265,7 @@ export function DashboardCardsList({ cards, monthlyTotals, hideValues }: Dashboa
 
           {/* Desktop: todos os dots, os 3 visíveis ficam destacados simultaneamente */}
           {cards.length > DESKTOP_CARDS_PER_PAGE && (
-            <div className="hidden md:flex mt-4 justify-center items-center gap-2">
+            <div className="hidden md:flex justify-center items-center gap-2">
               {Array.from({ length: cards.length }, (_, i) => {
                 const isActive = i >= visibleStart && i <= visibleEnd
                 return (

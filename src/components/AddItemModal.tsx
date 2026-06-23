@@ -130,6 +130,9 @@ export default function AddItemModal({
     setDisplayAmount(`R$ ${formatted}`)
   }
 
+  const exceedsAvailableLimit =
+    amount !== "" && parseFloat(amount) > card.available_balance
+
   const getSplitTotal = () => assignments.reduce((acc, curr) => acc + curr.amount, 0)
 
   const formatCurrency = (val: number) => {
@@ -319,6 +322,11 @@ export default function AddItemModal({
                   className={inputClass()}
                   required
                 />
+                {exceedsAvailableLimit && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                    O limite disponível é de R$ {formatCurrency(card.available_balance)}
+                  </p>
+                )}
               </div>
               <div>
                 <label htmlFor="installments" className={labelClass}>
