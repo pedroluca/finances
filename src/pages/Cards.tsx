@@ -112,7 +112,7 @@ export default function Cards() {
               <span className="text-purple-200 text-sm font-medium">Total gasto em cartões</span>
             </div>
             <p className="text-3xl font-bold">{hideValues ? 'R$ ••••' : `R$ ${totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</p>
-            <p className="text-purple-300 text-sm mt-1">{activeCards.length} cartão{activeCards.length !== 1 ? 's' : ''} ativo{activeCards.length !== 1 ? 's' : ''}</p>
+            <p className="text-purple-300 text-sm mt-1">{activeCards.length} cart{activeCards.length !== 1 ? 'ões' : 'ão'} ativo{activeCards.length !== 1 ? 's' : ''}</p>
           </div>
         )}
 
