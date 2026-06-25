@@ -37,6 +37,7 @@ export function DashboardStats({ totalCards, totalLimit, currentMonthExpense, hi
         icon={CreditCard}
         iconBgClassName="bg-purple-100 dark:bg-purple-900"
         iconColorClassName="text-purple-600 dark:text-purple-400"
+        onClick={() => navigate('/cards')}
       />
 
       <StatCard
