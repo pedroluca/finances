@@ -8,6 +8,7 @@ import { DashboardHeader } from '../components/dashboard/d-header'
 import { DashboardStats } from '../components/dashboard/d-stats'
 import { DashboardCardsList } from '../components/dashboard/d-cards-list'
 import { DashboardUpcomingPayments } from '../components/dashboard/d-upcoming-payments'
+import { DashboardSkeleton } from '../components/dashboard/d-skeleton'
 import { AndroidInstallBanner } from '../components/AndroidInstallBanner'
 
 export default function Dashboard() {
@@ -154,9 +155,7 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
-          </div>
+          <DashboardSkeleton />
         ) : (
           <>
             <DashboardStats

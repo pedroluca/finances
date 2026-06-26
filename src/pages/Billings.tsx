@@ -10,6 +10,7 @@ import { DashboardHeader } from '../components/dashboard/d-header'
 import type { Bill, BillCharge, CreateBillDTO, UpdateBillDTO } from '../types/database'
 import { labelClass, inputClass } from '../lib/formStyles'
 import Switch from '../components/Switch'
+import { Skeleton } from '../components/ui/skeleton'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -304,12 +305,16 @@ export default function Billings() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Contas</h1>
 
-          <button
-            onClick={openCreate}
-            className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Nova
-          </button>
+          {isLoading ? (
+            <Skeleton className="h-9 w-24 rounded-lg" />
+          ) : (
+            <button
+              onClick={openCreate}
+              className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Nova
+            </button>
+          )}
         </div>
 
         {globalError && (
@@ -318,7 +323,9 @@ export default function Billings() {
           </div>
         )}
 
-        {!isLoading && activeList.length > 0 && (
+        {isLoading ? (
+          <Skeleton className="rounded-2xl p-6 h-[104px]" />
+        ) : activeList.length > 0 && (
           <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 text-white shadow-lg">
             <div className="flex items-center gap-3 mb-1">
               <Receipt className="w-5 h-5 opacity-80" />
@@ -330,8 +337,10 @@ export default function Billings() {
         )}
 
         {isLoading && (
-          <div className="flex items-center justify-center py-16">
-            <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
+          <div className="space-y-3">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <BillCardSkeleton key={i} />
+            ))}
           </div>
         )}
 
@@ -582,6 +591,34 @@ export default function Billings() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Bill Card Skeleton ──────────────────────────────────────────────────────
+
+function BillCardSkeleton() {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
+      <div className="flex items-start gap-4">
+        <Skeleton className="w-10 h-10 rounded-xl shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+            <Skeleton className="h-5 w-16 shrink-0" />
+          </div>
+          <div className="flex items-center justify-between mt-3">
+            <Skeleton className="h-5 w-24 rounded-full" />
+            <div className="flex items-center gap-1">
+              <Skeleton className="w-7 h-7 rounded-lg" />
+              <Skeleton className="w-7 h-7 rounded-lg" />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

@@ -7,6 +7,7 @@ import type { CardWithBalance, MonthlyTotal } from '../types/database'
 import { phpApiRequest } from '../lib/api'
 import { DashboardHeader } from '../components/dashboard/d-header'
 import { StatCard } from '../components/dashboard/d-stat-card'
+import { Skeleton } from '../components/ui/skeleton'
 
 function getCurrentInvoiceAmount(card: CardWithBalance, monthlyTotals: MonthlyTotal[]): number {
   const cardId = card.card_id ?? card.id
@@ -97,15 +98,21 @@ export default function Cards() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Cartões</h1>
 
-          <button
-            onClick={() => navigate('/cards/new')}
-            className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Novo
-          </button>
+          {isLoading ? (
+            <Skeleton className="h-9 w-24 rounded-lg" />
+          ) : (
+            <button
+              onClick={() => navigate('/cards/new')}
+              className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Novo
+            </button>
+          )}
         </div>
 
-        {!isLoading && activeCards.length > 0 && (
+        {isLoading ? (
+          <Skeleton className="rounded-2xl p-6 h-[104px]" />
+        ) : activeCards.length > 0 && (
           <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 text-white shadow-lg">
             <div className="flex items-center gap-3 mb-1">
               <CreditCard className="w-5 h-5 opacity-80" />
@@ -117,12 +124,10 @@ export default function Cards() {
         )}
 
         {isLoading && (
-          <div className="flex items-center justify-center py-16">
-            <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
-          </div>
+          <Skeleton className="h-[68px] rounded-xl" />
         )}
 
-        {activeCards.length > 0 && (
+        {!isLoading && activeCards.length > 0 && (
           <StatCard
             label="Cartão mais usado"
             value={mostUsedCard?.card_name ?? '—'}
@@ -132,7 +137,15 @@ export default function Cards() {
           />
         )}
 
-        {activeCards.length === 0 ? (
+        {isLoading && (
+          <div className="space-y-4">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Skeleton key={i} className="w-full aspect-[2/1] sm:aspect-[2.2/1] rounded-2xl" />
+            ))}
+          </div>
+        )}
+
+        {!isLoading && (activeCards.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-12 text-center">
             <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-400 mb-4">
@@ -252,7 +265,7 @@ export default function Cards() {
               )
             })}
           </div>
-        )}
+        ))}
       </main>
     </div>
   )
