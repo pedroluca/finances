@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CreditCard, Nfc, Plus, Star } from 'lucide-react'
+import { CreditCard, Plus, Star } from 'lucide-react'
 import { useAuthStore } from '../store/auth.store'
 import { useAppStore } from '../store/app.store'
 import type { CardWithBalance, MonthlyTotal } from '../types/database'
@@ -8,6 +8,9 @@ import { phpApiRequest } from '../lib/api'
 import { DashboardHeader } from '../components/dashboard/d-header'
 import { StatCard } from '../components/dashboard/d-stat-card'
 import { Skeleton } from '../components/ui/skeleton'
+import { AnimatedCurrency } from '../components/ui/animated-currency'
+import { CreditCardTile } from '../components/cards/CreditCardTile'
+import { useIsFirstVisitThisSession } from '../hooks/useFirstVisitThisSession'
 
 function getCurrentInvoiceAmount(card: CardWithBalance, monthlyTotals: MonthlyTotal[]): number {
   const cardId = card.card_id ?? card.id
@@ -39,6 +42,9 @@ export default function Cards() {
   const { user, logout, isAuthenticated } = useAuthStore()
   const { setCards, monthlyTotals, setMonthlyTotals, orderedCards, cards } = useAppStore()
 
+  const hadCacheRef = useRef(cards.length > 0)
+  const animateOnMount = useIsFirstVisitThisSession('cards')
+
   const [isLoading, setIsLoading] = useState(cards.length === 0)
   const [hideValues, setHideValues] = useState(localStorage.getItem('hideValues') === 'true')
 
@@ -57,7 +63,7 @@ export default function Cards() {
 
     const loadData = async () => {
       try {
-        setIsLoading(true)
+        if (!hadCacheRef.current) setIsLoading(true)
         const [cardsData, monthlyTotalsData] = await Promise.all([
           phpApiRequest('cards.php', { method: 'GET' }),
           phpApiRequest('invoices.php?action=monthlyTotals', { method: 'GET' }),
@@ -118,7 +124,7 @@ export default function Cards() {
               <CreditCard className="w-5 h-5 opacity-80" />
               <span className="text-purple-200 text-sm font-medium">Total gasto em cartões</span>
             </div>
-            <p className="text-3xl font-bold">{hideValues ? 'R$ ••••' : `R$ ${totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</p>
+            <p className="text-3xl font-bold"><AnimatedCurrency value={totalSpent} hide={hideValues} animateOnMount={animateOnMount} /></p>
             <p className="text-purple-300 text-sm mt-1">{activeCards.length} cart{activeCards.length !== 1 ? 'ões' : 'ão'} ativo{activeCards.length !== 1 ? 's' : ''}</p>
           </div>
         )}
@@ -178,91 +184,21 @@ export default function Cards() {
                 const percAvailable = (availableLimit / totalReference) * 100
 
                 return (
-                  <button
+                  <CreditCardTile
                     key={card.card_id}
+                    card={card}
+                    hideValues={hideValues}
+                    animateOnMount={animateOnMount}
+                    totalLimit={totalLimit}
+                    currentInvoiceAmount={currentInvoiceAmount}
+                    otherInvoices={otherInvoices}
+                    availableLimit={availableLimit}
+                    percCurrent={percCurrent}
+                    percOther={percOther}
+                    percAvailable={percAvailable}
                     onClick={() => navigate(`/cards/${card.card_id}`)}
-                    className="relative w-full cursor-pointer rounded-2xl p-5 md:p-6 text-white shadow-xl transition-transform hover:scale-[1.01] hover:shadow-2xl overflow-hidden group text-left block"
-                    style={{
-                      background: `linear-gradient(135deg, ${card.color} 0%, ${card.color}dd 100%)`,
-                      boxShadow: `0 4px 24px -8px ${card.color}80`,
-                    }}
-                  >
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none" />
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full -ml-12 -mb-12 blur-2xl pointer-events-none" />
-
-                    <div className="relative h-full flex flex-col justify-between z-10 w-full">
-                      <div className="flex justify-between items-start w-full gap-2">
-                        <h3 className="font-bold text-lg md:text-xl tracking-wide drop-shadow-md truncate">
-                          {card.card_name}
-                        </h3>
-                        <Nfc className="w-6 h-6 md:w-8 md:h-8 opacity-80 shrink-0" />
-                      </div>
-
-                      <div className="w-10 h-7 md:w-12 md:h-9 bg-yellow-200/80 rounded-md border border-yellow-400/50 flex items-center justify-center overflow-hidden relative shadow-sm my-1 md:my-auto shrink-0">
-                        <div className="absolute w-full h-[1px] bg-yellow-600/40 top-1/2 -translate-y-1/2" />
-                        <div className="absolute h-full w-[1px] bg-yellow-600/40 left-1/2 -translate-x-1/2" />
-                        <div className="w-6 h-4 md:w-8 md:h-6 border border-yellow-600/40 rounded-sm" />
-                      </div>
-
-                      <div className="mt-auto w-full">
-                        {card.is_shared ? (
-                          <div className="flex flex-col w-full">
-                            <p className="text-[10px] uppercase tracking-wider opacity-80 font-medium mb-0.5">Compartilhado com</p>
-                            <p className="font-bold text-lg tracking-tight drop-shadow-sm truncate w-full">
-                              {card.owner_name}
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-2 md:gap-2.5 mt-2 md:mt-0 w-full">
-                            <div className="flex justify-between items-end w-full">
-                              <p className="text-[10px] md:text-[11px] uppercase tracking-wider opacity-90 font-medium">Limite Total</p>
-                              <p className="font-bold text-sm md:text-base tracking-tight drop-shadow-sm">
-                                {hideValues ? 'R$ ••••' : `R$ ${totalLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                              </p>
-                            </div>
-
-                            <div className="w-full h-1.5 md:h-2 rounded-full border border-gray-300/60 drop-shadow-md flex overflow-hidden bg-black/20 shadow-inner">
-                              <div style={{ width: `${percCurrent}%` }} className="bg-sky-400 h-full transition-all" />
-                              <div style={{ width: `${percOther}%` }} className="bg-orange-400 h-full transition-all" />
-                              <div style={{ width: `${percAvailable}%` }} className="bg-emerald-400 h-full transition-all" />
-                            </div>
-
-                            <div className="flex justify-between items-start text-[9px] md:text-[10px] uppercase tracking-wider opacity-100 font-medium w-full">
-                              <div className="flex flex-col gap-0.5">
-                                <div className="flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-sky-400 shadow-sm shrink-0" />
-                                  <span className="opacity-90">Atual</span>
-                                </div>
-                                <span className="font-bold text-[10px] md:text-xs normal-case drop-shadow-sm ml-[10px] md:ml-[12px]">
-                                  {hideValues ? '••••' : `R$ ${currentInvoiceAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                                </span>
-                              </div>
-
-                              <div className="flex flex-col gap-0.5">
-                                <div className="flex items-center gap-1 justify-center">
-                                  <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-orange-400 shadow-sm shrink-0" />
-                                  <span className="opacity-90">Outras</span>
-                                </div>
-                                <span className="font-bold text-[10px] md:text-xs normal-case drop-shadow-sm ml-[10px] md:ml-[12px]">
-                                  {hideValues ? '••••' : `R$ ${otherInvoices.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                                </span>
-                              </div>
-
-                              <div className="flex flex-col gap-0.5 items-end">
-                                <div className="flex items-center gap-1">
-                                  <span className="opacity-90">Disp.</span>
-                                  <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-400 shadow-sm shrink-0" />
-                                </div>
-                                <span className="font-bold text-[10px] md:text-xs normal-case drop-shadow-sm mr-[10px] md:mr-[12px]">
-                                  {hideValues ? '••••' : `R$ ${availableLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </button>
+                    className="w-full hover:scale-[1.01]"
+                  />
                 )
               })}
             </div>

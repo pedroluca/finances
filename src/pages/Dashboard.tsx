@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth.store'
 import { useAppStore } from '../store/app.store'
-import type { Bill, CardWithBalance, Subscription } from '../types/database'
+import type { CardWithBalance } from '../types/database'
 import { phpApiRequest } from '../lib/api'
 import { DashboardHeader } from '../components/dashboard/d-header'
 import { DashboardStats } from '../components/dashboard/d-stats'
@@ -10,16 +10,21 @@ import { DashboardCardsList } from '../components/dashboard/d-cards-list'
 import { DashboardUpcomingPayments } from '../components/dashboard/d-upcoming-payments'
 import { DashboardSkeleton } from '../components/dashboard/d-skeleton'
 import { AndroidInstallBanner } from '../components/AndroidInstallBanner'
+import { useIsFirstVisitThisSession } from '../hooks/useFirstVisitThisSession'
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, logout, isAuthenticated } = useAuthStore()
-  const { cards, setCards, setCategories, setAuthors, monthlyTotals, setMonthlyTotals, setCardOrder, orderedCards, authors } = useAppStore()
+  const {
+    cards, setCards, setCategories, setAuthors, monthlyTotals, setMonthlyTotals, setCardOrder, orderedCards, authors,
+    bills, setBills, subscriptions, setSubscriptions,
+  } = useAppStore()
+
+  const hadCacheRef = useRef(cards.length > 0)
+  const animateOnMount = useIsFirstVisitThisSession('dashboard')
 
   const [isLoading, setIsLoading] = useState(cards.length === 0)
   const [hideValues, setHideValues] = useState(localStorage.getItem('hideValues') === 'true')
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
-  const [bills, setBills] = useState<Bill[]>([])
 
   const activeCards = orderedCards() as CardWithBalance[]
   const ownerAuthor = authors.find((a) => a.is_owner)
@@ -43,7 +48,7 @@ export default function Dashboard() {
     const loadInitialData = async () => {
       if (!user?.id) return
       try {
-        setIsLoading(true)
+        if (!hadCacheRef.current) setIsLoading(true)
         const [cardsData, categoriesData, authorsData, monthlyTotalsData, cardOrderData, subsData, billsData] = await Promise.all([
           phpApiRequest('cards.php', { method: 'GET' }),
           phpApiRequest('categories.php', { method: 'GET' }),
@@ -71,7 +76,7 @@ export default function Dashboard() {
     }
 
     loadInitialData()
-  }, [isAuthenticated, user?.id, navigate, setCards, setCategories, setAuthors, setMonthlyTotals])
+  }, [isAuthenticated, user, navigate, setCards, setCategories, setAuthors, setMonthlyTotals, setCardOrder, setSubscriptions, setBills])
 
   const getCurrentMonthExpense = () => {
     if (!monthlyTotals || monthlyTotals.length === 0) return 0
@@ -165,9 +170,10 @@ export default function Dashboard() {
               hideValues={hideValues}
               subscriptions={subscriptions}
               ownerAuthorId={ownerAuthorId}
+              animateOnMount={animateOnMount}
             />
 
-            <DashboardCardsList cards={activeCards} hideValues={hideValues} monthlyTotals={monthlyTotals} />
+            <DashboardCardsList cards={activeCards} hideValues={hideValues} monthlyTotals={monthlyTotals} animateOnMount={animateOnMount} />
 
             <DashboardUpcomingPayments
               cards={activeCards}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type FormEvent } from 'react'
+import { useState, useEffect, useMemo, useRef, type FormEvent } from 'react'
 import {
   Plus, Pencil, Trash2, X, ChevronDown, Receipt,
   AlertCircle, CheckCircle2, Circle, Repeat, CalendarClock,
@@ -11,12 +11,10 @@ import type { Bill, BillCharge, CreateBillDTO, UpdateBillDTO } from '../types/da
 import { labelClass, inputClass } from '../lib/formStyles'
 import Switch from '../components/Switch'
 import { Skeleton } from '../components/ui/skeleton'
+import { AnimatedCurrency } from '../components/ui/animated-currency'
+import { useIsFirstVisitThisSession } from '../hooks/useFirstVisitThisSession'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-
-function formatAmount(value: number) {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
 
 function parseAmountInput(raw: string): { numeric: number; display: string } {
   const numbers = raw.replace(/\D/g, '')
@@ -47,11 +45,13 @@ function daysUntil(dateStr: string): number {
 
 export default function Billings() {
   const { user, logout } = useAuthStore()
-  const { authors, setAuthors, categories, setCategories } = useAppStore()
+  const { authors, setAuthors, categories, setCategories, bills, setBills } = useAppStore()
+
+  const hadCacheRef = useRef(bills.length > 0)
+  const animateOnMount = useIsFirstVisitThisSession('billings')
 
   const [hideValues, setHideValues] = useState(localStorage.getItem('hideValues') === 'true')
-  const [bills, setBills] = useState<Bill[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(bills.length === 0)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
@@ -79,7 +79,7 @@ export default function Billings() {
   useEffect(() => {
     const fetchAll = async () => {
       if (!user) return
-      setIsLoading(true)
+      if (!hadCacheRef.current) setIsLoading(true)
       try {
         const [billsRes, authData, catData] = await Promise.all([
           phpApiRequest(`bills.php?user_id=${user.id}`, { method: 'GET' }),
@@ -192,7 +192,7 @@ export default function Billings() {
           body: JSON.stringify(body),
         })
         if (res?.success) {
-          setBills((prev) => prev.map((b) => b.id === editingId ? res.data : b))
+          setBills(bills.map((b) => b.id === editingId ? res.data : b))
         } else {
           setFormError(res?.message ?? 'Erro ao atualizar')
           return
@@ -216,7 +216,7 @@ export default function Billings() {
           body: JSON.stringify(body),
         })
         if (res?.success) {
-          setBills((prev) => [res.data, ...prev])
+          setBills([res.data, ...bills])
         } else {
           setFormError(res?.message ?? 'Erro ao criar')
           return
@@ -243,7 +243,7 @@ export default function Billings() {
         body: JSON.stringify({ id, user_id: user.id }),
       })
       if (res?.success) {
-        setBills((prev) => prev.filter((b) => b.id !== id))
+        setBills(bills.filter((b) => b.id !== id))
         setDeletingId(null)
       }
     } catch (err) {
@@ -262,7 +262,7 @@ export default function Billings() {
         body: JSON.stringify({ action: 'updateCharge', charge_id: chargeId, user_id: user.id, ...payload }),
       })
       if (res?.success) {
-        setBills((prev) => prev.map((b) => {
+        setBills(bills.map((b) => {
           if (b.id !== billId) return b
           return { ...b, charges: b.charges.map((c) => c.id === chargeId ? { ...c, ...res.data } : c) }
         }))
@@ -331,7 +331,7 @@ export default function Billings() {
               <Receipt className="w-5 h-5 opacity-80" />
               <span className="text-purple-200 text-sm font-medium">Total em contas</span>
             </div>
-            <p className="text-3xl font-bold">{hideValues ? 'R$ ••••' : formatAmount(monthlyTotal)}</p>
+            <p className="text-3xl font-bold"><AnimatedCurrency value={monthlyTotal} hide={hideValues} animateOnMount={animateOnMount} /></p>
             <p className="text-purple-300 text-sm mt-1">{activeList.length} conta{activeList.length !== 1 ? 's' : ''} ativa{activeList.length !== 1 ? 's' : ''}</p>
           </div>
         )}
@@ -374,6 +374,7 @@ export default function Billings() {
                   key={bill.id}
                   bill={bill}
                   hideValues={hideValues}
+                  animateOnMount={animateOnMount}
                   onEdit={() => openEdit(bill)}
                   onDelete={() => setDeletingId(bill.id)}
                   isConfirmingDelete={deletingId === bill.id}
@@ -402,6 +403,7 @@ export default function Billings() {
                     key={bill.id}
                     bill={bill}
                     hideValues={hideValues}
+                    animateOnMount={animateOnMount}
                     onEdit={() => openEdit(bill)}
                     onDelete={() => setDeletingId(bill.id)}
                     isConfirmingDelete={deletingId === bill.id}
@@ -630,6 +632,7 @@ function BillCardSkeleton() {
 interface BillCardProps {
   bill: Bill
   hideValues: boolean
+  animateOnMount: boolean
   onEdit: () => void
   onDelete: () => void
   isConfirmingDelete: boolean
@@ -638,7 +641,7 @@ interface BillCardProps {
   onUpdateCharge: (chargeId: number, payload: Record<string, unknown>) => void
 }
 
-function BillCard({ bill, hideValues, onEdit, onDelete, isConfirmingDelete, onConfirmDelete, onCancelDelete, onUpdateCharge }: BillCardProps) {
+function BillCard({ bill, hideValues, animateOnMount, onEdit, onDelete, isConfirmingDelete, onConfirmDelete, onCancelDelete, onUpdateCharge }: BillCardProps) {
   const charge = relevantCharge(bill.charges)
   const [editingAmount, setEditingAmount] = useState(false)
   const [amountDisplay, setAmountDisplay] = useState('')
@@ -691,7 +694,9 @@ function BillCard({ bill, hideValues, onEdit, onDelete, isConfirmingDelete, onCo
 
             <div className="text-right shrink-0">
               {charge && charge.amount !== null ? (
-                <p className="font-bold text-gray-900 dark:text-white">{hideValues ? 'R$ ••••' : formatAmount(charge.amount)}</p>
+                <p className="font-bold text-gray-900 dark:text-white">
+                  <AnimatedCurrency value={charge.amount} hide={hideValues} animateOnMount={animateOnMount} />
+                </p>
               ) : (
                 <button
                   onClick={startEditAmount}
