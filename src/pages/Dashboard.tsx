@@ -142,17 +142,6 @@ export default function Dashboard() {
     return totalExpense
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent" />
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors pb-16 lg:pb-0">
       <DashboardHeader
@@ -164,23 +153,31 @@ export default function Dashboard() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <DashboardStats
-          totalCards={activeCards.length}
-          totalLimit={totalLimit}
-          currentMonthExpense={getCurrentMonthExpense()}
-          hideValues={hideValues}
-          subscriptions={subscriptions}
-          ownerAuthorId={ownerAuthorId}
-        />
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
+          </div>
+        ) : (
+          <>
+            <DashboardStats
+              totalCards={activeCards.length}
+              totalLimit={totalLimit}
+              currentMonthExpense={getCurrentMonthExpense()}
+              hideValues={hideValues}
+              subscriptions={subscriptions}
+              ownerAuthorId={ownerAuthorId}
+            />
 
-        <DashboardCardsList cards={activeCards} hideValues={hideValues} monthlyTotals={monthlyTotals} />
+            <DashboardCardsList cards={activeCards} hideValues={hideValues} monthlyTotals={monthlyTotals} />
 
-        <DashboardUpcomingPayments
-          cards={activeCards}
-          monthlyTotals={monthlyTotals}
-          bills={bills}
-          hideValues={hideValues}
-        />
+            <DashboardUpcomingPayments
+              cards={activeCards}
+              monthlyTotals={monthlyTotals}
+              bills={bills}
+              hideValues={hideValues}
+            />
+          </>
+        )}
       </main>
 
       <AndroidInstallBanner />
