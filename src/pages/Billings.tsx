@@ -301,7 +301,7 @@ export default function Billings() {
         onToggleHideValues={toggleHideValues}
       />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Contas</h1>
 
@@ -337,7 +337,7 @@ export default function Billings() {
         )}
 
         {isLoading && (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Array.from({ length: 2 }).map((_, i) => (
               <BillCardSkeleton key={i} />
             ))}
@@ -364,23 +364,25 @@ export default function Billings() {
         )}
 
         {!isLoading && activeList.length > 0 && (
-          <div className="space-y-3">
+          <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Ativas</h2>
             </div>
-            {activeList.map((bill) => (
-              <BillCard
-                key={bill.id}
-                bill={bill}
-                hideValues={hideValues}
-                onEdit={() => openEdit(bill)}
-                onDelete={() => setDeletingId(bill.id)}
-                isConfirmingDelete={deletingId === bill.id}
-                onConfirmDelete={() => handleDelete(bill.id)}
-                onCancelDelete={() => setDeletingId(null)}
-                onUpdateCharge={(chargeId, payload) => handleUpdateCharge(bill.id, chargeId, payload)}
-              />
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {activeList.map((bill) => (
+                <BillCard
+                  key={bill.id}
+                  bill={bill}
+                  hideValues={hideValues}
+                  onEdit={() => openEdit(bill)}
+                  onDelete={() => setDeletingId(bill.id)}
+                  isConfirmingDelete={deletingId === bill.id}
+                  onConfirmDelete={() => handleDelete(bill.id)}
+                  onCancelDelete={() => setDeletingId(null)}
+                  onUpdateCharge={(chargeId, payload) => handleUpdateCharge(bill.id, chargeId, payload)}
+                />
+              ))}
+            </div>
           </div>
         )}
 
