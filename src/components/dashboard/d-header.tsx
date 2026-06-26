@@ -1,7 +1,7 @@
 
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Settings, LogOut, User, ChevronDown, Eye, EyeOff } from 'lucide-react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { Settings, LogOut, User, ChevronDown, Eye, EyeOff, LayoutDashboard, ReceiptText, CreditCard } from 'lucide-react'
 import LogoImg from '../../assets/logo.png'
 
 interface DashboardHeaderProps {
@@ -12,6 +12,12 @@ interface DashboardHeaderProps {
   onToggleHideValues: () => void
 }
 
+const navItems = [
+  { to: '/dashboard', label: 'Início', icon: LayoutDashboard },
+  { to: '/billings', label: 'Contas', icon: ReceiptText },
+  { to: '/cards', label: 'Cartões', icon: CreditCard },
+]
+
 export function DashboardHeader({ userName, userEmail, onLogout, hideValues, onToggleHideValues }: DashboardHeaderProps) {
   const navigate = useNavigate()
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -19,7 +25,7 @@ export function DashboardHeader({ userName, userEmail, onLogout, hideValues, onT
   return (
     <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="relative flex items-center justify-between h-16">
           {/* Logo e Title - Desktop */}
           <div className="hidden sm:flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/30"> {/* from #9810fa to #155dfc */}
@@ -37,6 +43,26 @@ export function DashboardHeader({ userName, userEmail, onLogout, hideValues, onT
               <p className="text-xs text-gray-500 dark:text-gray-400">Olá, {userName}!</p>
             </div>
           </div>
+
+          {/* Nav - Desktop only (mobile/tablet use BottomBar) */}
+          <nav className="hidden lg:flex items-center gap-1.5 absolute left-1/2 -translate-x-1/2">
+            {navItems.map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-2.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-500/30'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                  }`
+                }
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </NavLink>
+            ))}
+          </nav>
 
           {/* Mobile Layout */}
           <div className="sm:hidden flex items-center justify-between w-full">
