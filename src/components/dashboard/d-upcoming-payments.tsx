@@ -169,9 +169,15 @@ export function DashboardUpcomingPayments({ cards, monthlyTotals, bills, hideVal
     ...buildBillPayments(bills, filter, today, navigate),
   ].sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
 
+  const definedPayments = payments.filter((p) => !p.amountPending)
+  const totalAll = definedPayments.reduce((sum, p) => sum + (p.totalAmount ?? p.unpaidAmount), 0)
+  const totalMine = definedPayments.reduce((sum, p) => sum + p.unpaidAmount, 0)
+  const formatCurrency = (value: number) =>
+    hideValues ? 'R$ ••••' : `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:p-6 transition-colors">
-      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
+      <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
           Próximos Pagamentos
         </h2>
@@ -191,6 +197,21 @@ export function DashboardUpcomingPayments({ cards, monthlyTotals, bills, hideVal
           ))}
         </div>
       </div>
+
+      {definedPayments.length > 0 && (
+        <div className={`grid ${totalMine !== totalAll ? 'grid-cols-2' : 'grid-cols-1'} gap-3 mb-3`}>
+          <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg px-3 py-2">
+            <p className="text-[11px] text-gray-500 dark:text-gray-400">Valor total</p>
+            <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(totalAll)}</p>
+          </div>
+          {totalMine !== totalAll && (
+            <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg px-3 py-2">
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">Sua parte</p>
+              <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(totalMine)}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {payments.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
