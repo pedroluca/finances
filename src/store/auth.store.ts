@@ -16,6 +16,7 @@ interface AuthState {
   logout: () => void;
   verifyAuth: () => Promise<void>;
   updateUser: (user: Omit<User, 'password_hash'>) => void;
+  completeOnboarding: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -137,6 +138,22 @@ export const useAuthStore = create<AuthState>()(
 
       updateUser: (user) => {
         set({ user });
+      },
+
+      completeOnboarding: async () => {
+        const { token, user } = get();
+        if (!token || !user) return;
+
+        set({ user: { ...user, onboarding_completed: true } });
+
+        try {
+          await phpApiRequest('auth.php?action=completeOnboarding', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+        } catch (error) {
+          console.error('Erro ao concluir onboarding:', error);
+        }
       },
     }),
     {

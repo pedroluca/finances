@@ -9,12 +9,14 @@ import { DashboardStats } from '../components/dashboard/d-stats'
 import { DashboardCardsList } from '../components/dashboard/d-cards-list'
 import { DashboardUpcomingPayments } from '../components/dashboard/d-upcoming-payments'
 import { DashboardSkeleton } from '../components/dashboard/d-skeleton'
-import { AndroidInstallBanner } from '../components/AndroidInstallBanner'
+import { InstallAppBanner } from '../components/InstallAppBanner'
+import { OnboardingModal } from '../components/OnboardingModal'
 import { useIsFirstVisitThisSession } from '../hooks/useFirstVisitThisSession'
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { user, logout, isAuthenticated } = useAuthStore()
+  const { user, logout, isAuthenticated, completeOnboarding } = useAuthStore()
+  const showOnboarding = isAuthenticated && user?.onboarding_completed === false
   const {
     cards, setCards, setCategories, setAuthors, monthlyTotals, setMonthlyTotals, setCardOrder, orderedCards, authors,
     bills, setBills, subscriptions, setSubscriptions,
@@ -185,7 +187,9 @@ export default function Dashboard() {
         )}
       </main>
 
-      <AndroidInstallBanner />
+      {showOnboarding && <OnboardingModal onComplete={completeOnboarding} />}
+
+      {!showOnboarding && <InstallAppBanner />}
     </div>
   )
 }

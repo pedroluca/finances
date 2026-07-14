@@ -5,6 +5,7 @@ export interface User {
   name: string;
   email: string;
   password_hash: string;
+  onboarding_completed: boolean;
   created_at: Date;
   updated_at: Date;
 }
