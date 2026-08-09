@@ -16,12 +16,13 @@ import {
   MinusCircle,
   Circle,
   Edit,
-  Check,
+  Banknote,
   ChevronLeft,
   ChevronRight,
   Filter,
   X,
   User,
+  BanknoteX,
 } from "lucide-react"
 import type {
   InvoiceItemWithDetails,
@@ -489,14 +490,14 @@ export default function CardDetails() {
     })
   }
 
-  const markSelectedAsPaid = async () => {
-    if (!user || selectedItems.size === 0) return
+  const setPaidStatusForItems = async (itemIds: number[], isPaid: boolean) => {
+    if (!user || itemIds.length === 0) return
 
     try {
       await Promise.all(
-        Array.from(selectedItems).map((itemId) => {
-          const payload: { id: number; is_paid: boolean; author_id?: number } = { id: itemId, is_paid: true }
-          
+        itemIds.map((itemId) => {
+          const payload: { id: number; is_paid: boolean; author_id?: number } = { id: itemId, is_paid: isPaid }
+
           if (selectedAuthorFilter.size === 1) {
              const authorId = Array.from(selectedAuthorFilter)[0]
              const originalItem = items.find(i => i.id === itemId)
@@ -512,17 +513,33 @@ export default function CardDetails() {
           })
         })
       )
-      
+
       // Recarregar os itens para garantir que o status atualizado (inclusive status parcial) seja refletido corretamente
       // Como o update local é complexo com assignments, o reload é mais seguro.
       // Mas para UX rápida, podemos tentar update otimista ou parcial.
       // Vamos recarregar por segurança pois o backend pode ter mudado o status do pai.
       await loadMonthItems()
-      
+
       setSelectedItems(new Set())
     } catch (error) {
-      console.error("Erro ao marcar itens como pagos:", error)
+      console.error("Erro ao alterar status de pagamento dos itens:", error)
     }
+  }
+
+  const markSelectedAsPaid = () => {
+    const unpaidIds = Array.from(selectedItems).filter((itemId) => {
+      const item = items.find((i) => i.id === itemId)
+      return item && !getDisplayDetails(item).isPaid
+    })
+    return setPaidStatusForItems(unpaidIds, true)
+  }
+
+  const markSelectedAsUnpaid = () => {
+    const paidIds = Array.from(selectedItems).filter((itemId) => {
+      const item = items.find((i) => i.id === itemId)
+      return item && getDisplayDetails(item).isPaid
+    })
+    return setPaidStatusForItems(paidIds, false)
   }
 
   const deleteSelectedItems = () => {
@@ -936,7 +953,7 @@ export default function CardDetails() {
 
         {/* Items List */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-6 transition-colors">
-          <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
+          <div className="flex flex-col justify-between mb-4 sm:mb-6 gap-2">
             <div className="flex items-center gap-2 min-w-0">
               {/* Select All — only show when there are visible items */}
               {filteredItems.length > 0 && (() => {
@@ -980,35 +997,58 @@ export default function CardDetails() {
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              {selectedItems.size > 0 && !card.is_shared && (
-                <>
-                  <button
-                    onClick={markSelectedAsPaid}
-                    className="px-2 sm:px-4 cursor-pointer py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
-                  >
-                    <Check className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline">
-                      Marcar {selectedItems.size} como pago
-                    </span>
-                    <span className="sm:hidden">
-                      Pagar ({selectedItems.size})
-                    </span>
-                  </button>
-                  <button
-                    onClick={deleteSelectedItems}
-                    className="px-2 sm:px-4 cursor-pointer py-1.5 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
-                  >
-                    <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline">
-                      Excluir {selectedItems.size}
-                    </span>
-                    <span className="sm:hidden">
-                      ({selectedItems.size})
-                    </span>
-                  </button>
-                </>
-              )}
+            <div className="flex justify-end items-center gap-1 sm:gap-2 flex-shrink-0">
+              {!card.is_shared && (() => {
+                const selectedUnpaidCount = Array.from(selectedItems).filter((itemId) => {
+                  const item = items.find((i) => i.id === itemId)
+                  return item && !getDisplayDetails(item).isPaid
+                }).length
+                const selectedPaidCount = selectedItems.size - selectedUnpaidCount
+
+                return (
+                  <>
+                    <button
+                      onClick={markSelectedAsPaid}
+                      disabled={selectedUnpaidCount === 0}
+                      className="px-2 sm:px-4 cursor-pointer py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-600"
+                    >
+                      <Banknote className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">
+                        Marcar {selectedUnpaidCount} como pago
+                      </span>
+                      <span className="sm:hidden">
+                        Pagar ({selectedUnpaidCount})
+                      </span>
+                    </button>
+                    <button
+                      onClick={markSelectedAsUnpaid}
+                      disabled={selectedPaidCount === 0}
+                      className="px-2 sm:px-4 cursor-pointer py-1.5 sm:py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-amber-600"
+                    >
+                      <BanknoteX className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">
+                        Desmarcar {selectedPaidCount} como pago
+                      </span>
+                      <span className="sm:hidden">
+                        Desmarcar ({selectedPaidCount})
+                      </span>
+                    </button>
+                    <button
+                      onClick={deleteSelectedItems}
+                      disabled={selectedItems.size === 0}
+                      className="px-2 sm:px-4 cursor-pointer py-1.5 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-600"
+                    >
+                      <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">
+                        Excluir {selectedItems.size}
+                      </span>
+                      <span className="sm:hidden">
+                        ({selectedItems.size})
+                      </span>
+                    </button>
+                  </>
+                )
+              })()}
               {!card.is_shared && (
                 <button
                   onClick={() => setShowAuthorFilter(true)}
