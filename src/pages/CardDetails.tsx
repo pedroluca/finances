@@ -30,6 +30,7 @@ import type {
 } from "../types/database"
 import ConfirmModal from "../components/ConfirmModal"
 import { useToast } from "../components/Toast"
+import { Skeleton } from "../components/ui/skeleton"
 
 export default function CardDetails() {
   const navigate = useNavigate()
@@ -659,10 +660,104 @@ export default function CardDetails() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando...</p>
+      <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors overflow-hidden">
+        {/* Header */}
+        <div className="flex-none bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors z-10 relative shadow-sm">
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+                <button
+                  onClick={handleBack}
+                  className="p-1.5 sm:p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
+                >
+                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-300" />
+                </button>
+                <Skeleton className="h-6 sm:h-7 w-24 sm:w-40" />
+              </div>
+              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                <Skeleton className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg" />
+                <Skeleton className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg" />
+              </div>
+            </div>
+
+            {/* Navegação de Meses */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-gray-300 dark:text-gray-600">
+                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">Anterior</span>
+              </div>
+              <Skeleton className="h-5 sm:h-6 w-32 sm:w-44" />
+              <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-gray-300 dark:text-gray-600">
+                <span className="hidden sm:inline">Próximo</span>
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto w-full relative custom-scrollbar">
+          <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-8 pb-24">
+            {/* Card Info */}
+            <div className="rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-8 bg-gray-200 dark:bg-gray-700 animate-pulse">
+              <div className="flex justify-between items-start mb-4 sm:mb-8">
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-20 bg-gray-300/70 dark:bg-gray-600/70" />
+                  <Skeleton className="h-7 sm:h-8 w-28 sm:w-32 bg-gray-300/70 dark:bg-gray-600/70" />
+                </div>
+                <CreditCard className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300/70 dark:text-gray-600/70" />
+              </div>
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-3 w-16 bg-gray-300/70 dark:bg-gray-600/70" />
+                    <Skeleton className="h-4 sm:h-5 w-14 sm:w-20 bg-gray-300/70 dark:bg-gray-600/70" />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 sm:mt-6 flex gap-3 sm:gap-4">
+                <Skeleton className="h-4 w-20 bg-gray-300/70 dark:bg-gray-600/70" />
+                <Skeleton className="h-4 w-20 bg-gray-300/70 dark:bg-gray-600/70" />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2 px-1">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+                Últimos Lançamentos
+              </h2>
+              <Skeleton className="h-8 sm:h-9 w-20 sm:w-24 rounded-lg" />
+            </div>
+
+            {/* Items List */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-6 transition-colors">
+              <div className="flex items-center gap-2 mb-4 sm:mb-6">
+                <Skeleton className="w-5 h-5 sm:w-6 sm:h-6 rounded-full" />
+                <Skeleton className="h-5 w-24" />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 mb-4 sm:mb-6">
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-6 w-12" />
+                <Skeleton className="h-6 w-6" />
+              </div>
+
+              <div className="space-y-2 sm:space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg"
+                  >
+                    <Skeleton className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex-shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <Skeleton className="h-4 w-1/3" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                    <Skeleton className="h-5 w-16 flex-shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -1062,11 +1157,20 @@ export default function CardDetails() {
           </div>
 
           {isLoadingItems ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-purple-600 border-t-transparent"></div>
-              <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-                Carregando itens...
-              </p>
+            <div className="space-y-2 sm:space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg"
+                >
+                  <Skeleton className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex-shrink-0" />
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                  <Skeleton className="h-5 w-16 flex-shrink-0" />
+                </div>
+              ))}
             </div>
           ) : items.length === 0 ? (
             <div className="text-center py-8 sm:py-12 animate-fade-in">
