@@ -1,8 +1,10 @@
-import { CreditCard, LayoutDashboard, ReceiptText, Settings } from 'lucide-react'
+import { CreditCard, LayoutDashboard, Plus, ReceiptText, Settings } from 'lucide-react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import logoMark from '../assets/logo-mark.png'
 import { cn } from '../lib/cn'
 import { useAuthStore } from '../store/auth.store'
+import { useQuickExpense } from '../store/quick-expense.store'
+import { Button } from './ui/button'
 import { IconButton } from './ui/icon-button'
 
 const TABS = [
@@ -29,23 +31,25 @@ function useActiveIndex() {
 }
 
 /** Reflexo do vidro: mais claro em cima, sumindo até o meio, e um fio de luz na borda de cima */
-function GlassSheen() {
+function GlassSheen({ rimClassName = 'left-8 right-8' }: { rimClassName?: string }) {
   return (
     <>
-      <div className="pointer-events-none absolute inset-0 rounded-full overflow-hidden">
-        <div className="absolute inset-0 bg-linear-to-b from-white/75 to-white/0 to-60% dark:from-white/10" />
-      </div>
-      <div className="pointer-events-none absolute top-0 left-8 right-8 h-px bg-linear-to-r from-white/0 via-white to-white/0 dark:via-white/35" />
+      <span className="pointer-events-none absolute inset-0 rounded-full overflow-hidden">
+        <span className="absolute inset-0 bg-linear-to-b from-white/75 to-white/0 to-60% dark:from-white/10" />
+      </span>
+      <span className={cn('pointer-events-none absolute top-0 h-px bg-linear-to-r from-white/0 via-white to-white/0 dark:via-white/35', rimClassName)} />
     </>
   )
 }
 
 /**
  * Tab bar flutuante em cápsula, com acabamento de vidro e um indicador que desliza até a aba
- * ativa (a mesma do app nativo). Só no celular/tablet e só nas três abas.
+ * ativa (a mesma do app nativo), e ao lado o "+" de nova despesa no mesmo vidro.
+ * Só no celular/tablet e só nas três abas.
  */
 export function FloatingTabBar() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const showQuickExpense = useQuickExpense((state) => state.show)
   const activeIndex = useActiveIndex()
   const { pathname } = useLocation()
 
@@ -56,32 +60,49 @@ export function FloatingTabBar() {
       {/* Faixa acima da cápsula em que o conteúdo vai sumindo */}
       <div className="absolute inset-0 bg-linear-to-b from-background/0 to-background/90 to-55%" />
 
-      <div className={cn('pointer-events-auto relative mx-auto w-full max-w-[520px] h-16 rounded-full', glass)}>
-        <GlassSheen />
-        <div className="relative h-full flex p-1.5">
-          {activeIndex >= 0 && (
-            <div
-              className={cn('absolute top-1.5 bottom-1.5 left-1.5 rounded-full transition-transform duration-500 ease-[cubic-bezier(0.34,1.36,0.64,1)]', indicator)}
-              style={{ width: `calc((100% - 12px) / ${TABS.length})`, transform: `translateX(${activeIndex * 100}%)` }}
-            />
-          )}
-          {TABS.map(({ to, label, icon: Icon }, index) => {
-            const active = index === activeIndex
-            return (
-              <NavLink
-                key={to}
-                to={to}
-                className={cn(
-                  'relative flex-1 flex flex-col items-center justify-center gap-0.5 rounded-full transition-colors',
-                  active ? 'text-primary' : 'text-muted hover:text-foreground',
-                )}
-              >
-                <Icon size={22} strokeWidth={active ? 2.4 : 2} />
-                <span className={cn('text-[11px] leading-tight', active ? 'font-semibold' : 'font-medium')}>{label}</span>
-              </NavLink>
-            )
-          })}
+      <div className="pointer-events-auto relative mx-auto w-full max-w-[520px] flex items-center gap-2.5">
+        <div className={cn('relative flex-1 min-w-0 h-16 rounded-full', glass)}>
+          <GlassSheen />
+          <div className="relative h-full flex p-1.5">
+            {activeIndex >= 0 && (
+              <div
+                className={cn('absolute top-1.5 bottom-1.5 left-1.5 rounded-full transition-transform duration-500 ease-[cubic-bezier(0.34,1.36,0.64,1)]', indicator)}
+                style={{ width: `calc((100% - 12px) / ${TABS.length})`, transform: `translateX(${activeIndex * 100}%)` }}
+              />
+            )}
+            {TABS.map(({ to, label, icon: Icon }, index) => {
+              const active = index === activeIndex
+              return (
+                <NavLink
+                  key={to}
+                  to={to}
+                  className={cn(
+                    'relative flex-1 flex flex-col items-center justify-center gap-0.5 rounded-full transition-colors',
+                    active ? 'text-primary' : 'text-muted hover:text-foreground',
+                  )}
+                >
+                  <Icon size={22} strokeWidth={active ? 2.4 : 2} />
+                  <span className={cn('text-[11px] leading-tight', active ? 'font-semibold' : 'font-medium')}>{label}</span>
+                </NavLink>
+              )
+            })}
+          </div>
         </div>
+
+        {/* Nova despesa: pílula um pouco mais larga que alta, com o mesmo halo da aba ativa */}
+        <button
+          type="button"
+          onClick={showQuickExpense}
+          aria-label="Nova despesa"
+          title="Nova despesa"
+          className={cn('relative shrink-0 w-[84px] h-16 rounded-full flex items-center justify-center transition-transform active:scale-[0.93]', glass)}
+        >
+          {/* No botão o fio de luz vira só um ponto de reflexo */}
+          <GlassSheen rimClassName="left-1/2 -translate-x-1/2 w-[18px]" />
+          <span className={cn('relative w-[72px] h-[52px] rounded-full flex items-center justify-center text-primary', indicator)}>
+            <Plus size={26} strokeWidth={2.4} />
+          </span>
+        </button>
       </div>
     </nav>
   )
@@ -94,6 +115,7 @@ export function FloatingTabBar() {
 export function Sidebar() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const user = useAuthStore((state) => state.user)
+  const showQuickExpense = useQuickExpense((state) => state.show)
   const activeIndex = useActiveIndex()
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -109,6 +131,8 @@ export function Sidebar() {
         <img src={logoMark} alt="" width={36} height={36} className="shrink-0 rounded-[10px]" />
         <span className="text-lg font-bold tracking-tight text-foreground">Finances</span>
       </Link>
+
+      <Button label="Nova despesa" icon={Plus} fullWidth onClick={showQuickExpense} className="mb-5" />
 
       <nav aria-label="Navegação principal" className="flex flex-col gap-1">
         {TABS.map(({ to, label, icon: Icon }, index) => {

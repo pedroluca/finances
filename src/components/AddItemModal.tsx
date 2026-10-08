@@ -26,26 +26,53 @@ import { FieldLabel, StepperField, TextField } from "./ui/field"
 
 const SUBSCRIPTION_CATEGORY_ID = 7
 
-interface AddItemModalProps {
+interface AddItemFormProps {
   card: CardWithBalance
+  linkedAuthorId?: number // ID do autor vinculado para cartões compartilhados
+  cardOwnerAuthors?: Author[] // Autores da conta do dono do cartão (para compartilhados)
+  isAuthorLocked?: boolean // Se true, não permite alterar o autor (cartões compartilhados)
+  /** Botão Cancelar (e "Ir para Assinaturas") */
+  onCancel: () => void
+  /** Depois de salvar com sucesso */
+  onSaved: () => void
+  /** Antes de gravar (ex.: garantir que a fatura do mês da compra existe) */
+  prepare?: (purchaseDate: string) => Promise<unknown>
+}
+
+interface AddItemModalProps extends Omit<AddItemFormProps, 'onCancel' | 'onSaved'> {
+  /** Fatura do mês visto (já garantida antes de abrir) */
   invoiceId: number
   open: boolean
   onClose: () => void
   onItemAdded?: () => void
-  linkedAuthorId?: number // ID do autor vinculado para cartões compartilhados
-  cardOwnerAuthors?: Author[] // Autores da conta do dono do cartão (para compartilhados)
-  isAuthorLocked?: boolean // Se true, não permite alterar o autor (cartões compartilhados)
 }
 
-export default function AddItemModal({
+/** "Adicionar Item" da fatura do cartão */
+export default function AddItemModal({ open, onClose, onItemAdded, ...formProps }: AddItemModalProps) {
+  return (
+    <Sheet open={open} onClose={onClose} title="Adicionar Item" size="lg">
+      <AddItemForm
+        {...formProps}
+        onCancel={onClose}
+        onSaved={() => {
+          if (onItemAdded) onItemAdded()
+          onClose()
+        }}
+      />
+    </Sheet>
+  )
+}
+
+/** Campos do item; a mesma base serve à fatura do cartão e à "Nova despesa" da tab bar */
+export function AddItemForm({
   card,
-  open,
-  onClose,
-  onItemAdded,
   linkedAuthorId,
   cardOwnerAuthors,
   isAuthorLocked = false,
-}: AddItemModalProps) {
+  onCancel,
+  onSaved,
+  prepare,
+}: AddItemFormProps) {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const { categories, setCategories, authors, setAuthors, addAuthor } =
@@ -63,7 +90,6 @@ export default function AddItemModal({
   )
 
   useEffect(() => {
-    if (!open) return
     const fetchData = async () => {
       setIsDataLoading(true)
       try {
@@ -85,7 +111,7 @@ export default function AddItemModal({
     }
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+  }, [])
 
   const [description, setDescription] = useState("")
   const [amount, setAmount] = useState("")
@@ -103,6 +129,11 @@ export default function AddItemModal({
       setAuthorId(defaultAuthor.id.toString())
     }
   }, [defaultAuthor, authorId])
+
+  // Ao trocar de cartão (Nova despesa), a pessoa escolhida pode não existir nas pessoas dele
+  const effectiveAuthorId = availableAuthors.some((a) => String(a.id) === authorId)
+    ? authorId
+    : defaultAuthor ? String(defaultAuthor.id) : ""
 
   const [newAuthorName, setNewAuthorName] = useState("")
   const [showNewAuthor, setShowNewAuthor] = useState(false)
@@ -164,8 +195,8 @@ export default function AddItemModal({
       return
     }
 
-    // Validação do split
-    if (isSplit) {
+    // Validação do split (cartão compartilhado não divide: o item é sempre da pessoa vinculada)
+    if (isSplit && !isAuthorLocked) {
         if (assignments.length === 0) {
             setError("Selecione pelo menos uma pessoa para dividir.")
             return
@@ -177,8 +208,10 @@ export default function AddItemModal({
         }
     }
 
-    let selectedAuthorId = authorId ? Number(authorId) : defaultAuthor?.id
-    if (showNewAuthor && newAuthorName.trim()) {
+    let selectedAuthorId = isAuthorLocked
+      ? defaultAuthor?.id
+      : effectiveAuthorId ? Number(effectiveAuthorId) : defaultAuthor?.id
+    if (!isAuthorLocked && showNewAuthor && newAuthorName.trim()) {
       try {
         setIsLoading(true)
         const newAuthor = await phpApiRequest("authors.php", {
@@ -211,17 +244,15 @@ export default function AddItemModal({
       return
     }
 
-    const assignmentsPayload = isSplit ? assignments : []
+    const assignmentsPayload = isSplit && !isAuthorLocked ? assignments : []
     const notesValue = notes.trim() || null
+    // card_id é o id da view card_available_balance (o mesmo usado nas rotas e faturas)
+    const cardIdToSend = card.card_id ?? card.id
 
     try {
       setIsLoading(true)
+      if (prepare) await prepare(purchaseDate)
       if (isInstallment && Number(installments) > 1) {
-        let cardIdToSend = card?.id
-        if (!cardIdToSend) {
-          const stored = localStorage.getItem("lastCardId")
-          if (stored) cardIdToSend = Number(stored)
-        }
         const payload = {
           action: "createInstallment",
           card_id: cardIdToSend,
@@ -235,19 +266,12 @@ export default function AddItemModal({
           notes: notesValue,
           assignments: assignmentsPayload
         }
-        console.log("Enviando parcelado:", payload)
         await phpApiRequest("items.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         })
       } else {
-        let cardIdToSend = card?.id || card?.card_id
-        if (!cardIdToSend) {
-          const stored = localStorage.getItem("lastCardId")
-          if (stored) cardIdToSend = Number(stored)
-        }
-
         await phpApiRequest("items.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -263,8 +287,7 @@ export default function AddItemModal({
           }),
         })
       }
-      if (onItemAdded) onItemAdded()
-      onClose()
+      onSaved()
     } catch (err) {
       console.log(err)
       setError("Erro ao criar item")
@@ -282,165 +305,161 @@ export default function AddItemModal({
     if (value < Number(currentInstallment)) setCurrentInstallment("1")
   }
 
+  if (isDataLoading) return <LoadingState className="py-12" />
+
   return (
-    <Sheet open={open} onClose={onClose} title="Adicionar Item" size="lg">
-      {isDataLoading ? (
-        <LoadingState className="py-12" />
+    <form onSubmit={handleSubmit} className="space-y-4 pb-2">
+      <TextField
+        id="description"
+        label="Descrição"
+        icon={FileText}
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Ex: Compras no supermercado"
+        autoFocus
+        required
+      />
+
+      {/* Valor e Parcelamento */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <TextField
+          id="amount"
+          label="Valor Total"
+          icon={DollarSign}
+          inputMode="numeric"
+          value={displayAmount}
+          onChange={(e) => handleAmountChange(e.target.value)}
+          placeholder="R$ 0,00"
+          required
+          hint={exceedsAvailableLimit && (
+            <span className="text-warning">O limite disponível é de R$ {formatCurrency(card.available_balance)}</span>
+          )}
+        />
+        <StepperField
+          label="Parcelas"
+          value={installmentsCount}
+          onChange={changeInstallments}
+          min={1}
+          max={24}
+          hint={isInstallment && `${installmentsCount}x de R$ ${formatCurrency(parseFloat(amount || "0") / installmentsCount)}`}
+        />
+      </div>
+
+      {/* Data da Compra e Parcela Atual */}
+      <div className={cn("grid gap-4", isInstallment ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1")}>
+        <TextField
+          id="date"
+          type="date"
+          label="Data da Compra"
+          icon={Calendar}
+          value={purchaseDate}
+          onChange={(e) => setPurchaseDate(e.target.value)}
+        />
+        {isInstallment && (
+          <StepperField
+            label="Parcela Atual"
+            value={Number(currentInstallment) || 1}
+            onChange={(value) => setCurrentInstallment(String(value))}
+            min={1}
+            max={installmentsCount}
+          />
+        )}
+      </div>
+      {isInstallment && (
+        <p className="text-xs text-subtle -mt-2">
+          Será criada a partir da parcela {currentInstallment} até a {installments} ({remainingInstallments} {plural(remainingInstallments, "parcela", "parcelas")})
+        </p>
+      )}
+
+      {/* Categoria */}
+      <div>
+        <FieldLabel label="Categoria (Opcional)" icon={Tag} />
+        <CategoryBadgeSelector categories={categories} value={categoryId} onChange={setCategoryId} />
+      </div>
+
+      {/* Observação */}
+      <div>
+        <FieldLabel label="Observação (Opcional)" icon={MessageSquare} htmlFor="notes" />
+        <textarea
+          id="notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Alguma anotação sobre esse item..."
+          rows={2}
+          className={textareaClass}
+        />
+      </div>
+
+      {/* Quando Assinatura é selecionada: esconder o form e redirecionar */}
+      {categoryId === String(SUBSCRIPTION_CATEGORY_ID) ? (
+        <div className="rounded-2xl p-5 bg-primary/8 flex flex-col items-center gap-3 text-center">
+          <div className="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center">
+            <Repeat size={20} />
+          </div>
+          <p className="text-sm font-semibold text-primary">Assinaturas têm configurações especiais</p>
+          <p className="text-xs text-muted">
+            Ciclo de cobrança, dia de vencimento e renovação automática só ficam disponíveis na página de Assinaturas.
+          </p>
+          <Button label="Ir para Assinaturas" fullWidth onClick={() => { onCancel(); navigate('/settings/subscriptions') }} />
+          <Button label="Voltar e escolher outra categoria" variant="ghost" size="sm" onClick={() => setCategoryId('')} />
+        </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4 pb-2">
-          <TextField
-            id="description"
-            label="Descrição"
-            icon={FileText}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Ex: Compras no supermercado"
-            autoFocus
-            required
+        <>
+          {/* Pessoas / Divisão */}
+          <AuthorSplitSection
+            authors={availableAuthors}
+            defaultAuthorId={defaultAuthor?.id}
+            totalAmount={parseFloat(amount || "0")}
+            authorId={effectiveAuthorId}
+            onAuthorIdChange={setAuthorId}
+            isSplit={isSplit}
+            onIsSplitChange={setIsSplit}
+            assignments={assignments}
+            onAssignmentsChange={setAssignments}
+            isLocked={isAuthorLocked}
+            lockedAuthorName={defaultAuthor?.name}
+            footer={
+              !showNewAuthor ? (
+                <button
+                  type="button"
+                  onClick={() => setShowNewAuthor(true)}
+                  className="flex items-center gap-1 text-[13px] font-medium text-primary hover:opacity-80"
+                >
+                  <Plus size={14} />
+                  Adicionar nova pessoa
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newAuthorName}
+                    onChange={(e) => setNewAuthorName(e.target.value)}
+                    placeholder="Nome da pessoa"
+                    className={fieldClass}
+                    autoFocus
+                  />
+                  <Button
+                    label="Cancelar"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowNewAuthor(false)
+                      setNewAuthorName("")
+                    }}
+                  />
+                </div>
+              )
+            }
           />
 
-          {/* Valor e Parcelamento */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <TextField
-              id="amount"
-              label="Valor Total"
-              icon={DollarSign}
-              inputMode="numeric"
-              value={displayAmount}
-              onChange={(e) => handleAmountChange(e.target.value)}
-              placeholder="R$ 0,00"
-              required
-              hint={exceedsAvailableLimit && (
-                <span className="text-warning">O limite disponível é de R$ {formatCurrency(card.available_balance)}</span>
-              )}
-            />
-            <StepperField
-              label="Parcelas"
-              value={installmentsCount}
-              onChange={changeInstallments}
-              min={1}
-              max={24}
-              hint={isInstallment && `${installmentsCount}x de R$ ${formatCurrency(parseFloat(amount || "0") / installmentsCount)}`}
-            />
+          {error && <Callout tone="danger" icon={AlertCircle}>{error}</Callout>}
+
+          <div className="flex gap-3 pt-1">
+            <Button label="Cancelar" variant="secondary" onClick={onCancel} className="flex-1" />
+            <Button type="submit" label={isLoading ? "Salvando..." : "Adicionar"} loading={isLoading} className="flex-1" />
           </div>
-
-          {/* Data da Compra e Parcela Atual */}
-          <div className={cn("grid gap-4", isInstallment ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1")}>
-            <TextField
-              id="date"
-              type="date"
-              label="Data da Compra"
-              icon={Calendar}
-              value={purchaseDate}
-              onChange={(e) => setPurchaseDate(e.target.value)}
-            />
-            {isInstallment && (
-              <StepperField
-                label="Parcela Atual"
-                value={Number(currentInstallment) || 1}
-                onChange={(value) => setCurrentInstallment(String(value))}
-                min={1}
-                max={installmentsCount}
-              />
-            )}
-          </div>
-          {isInstallment && (
-            <p className="text-xs text-subtle -mt-2">
-              Será criada a partir da parcela {currentInstallment} até a {installments} ({remainingInstallments} {plural(remainingInstallments, "parcela", "parcelas")})
-            </p>
-          )}
-
-          {/* Categoria */}
-          <div>
-            <FieldLabel label="Categoria (Opcional)" icon={Tag} />
-            <CategoryBadgeSelector categories={categories} value={categoryId} onChange={setCategoryId} />
-          </div>
-
-          {/* Observação */}
-          <div>
-            <FieldLabel label="Observação (Opcional)" icon={MessageSquare} htmlFor="notes" />
-            <textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Alguma anotação sobre esse item..."
-              rows={2}
-              className={textareaClass}
-            />
-          </div>
-
-          {/* Quando Assinatura é selecionada: esconder o form e redirecionar */}
-          {categoryId === String(SUBSCRIPTION_CATEGORY_ID) ? (
-            <div className="rounded-2xl p-5 bg-primary/8 flex flex-col items-center gap-3 text-center">
-              <div className="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center">
-                <Repeat size={20} />
-              </div>
-              <p className="text-sm font-semibold text-primary">Assinaturas têm configurações especiais</p>
-              <p className="text-xs text-muted">
-                Ciclo de cobrança, dia de vencimento e renovação automática só ficam disponíveis na página de Assinaturas.
-              </p>
-              <Button label="Ir para Assinaturas" fullWidth onClick={() => { onClose(); navigate('/settings/subscriptions') }} />
-              <Button label="Voltar e escolher outra categoria" variant="ghost" size="sm" onClick={() => setCategoryId('')} />
-            </div>
-          ) : (
-            <>
-              {/* Pessoas / Divisão */}
-              <AuthorSplitSection
-                authors={availableAuthors}
-                defaultAuthorId={defaultAuthor?.id}
-                totalAmount={parseFloat(amount || "0")}
-                authorId={authorId}
-                onAuthorIdChange={setAuthorId}
-                isSplit={isSplit}
-                onIsSplitChange={setIsSplit}
-                assignments={assignments}
-                onAssignmentsChange={setAssignments}
-                isLocked={isAuthorLocked}
-                lockedAuthorName={defaultAuthor?.name}
-                footer={
-                  !showNewAuthor ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowNewAuthor(true)}
-                      className="flex items-center gap-1 text-[13px] font-medium text-primary hover:opacity-80"
-                    >
-                      <Plus size={14} />
-                      Adicionar nova pessoa
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={newAuthorName}
-                        onChange={(e) => setNewAuthorName(e.target.value)}
-                        placeholder="Nome da pessoa"
-                        className={fieldClass}
-                        autoFocus
-                      />
-                      <Button
-                        label="Cancelar"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setShowNewAuthor(false)
-                          setNewAuthorName("")
-                        }}
-                      />
-                    </div>
-                  )
-                }
-              />
-
-              {error && <Callout tone="danger" icon={AlertCircle}>{error}</Callout>}
-
-              <div className="flex gap-3 pt-1">
-                <Button label="Cancelar" variant="secondary" onClick={onClose} className="flex-1" />
-                <Button type="submit" label={isLoading ? "Salvando..." : "Adicionar"} loading={isLoading} className="flex-1" />
-              </div>
-            </>
-          )}
-        </form>
+        </>
       )}
-    </Sheet>
+    </form>
   )
 }

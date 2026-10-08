@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/auth.store'
 import { FloatingTabBar, Sidebar } from './components/floating-tab-bar'
+import { QuickExpenseSheet } from './components/QuickExpenseSheet'
 import { ScrollToTop } from './components/ScrollToTop'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -120,6 +121,7 @@ function App() {
       </div>
 
       <FloatingTabBar />
+      <QuickExpenseSheet />
     </BrowserRouter>
   )
 }

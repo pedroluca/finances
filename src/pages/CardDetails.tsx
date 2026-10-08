@@ -43,6 +43,7 @@ import { CardSurface } from "../components/cards/CreditCardTile"
 import { cardInk, withAlpha } from "../lib/colors"
 import { cn } from "../lib/cn"
 import { formatCurrency, monthYearTitle, plural } from "../lib/format"
+import { EXPENSE_ADDED_EVENT } from "../store/quick-expense.store"
 
 // Botões das ações em lote com texto branco: tons fixos, legíveis nos dois temas
 const ACTION_COLORS = { pay: "#16a34a", unpay: "#d97706", delete: "#dc2626" }
@@ -363,6 +364,15 @@ export default function CardDetails() {
     if (!hasInitialLoad) return
     loadMonthItems()
   }, [hasInitialLoad, loadMonthItems])
+
+  // Despesa lançada pela "Nova despesa" (barra lateral) neste cartão: recarrega a fatura aberta
+  useEffect(() => {
+    const onExpenseAdded = (event: Event) => {
+      if ((event as CustomEvent<{ cardId: number }>).detail?.cardId === Number(cardId)) loadMonthItems()
+    }
+    window.addEventListener(EXPENSE_ADDED_EVENT, onExpenseAdded)
+    return () => window.removeEventListener(EXPENSE_ADDED_EVENT, onExpenseAdded)
+  }, [cardId, loadMonthItems])
 
   // Funções de navegação entre meses
   const goToPreviousMonth = () => {
