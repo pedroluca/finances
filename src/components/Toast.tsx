@@ -1,5 +1,6 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { useState, createContext, useContext, useRef, useCallback, type ReactNode } from 'react';
+import { CircleAlert, CircleCheck, Info } from 'lucide-react';
+import { cn } from '../lib/cn';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -15,53 +16,44 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
+const ICONS = { success: CircleCheck, error: CircleAlert, info: Info };
+const ICON_COLORS = { success: 'text-success', error: 'text-danger', info: 'text-info' };
+
+/** Aviso no topo da tela, no visual do app (cartão claro com o ícone colorido) */
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toast, setToast] = useState<Toast | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showToast = (message: string, type: ToastType = 'info') => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3000);
-  };
+  const showToast = useCallback((message: string, type: ToastType = 'info') => {
+    if (timer.current) clearTimeout(timer.current);
+    setToast({ id: Date.now(), message, type });
+    timer.current = setTimeout(() => setToast(null), type === 'error' ? 4000 : 2800);
+  }, []);
 
-  const removeToast = (id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  const Icon = toast ? ICONS[toast.type] : Info;
 
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-        {toasts.map((toast) => (
+      {toast && (
+        <div className="fixed inset-x-0 top-0 z-[80] flex justify-center px-4 pt-[calc(env(safe-area-inset-top)+12px)] pointer-events-none">
           <div
             key={toast.id}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-white min-w-[300px] animate-slide-in ${
-              toast.type === 'success'
-                ? 'bg-green-600'
-                : toast.type === 'error'
-                ? 'bg-red-600'
-                : 'bg-blue-600'
-            }`}
+            role="status"
+            aria-live="polite"
+            onClick={() => setToast(null)}
+            className="pointer-events-auto flex items-center gap-2.5 max-w-md bg-surface border border-border rounded-2xl px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.14)] animate-toast-in cursor-pointer"
           >
-            {toast.type === 'success' && <CheckCircle className="w-5 h-5" />}
-            {toast.type === 'error' && <AlertCircle className="w-5 h-5" />}
-            {toast.type === 'info' && <Info className="w-5 h-5" />}
-            <p className="flex-1 text-sm font-medium">{toast.message}</p>
-            <button
-              onClick={() => removeToast(toast.id)}
-              className="p-1 hover:bg-white/20 rounded transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <Icon size={18} className={cn('shrink-0', ICON_COLORS[toast.type])} />
+            <p className="text-sm font-medium text-foreground">{toast.message}</p>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </ToastContext.Provider>
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) {

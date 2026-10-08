@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { CreditCard, DollarSign, TrendingDown, Repeat } from 'lucide-react'
 import type { Subscription, BillingCycle } from '../../types/database'
-import { StatCard } from './d-stat-card'
+import { StatCard, StatValue } from './d-stat-card'
+import { accents } from '../../lib/colors'
 import { AnimatedCurrency } from '../ui/animated-currency'
 import { useAnimatedNumber } from '../../hooks/useAnimatedNumber'
 
@@ -34,56 +35,34 @@ export function DashboardStats({ totalCards, totalLimit, currentMonthExpense, hi
   const hasSubscriptions = activeSubscriptions.length > 0
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-3 md:mb-6">
-      <StatCard
-        label="Cartões"
-        value={animatedTotalCards}
-        icon={CreditCard}
-        iconBgClassName="bg-purple-100 dark:bg-purple-900"
-        iconColorClassName="text-purple-600 dark:text-purple-400"
-        onClick={() => navigate('/cards')}
-      />
+    <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
+      <StatCard label="Cartões" value={animatedTotalCards} icon={CreditCard} color="var(--color-primary)" onClick={() => navigate('/cards')} />
 
       <StatCard
         label="Limite Total"
-        value={
-          <p className="text-base md:text-xl font-bold text-gray-900 dark:text-white truncate">
-            <AnimatedCurrency value={totalLimit} hide={hideValues} animateOnMount={animateOnMount} />
-          </p>
-        }
+        value={<StatValue><AnimatedCurrency value={totalLimit} hide={hideValues} animateOnMount={animateOnMount} /></StatValue>}
         icon={DollarSign}
-        iconBgClassName="bg-green-100 dark:bg-green-900"
-        iconColorClassName="text-green-600 dark:text-green-400"
+        color={accents.green}
       />
 
       <StatCard
         label="Gasto do Mês"
-        value={
-          <p className="text-base md:text-xl font-bold text-gray-900 dark:text-white truncate">
-            <AnimatedCurrency value={currentMonthExpense} hide={hideValues} animateOnMount={animateOnMount} />
-          </p>
-        }
+        value={<StatValue><AnimatedCurrency value={currentMonthExpense} hide={hideValues} animateOnMount={animateOnMount} /></StatValue>}
         icon={TrendingDown}
-        iconBgClassName="bg-red-100 dark:bg-red-900"
-        iconColorClassName="text-red-600 dark:text-red-400"
+        color={accents.red}
       />
 
       <StatCard
         label="Assinaturas"
         value={
           hasSubscriptions ? (
-            <p className="text-base md:text-xl font-bold text-gray-900 dark:text-white truncate">
-              <AnimatedCurrency value={monthlySubTotal} hide={hideValues} animateOnMount={animateOnMount} />
-            </p>
+            <StatValue><AnimatedCurrency value={monthlySubTotal} hide={hideValues} animateOnMount={animateOnMount} /></StatValue>
           ) : (
-            <p className="text-sm font-semibold text-purple-600 dark:text-purple-400 mt-1 md:mt-2">
-              Gerenciar →
-            </p>
+            <p className="text-sm font-semibold text-primary">Gerenciar →</p>
           )
         }
         icon={Repeat}
-        iconBgClassName="bg-purple-100 dark:bg-purple-900/40 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/70"
-        iconColorClassName="text-purple-600 dark:text-purple-400"
+        color={accents.violet}
         onClick={() => navigate('/settings/subscriptions')}
       />
     </div>

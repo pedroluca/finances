@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { Sparkles, CreditCard, TrendingUp, PartyPopper } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CreditCard, PartyPopper, Sparkles, TrendingUp } from 'lucide-react'
 import { ScrollIndicator } from './ui/scroll-indicator'
+import { Dialog } from './ui/sheet'
+import { Button } from './ui/button'
 
 interface OnboardingModalProps {
   onComplete: () => void
@@ -35,49 +37,34 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
   const { icon: Icon, title, description } = STEPS[step]
 
   return (
-    <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50 p-4 animate-fade-in">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 sm:p-8 animate-scale-in">
-        <div className="flex justify-end mb-2">
-          <button
-            onClick={onComplete}
-            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
-          >
-            Pular
-          </button>
+    <Dialog open>
+      <div className="space-y-5">
+        <div className="flex justify-end -mt-2 -mr-2">
+          <Button label="Pular" variant="ghost" size="sm" onClick={onComplete} />
         </div>
 
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-            <Icon className="w-8 h-8 text-white" />
+        <div className="flex flex-col items-center gap-3 min-h-48 justify-center text-center">
+          <div className="w-16 h-16 rounded-2xl bg-primary/12 text-primary flex items-center justify-center mb-1">
+            <Icon size={30} />
           </div>
+          <h2 className="text-xl font-bold text-foreground">{title}</h2>
+          <p className="text-sm leading-5 text-muted">{description}</p>
         </div>
 
-        <div className="text-center mb-8">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>
-          <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{description}</p>
-        </div>
-
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center">
           <ScrollIndicator total={STEPS.length} current={step} visibleCount={STEPS.length} onSelect={setStep} />
         </div>
 
-        <div className="flex gap-3">
-          {step > 0 && (
-            <button
-              onClick={() => setStep((s) => s - 1)}
-              className="cursor-pointer flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
-            >
-              Voltar
-            </button>
-          )}
-          <button
+        <div className="flex gap-2">
+          {step > 0 && <Button label="Voltar" icon={ChevronLeft} variant="secondary" onClick={() => setStep((s) => s - 1)} />}
+          <Button
+            label={isLastStep ? 'Começar' : 'Próximo'}
+            icon={isLastStep ? undefined : ChevronRight}
+            className="flex-1"
             onClick={() => (isLastStep ? onComplete() : setStep((s) => s + 1))}
-            className="cursor-pointer flex-1 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition font-medium"
-          >
-            {isLastStep ? 'Começar' : 'Próximo'}
-          </button>
+          />
         </div>
       </div>
-    </div>
+    </Dialog>
   )
 }

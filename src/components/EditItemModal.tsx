@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react"
-import { X, Save, FileText, DollarSign, Tag, Calendar, MessageSquare } from "lucide-react"
+import { Save, FileText, DollarSign, Tag, Calendar, MessageSquare } from "lucide-react"
 import { useAppStore } from "../store/app.store"
 import type { InvoiceItemWithDetails } from "../types/database"
 import CategoryBadgeSelector from "./CategoryBadgeSelector"
 import AuthorSplitSection, { type SplitAssignment } from "./AuthorSplitSection"
-import { labelClass, inputClass } from "../lib/formStyles"
+import { textareaClass } from "../lib/formStyles"
+import { Sheet } from "./ui/sheet"
+import { Button } from "./ui/button"
+import { FieldLabel, TextField } from "./ui/field"
 
 interface EditItemModalProps {
   item: InvoiceItemWithDetails
@@ -155,130 +158,74 @@ export default function EditItemModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md lg:max-w-2xl max-h-[92vh] overflow-y-auto custom-scrollbar">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl">
-          <h2 className="text-lg font-bold dark:text-white">Editar Item</h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 hover:bg-gray-100 cursor-pointer dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+    <Sheet open onClose={onClose} title="Editar Item" size="lg">
+      <form onSubmit={handleSubmit} className="space-y-4 pb-2">
+        <TextField
+          label="Descrição"
+          icon={FileText}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          required
+        />
+
+        {/* Valor e Data */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <TextField
+            label="Valor Total"
+            icon={DollarSign}
+            inputMode="numeric"
+            value={displayAmount}
+            onChange={(e) => handleAmountChange(e.target.value)}
+            placeholder="R$ 0,00"
+            required
+            hint={item.is_installment && `Parcela ${item.installment_number}/${item.total_installments}`}
+          />
+          <TextField
+            type="date"
+            label="Data da Compra"
+            icon={Calendar}
+            value={purchaseDate}
+            onChange={(e) => setPurchaseDate(e.target.value)}
+          />
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* Descrição */}
-          <div>
-            <label className={labelClass}>
-              <FileText className="w-3.5 h-3.5" />
-              Descrição
-            </label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className={inputClass()}
-              required
-            />
-          </div>
+        {/* Categoria */}
+        <div>
+          <FieldLabel label="Categoria" icon={Tag} />
+          <CategoryBadgeSelector categories={categories} value={categoryId} onChange={setCategoryId} />
+        </div>
 
-          {/* Valor e Categoria */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>
-                <DollarSign className="w-3.5 h-3.5" />
-                Valor Total
-              </label>
-              <input
-                type="text"
-                value={displayAmount}
-                onChange={(e) => handleAmountChange(e.target.value)}
-                placeholder="R$ 0,00"
-                className={inputClass()}
-                required
-              />
-              {item.is_installment && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Parcela {item.installment_number}/{item.total_installments}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className={labelClass}>
-                <Calendar className="w-3.5 h-3.5" />
-                Data da Compra
-              </label>
-              <input
-                type="date"
-                value={purchaseDate}
-                onChange={(e) => setPurchaseDate(e.target.value)}
-                className={inputClass()}
-              />
-            </div>
-          </div>
-
-          {/* Categoria */}
-          <div>
-            <label className={labelClass}>
-              <Tag className="w-3.5 h-3.5" />
-              Categoria
-            </label>
-            <CategoryBadgeSelector
-              categories={categories}
-              value={categoryId}
-              onChange={setCategoryId}
-            />
-          </div>
-
-          {/* Observação */}
-          <div>
-            <label className={labelClass}>
-              <MessageSquare className="w-3.5 h-3.5" />
-              Observação (Opcional)
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Alguma anotação sobre esse item..."
-              rows={2}
-              className={`${inputClass()} resize-none`}
-            />
-          </div>
-
-          {/* Pessoas / Divisão */}
-          <AuthorSplitSection
-            authors={authors}
-            defaultAuthorId={item.author_id}
-            totalAmount={parseFloat(amount || "0")}
-            authorId={authorId}
-            onAuthorIdChange={setAuthorId}
-            isSplit={isSplit}
-            onIsSplitChange={setIsSplit}
-            assignments={assignments}
-            onAssignmentsChange={setAssignments}
+        {/* Observação */}
+        <div>
+          <FieldLabel label="Observação (Opcional)" icon={MessageSquare} htmlFor="edit-notes" />
+          <textarea
+            id="edit-notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Alguma anotação sobre esse item..."
+            rows={2}
+            className={textareaClass}
           />
+        </div>
 
-          {/* Botões */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-2.5 cursor-pointer border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium text-sm"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1 px-6 py-2.5 bg-indigo-600 cursor-pointer text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <Save className="w-4 h-4" />
-              {isLoading ? "Salvando..." : "Salvar"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        {/* Pessoas / Divisão */}
+        <AuthorSplitSection
+          authors={authors}
+          defaultAuthorId={item.author_id}
+          totalAmount={parseFloat(amount || "0")}
+          authorId={authorId}
+          onAuthorIdChange={setAuthorId}
+          isSplit={isSplit}
+          onIsSplitChange={setIsSplit}
+          assignments={assignments}
+          onAssignmentsChange={setAssignments}
+        />
+
+        <div className="flex gap-3 pt-1">
+          <Button label="Cancelar" variant="secondary" onClick={onClose} className="flex-1" />
+          <Button type="submit" label={isLoading ? "Salvando..." : "Salvar"} icon={Save} loading={isLoading} className="flex-1" />
+        </div>
+      </form>
+    </Sheet>
   )
 }

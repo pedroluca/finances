@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect, type ReactNode } from "react"
 import { User, Calculator, AlertCircle } from "lucide-react"
-import Switch from "./Switch"
-import { accentBg, accentText, pillClass, type Accent } from "../lib/formStyles"
+import { AppSwitch, Chip } from "./ui/misc"
+import { cn } from "../lib/cn"
 import type { Author } from "../types/database"
 
 export interface SplitAssignment {
@@ -23,7 +23,6 @@ interface AuthorSplitSectionProps {
   lockedAuthorName?: string
   /** Renderizado abaixo dos badges, apenas no modo de seleção única (ex: adicionar nova pessoa) */
   footer?: ReactNode
-  accent?: Accent
 }
 
 const formatCurrency = (val: number) =>
@@ -42,7 +41,6 @@ export default function AuthorSplitSection({
   isLocked,
   lockedAuthorName,
   footer,
-  accent = "indigo",
 }: AuthorSplitSectionProps) {
   const orderedAuthors = useMemo(() => {
     if (!defaultAuthorId) return authors
@@ -123,84 +121,69 @@ export default function AuthorSplitSection({
   const splitMismatch = Math.abs(splitDiff) >= 0.05
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
-          <User className="w-3.5 h-3.5" />
+        <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted">
+          <User size={14} />
           Quem comprou?
-        </label>
+        </span>
         {!isLocked && (
-          <Switch
-            id="isSplit"
-            checked={isSplit}
-            onChange={onIsSplitChange}
-            label="Gasto compartilhado"
-            accent={accent}
-          />
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <span className="text-[13px] font-medium text-foreground">Gasto compartilhado</span>
+            <AppSwitch checked={isSplit} onChange={onIsSplitChange} label="Gasto compartilhado" />
+          </label>
         )}
       </div>
 
       {isLocked ? (
-        <div className="inline-flex px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+        <div className="inline-flex items-center h-9 px-3.5 rounded-full bg-surface-2 text-sm font-medium text-foreground">
           {lockedAuthorName || "Carregando..."}
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {orderedAuthors.map((author) => {
               if (!isSplit) {
-                const selected = authorId === String(author.id)
                 return (
-                  <button
+                  <Chip
                     key={author.id}
-                    type="button"
+                    label={`${author.name}${author.is_owner ? " (Você)" : ""}`}
+                    selected={authorId === String(author.id)}
                     onClick={() => onAuthorIdChange(String(author.id))}
-                    className={pillClass(selected, accent)}
-                  >
-                    {author.name} {author.is_owner ? "(Você)" : ""}
-                  </button>
+                  />
                 )
               }
 
               const assignment = assignments.find((a) => a.author_id === author.id)
-              if (assignment) {
-                const isAuto = !touchedIds.has(author.id)
-                return (
-                  <div
-                    key={author.id}
-                    className={`flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs font-medium text-white ${accentBg(accent)} ${
-                      isAuto ? "ring-1 ring-inset ring-white/40" : ""
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => toggleAuthorInSplit(author.id)}
-                      className="cursor-pointer"
-                    >
-                      {author.name}
-                    </button>
-                    <input
-                      type="text"
-                      value={`R$ ${formatCurrency(assignment.amount)}`}
-                      onChange={(e) => updateAssignmentAmount(author.id, e.target.value)}
-                      title={isAuto ? "Valor calculado automaticamente com o restante" : undefined}
-                      className={`w-20 bg-white/10 rounded px-1 text-right text-xs font-semibold focus:outline-none focus:bg-white/20 ${
-                        isAuto ? "italic opacity-90" : ""
-                      }`}
-                    />
-                  </div>
-                )
+              if (!assignment) {
+                return <Chip key={author.id} label={`+ ${author.name}`} onClick={() => toggleAuthorInSplit(author.id)} />
               }
 
+              const isAuto = !touchedIds.has(author.id)
               return (
-                <button
+                <div
                   key={author.id}
-                  type="button"
-                  onClick={() => toggleAuthorInSplit(author.id)}
-                  className={pillClass(false, accent)}
+                  className={cn(
+                    "flex items-center gap-1.5 h-10 pl-3.5 pr-1 rounded-full bg-primary text-on-primary",
+                    isAuto && "ring-1 ring-inset ring-white/40",
+                  )}
                 >
-                  + {author.name}
-                </button>
+                  <button type="button" onClick={() => toggleAuthorInSplit(author.id)} className="text-sm font-medium" title="Remover da divisão">
+                    {author.name}
+                  </button>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={`R$ ${formatCurrency(assignment.amount)}`}
+                    onChange={(e) => updateAssignmentAmount(author.id, e.target.value)}
+                    aria-label={`Valor de ${author.name}`}
+                    title={isAuto ? "Valor calculado automaticamente com o restante" : undefined}
+                    className={cn(
+                      "w-[104px] h-8 px-3 rounded-full bg-white/15 text-right text-[13px] font-semibold outline-none focus:bg-white/25",
+                      isAuto && "italic",
+                    )}
+                  />
+                </div>
               )
             })}
           </div>
@@ -208,28 +191,22 @@ export default function AuthorSplitSection({
           {!isSplit && footer}
 
           {isSplit && (
-            <div className="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-2.5 space-y-1.5">
+            <div className="rounded-xl bg-surface-2 p-3 space-y-1.5">
               <div className="flex items-center justify-between gap-2">
                 <button
                   type="button"
                   onClick={distributeEqually}
-                  className={`text-xs cursor-pointer flex items-center gap-1 ${accentText(accent)}`}
+                  className="flex items-center gap-1 text-[13px] font-medium text-primary hover:opacity-80"
                   title="Distribuir igualmente entre selecionados"
                 >
-                  <Calculator size={13} /> Distribuir igualmente
+                  <Calculator size={14} /> Distribuir igualmente
                 </button>
-                <span
-                  className={`text-xs font-bold ${
-                    splitMismatch
-                      ? "text-red-600 dark:text-red-400"
-                      : "text-green-600 dark:text-green-400"
-                  }`}
-                >
+                <span className={cn("text-[13px] font-bold", splitMismatch ? "text-danger" : "text-success")}>
                   Total: R$ {formatCurrency(splitTotal)}
                 </span>
               </div>
               {splitMismatch && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
+                <p className="text-xs text-danger flex items-center gap-1">
                   <AlertCircle size={12} />
                   {splitDiff > 0
                     ? `Falta distribuir R$ ${formatCurrency(splitDiff)}`

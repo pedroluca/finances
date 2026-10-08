@@ -1,33 +1,26 @@
-import { pillClass, type Accent } from "../lib/formStyles"
 import type { Category } from "../types/database"
+import { Chip } from "./ui/misc"
 
 interface CategoryBadgeSelectorProps {
   categories: Category[]
   value: string
   onChange: (value: string) => void
-  accent?: Accent
 }
 
-export default function CategoryBadgeSelector({
-  categories,
-  value,
-  onChange,
-  accent = "indigo",
-}: CategoryBadgeSelectorProps) {
+/** Categorias em pílulas numa linha que rola de lado (como no app) */
+export default function CategoryBadgeSelector({ categories, value, onChange }: CategoryBadgeSelectorProps) {
   return (
-    <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto custom-scrollbar pr-1">
-      <button type="button" onClick={() => onChange("")} className={pillClass(value === "", accent)}>
-        Sem categoria
-      </button>
+    <div className="-mx-5 px-5 flex gap-2 overflow-x-auto custom-scrollbar sm:mx-0 sm:px-0 sm:flex-wrap sm:max-h-[84px] sm:overflow-x-hidden sm:overflow-y-auto">
+      <Chip label="Sem categoria" size="sm" selected={value === ""} onClick={() => onChange("")} />
       {categories.map((cat) => (
-        <button
+        <Chip
           key={cat.id}
-          type="button"
+          label={cat.name}
+          emoji={cat.icon}
+          size="sm"
+          selected={value === String(cat.id)}
           onClick={() => onChange(String(cat.id))}
-          className={pillClass(value === String(cat.id), accent)}
-        >
-          <span>{cat.icon}</span> {cat.name}
-        </button>
+        />
       ))}
     </div>
   )

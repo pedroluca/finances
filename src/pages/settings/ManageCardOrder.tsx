@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, GripVertical, Save } from 'lucide-react'
+import { CreditCard, GripVertical, Save } from 'lucide-react'
 import { useAppStore } from '../../store/app.store'
 import { useAuthStore } from '../../store/auth.store'
 import { phpApiRequest } from '../../lib/api'
 import { useToast } from '../../components/Toast'
 import type { CardWithBalance } from '../../types/database'
+import { StackContent, StackHeader } from '../../components/app-header'
+import { Button } from '../../components/ui/button'
+import { EmptyState } from '../../components/ui/misc'
 
 export default function ManageCardOrder() {
   const navigate = useNavigate()
@@ -88,87 +91,45 @@ export default function ManageCardOrder() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors pb-16 lg:pb-0">
-      <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/settings')}
-              className="cursor-pointer p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Ordem dos Cartões
-            </h1>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background">
+      <StackHeader title="Ordem dos Cartões" onBack={() => navigate('/settings')} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+      <StackContent className="space-y-5">
+        <p className="text-sm text-muted px-1">
           Arraste os cartões para definir a ordem em que aparecem no dashboard.
         </p>
 
         {localOrder.length === 0 ? (
-          <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-            Nenhum cartão encontrado.
-          </div>
+          <EmptyState icon={CreditCard} title="Nenhum cartão encontrado." tint="subtle" />
         ) : (
-          <div className="space-y-3">
-            {localOrder.map((card, index) => (
-              <div
-                key={card.card_id ?? card.id}
-                draggable
-                onDragStart={() => handleDragStart(index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDrop={handleDrop}
-                className="flex items-center gap-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 cursor-grab active:cursor-grabbing select-none transition-colors"
-              >
-                {/* Color stripe */}
+          <>
+            <div className="space-y-3">
+              {localOrder.map((card, index) => (
                 <div
-                  className="w-1.5 h-10 rounded-full shrink-0"
-                  style={{ backgroundColor: card.color }}
-                />
-
-                {/* Card name */}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 dark:text-white truncate">
-                    {card.card_name}
-                  </p>
-                  {card.is_shared ? (
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                      Compartilhado com {card.owner_name}
-                    </p>
-                  ) : ''}
+                  key={card.card_id ?? card.id}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDrop={handleDrop}
+                  className="h-[68px] flex items-center gap-4 bg-surface rounded-2xl border border-border px-4 cursor-grab active:cursor-grabbing select-none transition-colors hover:bg-surface-2"
+                >
+                  <div className="w-1.5 h-10 rounded-full shrink-0" style={{ backgroundColor: card.color }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground truncate">{card.card_name}</p>
+                    {!!card.is_shared && (
+                      <p className="text-xs text-subtle truncate">Compartilhado com {card.owner_name}</p>
+                    )}
+                  </div>
+                  <span className="text-xs font-medium text-subtle w-5 text-center shrink-0">{index + 1}</span>
+                  <GripVertical size={20} className="text-subtle shrink-0" />
                 </div>
+              ))}
+            </div>
 
-                {/* Position badge */}
-                <span className="text-xs font-medium text-gray-400 dark:text-gray-500 w-5 text-center shrink-0">
-                  {index + 1}
-                </span>
-
-                {/* Drag handle */}
-                <GripVertical className="w-5 h-5 text-gray-300 dark:text-gray-600 shrink-0" />
-              </div>
-            ))}
-          </div>
+            <Button label={isSaving ? 'Salvando...' : 'Salvar ordem'} icon={Save} loading={isSaving} onClick={handleSave} />
+          </>
         )}
-
-        {/* Save button */}
-        {localOrder.length > 0 && (
-          <div className="mt-6">
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-white font-medium transition-all cursor-pointer disabled:opacity-60 bg-purple-600 hover:bg-purple-700`}
-            >
-              <Save className="w-4 h-4" />
-              {isSaving ? 'Salvando...' : 'Salvar ordem'}
-            </button>
-          </div>
-        )}
-      </main>
+      </StackContent>
     </div>
   )
 }

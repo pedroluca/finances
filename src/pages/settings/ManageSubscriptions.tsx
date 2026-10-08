@@ -1,13 +1,23 @@
 import { useState, useEffect, useMemo, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, RefreshCw, Pencil, Trash2, X, ChevronDown, Repeat, AlertCircle, Pause, Play } from 'lucide-react';
+import { Plus, RefreshCw, Pencil, Trash2, ChevronDown, Repeat, AlertCircle, Pause, Play, type LucideIcon } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { useAppStore } from '../../store/app.store';
 import { phpApiRequest } from '../../lib/api';
 import type { Subscription, CreateSubscriptionDTO, UpdateSubscriptionDTO, BillingCycle, CardWithBalance } from '../../types/database';
-import { labelClass, inputClass, pillClass } from '../../lib/formStyles';
-import Switch from '../../components/Switch';
+import { textareaClass } from '../../lib/formStyles';
+import { cn } from '../../lib/cn';
+import { plural } from '../../lib/format';
 import AuthorSplitSection, { type SplitAssignment } from '../../components/AuthorSplitSection';
+import ConfirmModal from '../../components/ConfirmModal';
+import { SectionTitle, StackContent, StackHeader } from '../../components/app-header';
+import { SummaryCard } from '../../components/summary-card';
+import { Card } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { IconButton } from '../../components/ui/icon-button';
+import { Badge, Callout, Chip, Divider, EmptyState, LoadingState, SwitchField } from '../../components/ui/misc';
+import { FieldLabel, SelectField, StepperField, TextField } from '../../components/ui/field';
+import { Sheet } from '../../components/ui/sheet';
 
 // ── billing cycle helpers ─────────────────────────────────────────────────────
 const CYCLE_OPTIONS: { value: BillingCycle; label: string; shortLabel: string }[] = [
@@ -52,32 +62,24 @@ function daysUntilRenewal(nextBillingDate: string): number {
   return Math.ceil((renewal.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
+function StatusPill({ icon: Icon, label, className }: { icon: LucideIcon; label: string; className: string }) {
+  return (
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold', className)}>
+      <Icon className="w-3 h-3" /> {label}
+    </span>
+  );
+}
+
 function RenewalBadge({ nextBillingDate }: { nextBillingDate: string }) {
   const days = daysUntilRenewal(nextBillingDate);
   const renewal = new Date(nextBillingDate + 'T00:00:00');
   const isNextYear = renewal.getFullYear() !== new Date().getFullYear();
   const date = renewal.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', ...(isNextYear ? { year: 'numeric' } : {}) });
 
-  if (days < 0) return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-      <AlertCircle className="w-3 h-3" /> Atrasada
-    </span>
-  );
-  if (days === 0) return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-      <RefreshCw className="w-3 h-3" /> Hoje
-    </span>
-  );
-  if (days <= 3) return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
-      <RefreshCw className="w-3 h-3" /> {date} ({days}d)
-    </span>
-  );
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-      <RefreshCw className="w-3 h-3" /> {date}
-    </span>
-  );
+  if (days < 0) return <StatusPill icon={AlertCircle} label="Atrasada" className="bg-danger/12 text-danger" />;
+  if (days === 0) return <StatusPill icon={RefreshCw} label="Hoje" className="bg-orange/12 text-orange" />;
+  if (days <= 3) return <StatusPill icon={RefreshCw} label={`${date} (${days}d)`} className="bg-warning/12 text-warning" />;
+  return <StatusPill icon={RefreshCw} label={date} className="bg-surface-2 text-muted" />;
 }
 
 // ── main component ─────────────────────────────────────────────────────────
@@ -91,7 +93,7 @@ export default function ManageSubscriptions() {
   const [isLoading, setIsLoading]         = useState(true);
   const [showForm, setShowForm]           = useState(false);
   const [editingId, setEditingId]         = useState<number | null>(null);
-  const [deletingId, setDeletingId]       = useState<number | null>(null);
+  const [deletingSub, setDeletingSub]     = useState<Subscription | null>(null);
   const [showInactive, setShowInactive]   = useState(false);
   const [showPaused, setShowPaused]       = useState(true);
   const [globalError, setGlobalError]     = useState('');
@@ -303,7 +305,6 @@ export default function ManageSubscriptions() {
       });
       if (res?.success) {
         setSubscriptions((prev) => prev.filter((s) => s.id !== id));
-        setDeletingId(null);
       }
     } catch (err) {
       console.error(err);
@@ -351,375 +352,244 @@ export default function ManageSubscriptions() {
 
   // ── render ─────────────────────────────────────────────────────────────────
 
+  const closeForm = () => { setShowForm(false); resetForm(); };
+
+  const renderCard = (sub: Subscription, withPause = true) => (
+    <SubscriptionCard
+      key={sub.id}
+      sub={sub}
+      onEdit={() => openEdit(sub)}
+      onDelete={() => setDeletingSub(sub)}
+      onPause={withPause ? () => handlePause(sub) : undefined}
+    />
+  );
+
+  const hasActive = subscriptions.some((s) => s.active);
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors pb-16 lg:pb-0">
-      <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/settings')}
-              className="cursor-pointer p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Assinaturas</h1>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background">
+      <StackHeader title="Assinaturas" onBack={() => navigate('/settings')} />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        {globalError && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-red-800 dark:text-red-400 text-sm">
-            {globalError}
-          </div>
-        )}
+      <StackContent className="space-y-4">
+        {globalError && <Callout tone="danger" icon={AlertCircle}>{globalError}</Callout>}
 
-        {/* Filter bar */}
-        {!isLoading && subscriptions.some((s) => s.active) && (
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mr-1">Filtrar:</span>
-
-            {/* Author filter */}
+        {/* Filtros */}
+        {!isLoading && hasActive && (
+          <div className="space-y-2">
+            <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.6px] text-subtle">Filtrar</h2>
             {authorOptions.length > 1 && (
-              <div className="flex flex-wrap gap-1">
-                <button
-                  onClick={() => setFilterAuthor(null)}
-                  className={`cursor-pointer px-3 py-1 rounded-full text-xs font-medium transition ${
-                    filterAuthor === null
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  Todos
-                </button>
+              <div className="flex flex-wrap gap-2">
+                <Chip label="Todos" size="sm" selected={filterAuthor === null} onClick={() => setFilterAuthor(null)} />
                 {authorOptions.map((a) => (
-                  <button
+                  <Chip
                     key={a.id}
+                    label={`${a.name}${a.is_owner ? ' (você)' : ''}`}
+                    size="sm"
+                    selected={filterAuthor === a.id}
                     onClick={() => setFilterAuthor(filterAuthor === a.id ? null : a.id)}
-                    className={`cursor-pointer px-3 py-1 rounded-full text-xs font-medium capitalize transition ${
-                      filterAuthor === a.id
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    {a.name}{a.is_owner ? ' (você)' : ''}
-                  </button>
+                  />
                 ))}
               </div>
             )}
-
-            {/* Cycle filter */}
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-2">
               {CYCLE_OPTIONS.map((opt) => (
-                <button
+                <Chip
                   key={opt.value}
+                  label={opt.shortLabel.replace('/', '')}
+                  size="sm"
+                  selected={filterCycle === opt.value}
                   onClick={() => setFilterCycle(filterCycle === opt.value ? null : opt.value)}
-                  className={`cursor-pointer px-3 py-1 rounded-full text-xs font-medium capitalize transition ${
-                    filterCycle === opt.value
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {opt.shortLabel.replace('/', '')}
-                </button>
+                />
               ))}
             </div>
           </div>
         )}
-        {!isLoading && activeList.length > 0 && (
-          <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 text-white shadow-lg">
-            <div className="flex items-center gap-3 mb-1">
-              <Repeat className="w-5 h-5 opacity-80" />
-              <span className="text-purple-200 text-sm font-medium">Equivalente mensal em assinaturas</span>
-            </div>
-            <p className="text-3xl font-bold">{formatAmount(monthlyTotal)}</p>
-            <p className="text-purple-300 text-sm mt-1">{activeList.length} assinatura{activeList.length !== 1 ? 's' : ''} ativa{activeList.length !== 1 ? 's' : ''}</p>
-          </div>
-        )}
-
-        {isLoading && (
-          <div className="flex items-center justify-center py-16">
-            <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
-          </div>
-        )}
-
-        {!isLoading && activeList.length === 0 && pausedList.length === 0 && subscriptions.length === 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-12 text-center">
-            <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Repeat className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Nenhuma assinatura cadastrada</h3>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
-              Cadastre suas assinaturas recorrentes e elas serão adicionadas automaticamente nas faturas na data certa.
-            </p>
-            <button
-              onClick={openCreate}
-              className="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              Adicionar assinatura
-            </button>
-          </div>
-        )}
 
         {!isLoading && activeList.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Ativas</h2>
-              <button
-                onClick={openCreate}
-                className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition cursor-pointer"
-              >
-                <Plus className="w-4 h-4" /> Nova
-              </button>
-            </div>
-            {activeList.map((sub) => (
-              <SubscriptionCard
-                key={sub.id}
-                sub={sub}
-                onEdit={() => openEdit(sub)}
-                onDelete={() => setDeletingId(sub.id)}
-                onPause={() => handlePause(sub)}
-                isConfirmingDelete={deletingId === sub.id}
-                onConfirmDelete={() => handleDelete(sub.id)}
-                onCancelDelete={() => setDeletingId(null)}
-              />
-            ))}
-          </div>
+          <SummaryCard
+            icon={Repeat}
+            label="Equivalente mensal em assinaturas"
+            value={formatAmount(monthlyTotal)}
+            caption={`${activeList.length} ${plural(activeList.length, 'assinatura ativa', 'assinaturas ativas')}`}
+          />
         )}
 
-        {/* Paused subscriptions */}
-        {!isLoading && pausedList.length > 0 && (
-          <div>
-            <button
-              onClick={() => setShowPaused((v) => !v)}
-              className="flex items-center gap-2 text-sm text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-medium transition mb-2"
-            >
-              <ChevronDown className={`w-4 h-4 transition-transform ${showPaused ? 'rotate-180' : ''}`} />
-              <Pause className="w-3.5 h-3.5" />
-              {pausedList.length} pausada{pausedList.length !== 1 ? 's' : ''}
-            </button>
-            {showPaused && (
+        {isLoading ? (
+          <LoadingState />
+        ) : subscriptions.length === 0 ? (
+          <Card>
+            <EmptyState
+              icon={Repeat}
+              title="Nenhuma assinatura cadastrada"
+              description="Cadastre suas assinaturas recorrentes e elas serão adicionadas automaticamente nas faturas na data certa."
+              actionLabel="Adicionar assinatura"
+              actionIcon={Plus}
+              onAction={openCreate}
+            />
+          </Card>
+        ) : (
+          <>
+            <SectionTitle title="Ativas" action={<Button label="Nova" icon={Plus} size="sm" onClick={openCreate} />} />
+            {activeList.length > 0 ? (
+              <div className="space-y-3">{activeList.map((sub) => renderCard(sub))}</div>
+            ) : (
+              <p className="text-sm text-subtle px-1">
+                Nenhuma assinatura ativa{filterAuthor !== null || filterCycle !== null ? ' com esses filtros' : ''}.
+              </p>
+            )}
+
+            {/* Pausadas */}
+            {pausedList.length > 0 && (
               <div className="space-y-3">
-                {pausedList.map((sub) => (
-                  <SubscriptionCard
-                    key={sub.id}
-                    sub={sub}
-                    onEdit={() => openEdit(sub)}
-                    onDelete={() => setDeletingId(sub.id)}
-                    onPause={() => handlePause(sub)}
-                    isConfirmingDelete={deletingId === sub.id}
-                    onConfirmDelete={() => handleDelete(sub.id)}
-                    onCancelDelete={() => setDeletingId(null)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {!isLoading && inactiveList.length > 0 && (
-          <div>
-            <button
-              onClick={() => setShowInactive((v) => !v)}
-              className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition"
-            >
-              <ChevronDown className={`w-4 h-4 transition-transform ${showInactive ? 'rotate-180' : ''}`} />
-              {inactiveList.length} assinatura{inactiveList.length !== 1 ? 's' : ''} inativa{inactiveList.length !== 1 ? 's' : ''}
-            </button>
-            {showInactive && (
-              <div className="mt-3 space-y-3 opacity-60">
-                {inactiveList.map((sub) => (
-                  <SubscriptionCard
-                    key={sub.id}
-                    sub={sub}
-                    onEdit={() => openEdit(sub)}
-                    onDelete={() => setDeletingId(sub.id)}
-                    onPause={() => {}}
-                    isConfirmingDelete={deletingId === sub.id}
-                    onConfirmDelete={() => handleDelete(sub.id)}
-                    onCancelDelete={() => setDeletingId(null)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </main>
-
-      {/* ── Modal de formulário ── */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {editingId !== null ? 'Editar assinatura' : 'Nova assinatura'}
-              </h2>
-              <button
-                onClick={() => { setShowForm(false); resetForm(); }}
-                className="cursor-pointer p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="overflow-y-auto flex-1 custom-scrollbar">
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              {formError && (
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-800 dark:text-red-400">
-                  {formError}
-                </div>
-              )}
-
-              {/* Descrição */}
-              <div>
-                <label className={labelClass}>Nome da assinatura *</label>
-                <input
-                  type="text"
-                  value={fDescription}
-                  onChange={(e) => setFDescription(e.target.value)}
-                  placeholder="Ex: Netflix, Spotify, iCloud..."
-                  autoFocus
-                  className={inputClass('purple')}
-                  required
-                />
-              </div>
-
-              {/* Valor + Dia */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Valor por cobrança *</label>
-                  <input
-                    type="text"
-                    value={fAmountDisplay}
-                    onChange={(e) => handleAmountChange(e.target.value)}
-                    placeholder="R$ 0,00"
-                    className={inputClass('purple')}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Dia de cobrança *</label>
-                  <input
-                    type="number"
-                    value={fBillingDay}
-                    onChange={(e) => setFBillingDay(e.target.value)}
-                    min="1" max="31"
-                    placeholder="Ex: 28"
-                    className={inputClass('purple')}
-                    required
-                  />
-                  <p className="text-xs text-gray-400 mt-1">Cai na fatura mais próxima deste dia</p>
-                </div>
-              </div>
-
-              {/* Ciclo de cobrança */}
-              <div>
-                <label className={labelClass}>Ciclo de cobrança *</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {CYCLE_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setFBillingCycle(opt.value)}
-                      className={pillClass(fBillingCycle === opt.value, 'purple')}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                {fBillingCycle !== 'monthly' && parseFloat(fAmount) > 0 && (
-                  <p className="text-xs text-purple-500 dark:text-purple-400 mt-1.5">
-                    ≈ {formatAmount(toMonthlyEquivalent(parseFloat(fAmount), fBillingCycle))}/mês
-                  </p>
-                )}
-              </div>
-
-              {/* Cartão — usa card_id (field da view card_available_balance) */}
-              <div>
-                <label className={labelClass}>Cartão *</label>
-                <select
-                  value={fCardId}
-                  onChange={(e) => setFCardId(e.target.value)}
-                  className={inputClass('purple')}
-                  required
-                >
-                  <option value="">Selecione o cartão...</option>
-                  {cards
-                    .filter((c) => c.active || Number((c as CardWithBalance).active) === 1)
-                    .map((c) => {
-                      // A view retorna card_id e card_name; fallback para id/name se vier diferente
-                      const card = c as CardWithBalance;
-                      const id   = card.card_id ?? card.id;
-                      const name = card.card_name ?? card.name;
-                      return (
-                        <option key={id} value={id}>{name}</option>
-                      );
-                    })}
-                </select>
-              </div>
-
-              {/* Divisão de despesa */}
-              <div className="border-t border-b border-gray-200 dark:border-gray-700 py-4">
-                <AuthorSplitSection
-                  authors={authors}
-                  defaultAuthorId={defaultAuthor?.id}
-                  totalAmount={parseFloat(fAmount || '0')}
-                  authorId={fAuthorId}
-                  onAuthorIdChange={setFAuthorId}
-                  isSplit={isSplit}
-                  onIsSplitChange={(v) => { setIsSplit(v); setAssignments([]); }}
-                  assignments={assignments}
-                  onAssignmentsChange={setAssignments}
-                  accent="purple"
-                />
-              </div>
-
-              {/* Observações */}
-              <div>
-                <label className={labelClass}>
-                  Observações <span className="text-gray-400 font-normal">(opcional)</span>
-                </label>
-                <textarea
-                  value={fNotes}
-                  onChange={(e) => setFNotes(e.target.value)}
-                  rows={2}
-                  placeholder="Ex: conta familiar, plano premium..."
-                  className={`${inputClass('purple')} resize-none`}
-                />
-              </div>
-
-              {/* Toggle ativo/inativo (só na edição) */}
-              {editingId !== null && (
-                <div className="flex items-center justify-between py-3 border-t border-gray-100 dark:border-gray-700">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Assinatura ativa</span>
-                  <Switch checked={fActive} onChange={setFActive} accent="purple" />
-                </div>
-              )}
-
-              {/* Botões */}
-              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => { setShowForm(false); resetForm(); }}
-                  className="flex-1 cursor-pointer px-4 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm font-medium"
+                  onClick={() => setShowPaused((v) => !v)}
+                  className="flex items-center gap-2 py-1 px-1 text-sm font-medium text-warning hover:opacity-80 transition-opacity"
                 >
-                  Cancelar
+                  <ChevronDown className={cn('w-4 h-4 transition-transform', showPaused && 'rotate-180')} />
+                  <Pause className="w-3.5 h-3.5" />
+                  {pausedList.length} {plural(pausedList.length, 'pausada', 'pausadas')}
                 </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 cursor-pointer px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? 'Salvando...' : editingId !== null ? 'Salvar' : 'Criar assinatura'}
-                </button>
+                {showPaused && <div className="space-y-3">{pausedList.map((sub) => renderCard(sub))}</div>}
               </div>
-            </form>
-            </div>
-          </div>
-        </div>
-      )}
+            )}
 
+            {/* Inativas */}
+            {inactiveList.length > 0 && (
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setShowInactive((v) => !v)}
+                  className="flex items-center gap-2 py-1 px-1 text-sm text-muted hover:text-foreground transition-colors"
+                >
+                  <ChevronDown className={cn('w-4 h-4 transition-transform', showInactive && 'rotate-180')} />
+                  {inactiveList.length} {plural(inactiveList.length, 'assinatura inativa', 'assinaturas inativas')}
+                </button>
+                {showInactive && <div className="space-y-3">{inactiveList.map((sub) => renderCard(sub, false))}</div>}
+              </div>
+            )}
+          </>
+        )}
+      </StackContent>
+
+      {/* ── Formulário: folha no celular, diálogo no desktop ── */}
+      <Sheet open={showForm} onClose={closeForm} title={editingId !== null ? 'Editar assinatura' : 'Nova assinatura'}>
+        <form onSubmit={handleSubmit} className="space-y-4 pb-2">
+          <TextField
+            label="Nome da assinatura *"
+            value={fDescription}
+            onChange={(e) => setFDescription(e.target.value)}
+            placeholder="Ex: Netflix, Spotify, iCloud..."
+            autoFocus={editingId === null}
+            required
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <TextField
+              label="Valor por cobrança *"
+              inputMode="numeric"
+              value={fAmountDisplay}
+              onChange={(e) => handleAmountChange(e.target.value)}
+              placeholder="R$ 0,00"
+              required
+            />
+            <StepperField
+              label="Dia de cobrança *"
+              value={Number(fBillingDay) || 1}
+              onChange={(value) => setFBillingDay(String(value))}
+              min={1}
+              max={28}
+              hint="Cai na fatura mais próxima deste dia"
+            />
+          </div>
+
+          <div>
+            <FieldLabel label="Ciclo de cobrança *" />
+            <div className="flex flex-wrap gap-2">
+              {CYCLE_OPTIONS.map((opt) => (
+                <Chip key={opt.value} label={opt.label} selected={fBillingCycle === opt.value} onClick={() => setFBillingCycle(opt.value)} />
+              ))}
+            </div>
+            {fBillingCycle !== 'monthly' && parseFloat(fAmount) > 0 && (
+              <p className="text-xs text-primary mt-1.5">
+                ≈ {formatAmount(toMonthlyEquivalent(parseFloat(fAmount), fBillingCycle))}/mês
+              </p>
+            )}
+          </div>
+
+          {/* Cartão — usa card_id (field da view card_available_balance) */}
+          <SelectField label="Cartão *" id="sub-card" value={fCardId} onChange={setFCardId} required>
+            <option value="">Selecione o cartão...</option>
+            {cards
+              .filter((c) => c.active || Number((c as CardWithBalance).active) === 1)
+              .map((c) => {
+                // A view retorna card_id e card_name; fallback para id/name se vier diferente
+                const card = c as CardWithBalance;
+                const id = card.card_id ?? card.id;
+                const name = card.card_name ?? card.name;
+                return <option key={id} value={id}>{name}</option>;
+              })}
+          </SelectField>
+
+          <Divider />
+
+          <AuthorSplitSection
+            authors={authors}
+            defaultAuthorId={defaultAuthor?.id}
+            totalAmount={parseFloat(fAmount || '0')}
+            authorId={fAuthorId}
+            onAuthorIdChange={setFAuthorId}
+            isSplit={isSplit}
+            onIsSplitChange={(v) => { setIsSplit(v); setAssignments([]); }}
+            assignments={assignments}
+            onAssignmentsChange={setAssignments}
+          />
+
+          <Divider />
+
+          <div>
+            <FieldLabel label="Observações (opcional)" htmlFor="sub-notes" />
+            <textarea
+              id="sub-notes"
+              value={fNotes}
+              onChange={(e) => setFNotes(e.target.value)}
+              rows={2}
+              placeholder="Ex: conta familiar, plano premium..."
+              className={textareaClass}
+            />
+          </div>
+
+          {editingId !== null && (
+            <>
+              <Divider />
+              <SwitchField title="Assinatura ativa" checked={fActive} onChange={setFActive} />
+            </>
+          )}
+
+          {formError && <Callout tone="danger" icon={AlertCircle}>{formError}</Callout>}
+
+          <div className="flex gap-3 pt-1">
+            <Button label="Cancelar" variant="secondary" onClick={closeForm} className="flex-1" />
+            <Button
+              type="submit"
+              label={isSubmitting ? 'Salvando...' : editingId !== null ? 'Salvar' : 'Criar assinatura'}
+              loading={isSubmitting}
+              className="flex-1"
+            />
+          </div>
+        </form>
+      </Sheet>
+
+      <ConfirmModal
+        isOpen={!!deletingSub}
+        onClose={() => setDeletingSub(null)}
+        onConfirm={() => (deletingSub ? handleDelete(deletingSub.id) : undefined)}
+        title="Excluir assinatura?"
+        message={`Excluir "${deletingSub?.description ?? ''}"? Esta ação não pode ser desfeita.`}
+        confirmText="Excluir"
+        icon={Trash2}
+        isDestructive
+      />
     </div>
   );
 }
@@ -730,93 +600,66 @@ interface SubscriptionCardProps {
   sub: Subscription;
   onEdit: () => void;
   onDelete: () => void;
-  onPause: () => void;
-  isConfirmingDelete: boolean;
-  onConfirmDelete: () => void;
-  onCancelDelete: () => void;
+  /** Ausente nas inativas (não dá para pausar) */
+  onPause?: () => void;
 }
 
-function SubscriptionCard({ sub, onEdit, onDelete, onPause, isConfirmingDelete, onConfirmDelete, onCancelDelete }: SubscriptionCardProps) {
+function SubscriptionCard({ sub, onEdit, onDelete, onPause }: SubscriptionCardProps) {
+  const tint = sub.category_color ?? '#6366f1';
+  const details = [sub.card_name, sub.author_name, sub.billing_day ? `Dia ${sub.billing_day}` : null].filter(Boolean).join(' · ');
+
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 transition-all ${
-      !sub.active ? 'opacity-60' : sub.paused ? 'opacity-75 border border-amber-200 dark:border-amber-800' : ''
-    }`}>
-      <div className="flex items-start gap-4">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 mt-0.5"
-          style={{ backgroundColor: sub.category_color ? `${sub.category_color}20` : '#6366f120' }}
-        >
-          {sub.category_icon ?? '🔄'}
+    <Card
+      className={cn('p-4 space-y-3', !sub.active ? 'opacity-60' : sub.paused && 'opacity-85')}
+      style={sub.active && sub.paused ? { borderColor: 'color-mix(in srgb, var(--color-warning) 40%, transparent)' } : undefined}
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-lg" style={{ backgroundColor: `${tint}26`, color: tint }}>
+          {sub.category_icon ?? <Repeat size={19} />}
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-gray-900 dark:text-white truncate flex items-center gap-2">
-                {sub.description}
-                {sub.paused && (
-                  <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">Pausada</span>
-                )}
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {sub.card_name} · {sub.author_name}{sub.billing_day ? ` · Dia ${sub.billing_day}` : ''}
-                {sub.billing_cycle && sub.billing_cycle !== 'monthly' && (
-                  <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 font-medium">
-                    {sub.billing_cycle === 'annual' ? 'Anual' : 'Semestral'}
-                  </span>
-                )}
-              </p>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="font-bold text-gray-900 dark:text-white">{formatAmount(sub.amount)}</p>
-              <p className="text-xs text-gray-400">{cycleShortLabel(sub.billing_cycle)}</p>
-            </div>
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-semibold text-foreground truncate">{sub.description}</h3>
+            {sub.paused && <Badge label="Pausada" tone="warning" />}
           </div>
-
-          <div className="flex items-center justify-between mt-3 gap-2">
-            {sub.paused ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                <Pause className="w-3 h-3" /> Pausada
-              </span>
-            ) : (
-              <RenewalBadge nextBillingDate={sub.next_billing_date} />
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-xs text-muted">{details}</p>
+            {sub.billing_cycle && sub.billing_cycle !== 'monthly' && (
+              <Badge label={sub.billing_cycle === 'annual' ? 'Anual' : 'Semestral'} tone="primary" />
             )}
-            <div className="flex items-center gap-1">
-              {!isConfirmingDelete ? (
-                <>
-                  <button
-                    onClick={onPause}
-                    className={`cursor-pointer p-1.5 rounded-lg transition ${
-                      sub.paused
-                        ? 'text-amber-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
-                        : 'text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20'
-                    }`}
-                    title={sub.paused ? 'Retomar' : 'Pausar'}
-                  >
-                    {sub.paused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-                  </button>
-                  <button onClick={onEdit} className="cursor-pointer p-1.5 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition" title="Editar">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button onClick={onDelete} className="cursor-pointer p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Excluir">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Excluir?</span>
-                  <button onClick={onCancelDelete} className="px-3 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Não</button>
-                  <button onClick={onConfirmDelete} className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg transition">Sim</button>
-                </div>
-              )}
-            </div>
           </div>
+        </div>
 
-          {sub.notes && (
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 italic">{sub.notes}</p>
-          )}
+        <div className="text-right shrink-0">
+          <p className="font-bold text-foreground">{formatAmount(sub.amount)}</p>
+          <p className="text-xs text-subtle">{cycleShortLabel(sub.billing_cycle)}</p>
         </div>
       </div>
-    </div>
+
+      <div className="flex items-center justify-between gap-2">
+        {sub.paused ? (
+          <StatusPill icon={Pause} label="Pausada" className="bg-warning/12 text-warning" />
+        ) : (
+          <RenewalBadge nextBillingDate={sub.next_billing_date} />
+        )}
+        <div className="flex items-center">
+          {onPause && (
+            <IconButton
+              icon={sub.paused ? Play : Pause}
+              label={sub.paused ? 'Retomar' : 'Pausar'}
+              size={36}
+              iconSize={17}
+              tone={sub.paused ? 'success' : 'muted'}
+              onClick={onPause}
+            />
+          )}
+          <IconButton icon={Pencil} label="Editar" size={36} iconSize={17} tone="muted" onClick={onEdit} />
+          <IconButton icon={Trash2} label="Excluir" size={36} iconSize={17} tone="muted" onClick={onDelete} />
+        </div>
+      </div>
+
+      {sub.notes && <p className="text-xs text-subtle italic">{sub.notes}</p>}
+    </Card>
   );
 }

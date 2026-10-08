@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle2, CreditCard } from 'lucide-react'
+import { CheckCircle2, CreditCard, ReceiptText } from 'lucide-react'
 import type { Bill, CardWithBalance, MonthlyTotal } from '../../types/database'
+import { Card } from '../ui/card'
+import { Badge, SegmentedControl } from '../ui/misc'
+import { cn } from '../../lib/cn'
+import { money } from '../../lib/format'
 
 interface UpcomingPayment {
   kind: 'card' | 'bill'
@@ -143,11 +147,13 @@ function buildBillPayments(
   return results
 }
 
-const FILTERS: { label: string; value: number | null }[] = [
-  { label: 'Todos', value: null },
-  { label: '7d', value: 7 },
-  { label: '15d', value: 15 },
-  { label: '30d', value: 30 },
+type Filter = 'all' | '7' | '15' | '30'
+
+const FILTERS: { value: Filter; label: string }[] = [
+  { value: 'all', label: 'Todos' },
+  { value: '7', label: '7d' },
+  { value: '15', label: '15d' },
+  { value: '30', label: '30d' },
 ]
 
 interface DashboardUpcomingPaymentsProps {
@@ -159,168 +165,120 @@ interface DashboardUpcomingPaymentsProps {
 
 export function DashboardUpcomingPayments({ cards, monthlyTotals, bills, hideValues }: DashboardUpcomingPaymentsProps) {
   const navigate = useNavigate()
-  const [filter, setFilter] = useState<number | null>(15)
+  const [filter, setFilter] = useState<Filter>('15')
+  const maxDays = filter === 'all' ? null : Number(filter)
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
   const payments = [
-    ...buildCardPayments(cards, monthlyTotals, filter, today, navigate),
-    ...buildBillPayments(bills, filter, today, navigate),
+    ...buildCardPayments(cards, monthlyTotals, maxDays, today, navigate),
+    ...buildBillPayments(bills, maxDays, today, navigate),
   ].sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
 
   const definedPayments = payments.filter((p) => !p.amountPending)
   const totalAll = definedPayments.reduce((sum, p) => sum + (p.totalAmount ?? p.unpaidAmount), 0)
   const totalMine = definedPayments.reduce((sum, p) => sum + p.unpaidAmount, 0)
-  const formatCurrency = (value: number) =>
-    hideValues ? 'R$ ••••' : `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const showMine = Math.abs(totalMine - totalAll) > 0.004
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:p-6 transition-colors">
-      <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Próximos Pagamentos
-        </h2>
-        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-          {FILTERS.map(({ label, value }) => (
-            <button
-              key={label}
-              onClick={() => setFilter(value)}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer ${
-                filter === value
-                  ? 'bg-white dark:bg-gray-600 text-purple-600 dark:text-purple-400 shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+    <Card className="p-4 md:p-5 space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h2 className="text-lg font-semibold text-foreground">Próximos Pagamentos</h2>
+        <SegmentedControl options={FILTERS} value={filter} onChange={setFilter} compact />
       </div>
 
       {definedPayments.length > 0 && (
-        <div className={`grid ${totalMine !== totalAll ? 'grid-cols-2' : 'grid-cols-1'} gap-3 mb-3`}>
-          <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg px-3 py-2">
-            <p className="text-[11px] text-gray-500 dark:text-gray-400">Valor total</p>
-            <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(totalAll)}</p>
-          </div>
-          {totalMine !== totalAll && (
-            <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg px-3 py-2">
-              <p className="text-[11px] text-gray-500 dark:text-gray-400">Sua parte</p>
-              <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(totalMine)}</p>
-            </div>
-          )}
+        <div className="flex gap-3">
+          <TotalBox label="Valor total" value={money(totalAll, hideValues)} />
+          {showMine && <TotalBox label="Sua parte" value={money(totalMine, hideValues)} />}
         </div>
       )}
 
       {payments.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
-          <CheckCircle2 className="w-10 h-10 text-green-500" />
-          <p className="font-medium text-gray-900 dark:text-white">Tudo em dia!</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Nenhum pagamento pendente no momento.</p>
+          <CheckCircle2 className="w-10 h-10 text-success" />
+          <p className="font-semibold text-foreground">Tudo em dia!</p>
+          <p className="text-sm text-muted">Nenhum pagamento pendente no momento.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-2.5 xl:grid-cols-2">
           {payments.map((payment) => (
-            <button
-              key={payment.key}
-              onClick={payment.onClick}
-              className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/60 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-2">
-                {payment.kind === 'bill' ? (
-                  <div
-                    className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-base"
-                    style={{ backgroundColor: `${payment.color}20` }}
-                  >
-                    {payment.icon ?? '🧾'}
-                  </div>
-                ) : (
-                  <div
-                    className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-base"
-                    style={{ backgroundColor: payment.color }}
-                  >
-                    <CreditCard className="w-5 h-5 text-white" />
-                  </div>
-                )}
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-gray-900 dark:text-white leading-tight">
-                      {payment.label}
-                    </p>
-                    {payment.isShared && (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400">
-                        compartilhado
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Vence{' '}
-                    {payment.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                    {' '}·{' '}
-                    {payment.subLabel}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 shrink-0">
-                <div className="text-right">
-                  {payment.amountPending ? (
-                    <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
-                      Valor a definir
-                    </span>
-                  ) : (
-                    <>
-                      {/* Para cartões próprios: mostra "Sua parte" se for menor que o total */}
-                      {payment.kind === 'card' && !payment.isShared && payment.totalAmount !== undefined && payment.totalAmount > payment.unpaidAmount ? (
-                        <>
-                          <p className="font-semibold text-gray-900 dark:text-white">
-                            {hideValues ? 'R$ ••••' : `R$ ${payment.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                          </p>
-                          <p className="text-[11px] text-gray-400 dark:text-gray-500">
-                            Sua parte:{' '}
-                            <span className="font-medium text-gray-600 dark:text-gray-300">
-                              {hideValues ? 'R$ ••••' : `R$ ${payment.unpaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                            </span>
-                          </p>
-                        </>
-                      ) : (
-                        <>
-                          {/* Para compartilhados ou quando o total = parte do usuário */}
-                          {payment.isShared && (
-                            <p className="text-[11px] text-gray-400 dark:text-gray-500 text-right">Sua parte</p>
-                          )}
-                          <p className="font-semibold text-gray-900 dark:text-white">
-                            {hideValues ? 'R$ ••••' : `R$ ${payment.unpaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                          </p>
-                        </>
-                      )}
-                    </>
-                  )}
-
-                  {/* Urgency badges */}
-                  {payment.isOverdue && (
-                    <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">Vencida</span>
-                  )}
-                  {payment.isDueToday && (
-                    <span className="text-[11px] font-semibold text-orange-500 dark:text-orange-400">Vence hoje</span>
-                  )}
-                  {payment.isDueSoon && !payment.isDueToday && (
-                    <span className="text-[11px] font-semibold text-yellow-600 dark:text-yellow-400">
-                      {payment.diffDays === 1 ? 'Amanhã' : `Em ${payment.diffDays} dias`}
-                    </span>
-                  )}
-                  {!payment.isOverdue && !payment.isDueToday && !payment.isDueSoon && (
-                    <span className="text-[11px] text-gray-400 dark:text-gray-500">
-                      {payment.diffDays === 1 ? 'Em 1 dia' : `Em ${payment.diffDays} dias`}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </button>
+            <PaymentRow key={payment.key} payment={payment} hideValues={hideValues} />
           ))}
         </div>
       )}
+    </Card>
+  )
+}
+
+function TotalBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex-1 min-w-0 bg-surface-2 rounded-xl px-3 py-2.5">
+      <p className="text-[11px] text-muted">{label}</p>
+      <p className="text-[15px] font-semibold text-foreground truncate">{value}</p>
     </div>
+  )
+}
+
+function PaymentRow({ payment, hideValues }: { payment: UpcomingPayment; hideValues: boolean }) {
+  const { diffDays } = payment
+
+  const urgency = payment.isOverdue
+    ? { label: 'Vencida', className: 'text-danger' }
+    : payment.isDueToday
+      ? { label: 'Vence hoje', className: 'text-orange' }
+      : payment.isDueSoon
+        ? { label: diffDays === 1 ? 'Amanhã' : `Em ${diffDays} dias`, className: 'text-warning' }
+        : { label: diffDays === 1 ? 'Em 1 dia' : `Em ${diffDays} dias`, className: 'text-subtle' }
+
+  // Cartão próprio com itens de outras pessoas: mostra o total e, embaixo, a parte do usuário
+  const showTotalAndPart = payment.kind === 'card' && !payment.isShared && payment.totalAmount !== undefined && payment.totalAmount > payment.unpaidAmount
+
+  return (
+    <button
+      type="button"
+      onClick={payment.onClick}
+      className="w-full flex items-center gap-3 p-3.5 bg-surface-2 hover:bg-surface-3 rounded-xl transition-colors text-left"
+    >
+      {payment.kind === 'bill' ? (
+        <div className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-lg" style={{ backgroundColor: `${payment.color}26`, color: payment.color }}>
+          {payment.icon ?? <ReceiptText size={19} />}
+        </div>
+      ) : (
+        <div className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-white" style={{ backgroundColor: payment.color }}>
+          <CreditCard size={19} />
+        </div>
+      )}
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="font-semibold text-foreground truncate">{payment.label}</p>
+          {payment.isShared && <Badge label="compartilhado" tone="info" />}
+        </div>
+        <p className="text-xs text-muted mt-0.5 line-clamp-2">
+          Vence {payment.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} · {payment.subLabel}
+        </p>
+      </div>
+
+      <div className="flex flex-col items-end shrink-0">
+        {payment.amountPending ? (
+          <Badge label="Valor a definir" tone="warning" />
+        ) : showTotalAndPart ? (
+          <>
+            <p className="font-semibold text-foreground">{money(payment.totalAmount ?? 0, hideValues)}</p>
+            <p className="text-[11px] text-subtle">
+              Sua parte: <span className="font-medium text-muted">{money(payment.unpaidAmount, hideValues)}</span>
+            </p>
+          </>
+        ) : (
+          <>
+            {payment.isShared && <p className="text-[11px] text-subtle">Sua parte</p>}
+            <p className="font-semibold text-foreground">{money(payment.unpaidAmount, hideValues)}</p>
+          </>
+        )}
+        <span className={cn('text-[11px] font-semibold mt-0.5', urgency.className)}>{urgency.label}</span>
+      </div>
+    </button>
   )
 }

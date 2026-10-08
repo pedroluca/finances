@@ -4,8 +4,16 @@ import { useAuthStore } from '../store/auth.store'
 import { useAppStore } from '../store/app.store'
 import { phpApiRequest } from '../lib/api'
 import type { CardWithBalance } from '../types/database'
-import { ArrowLeft, CreditCard, DollarSign, Calendar, Palette, Check, Plus, Minus } from 'lucide-react'
-import { labelClass, inputClass } from '../lib/formStyles'
+import { AlertCircle, CreditCard, DollarSign, Calendar, Palette, Check, Nfc, Plus, Minus } from 'lucide-react'
+import { StackContent, StackHeader } from '../components/app-header'
+import { CardChip, CardSurface } from '../components/cards/CreditCardTile'
+import { Card } from '../components/ui/card'
+import { Button } from '../components/ui/button'
+import { Callout, LoadingState } from '../components/ui/misc'
+import { FieldLabel, SelectField, TextField } from '../components/ui/field'
+import { fieldClass } from '../lib/formStyles'
+import { CARD_RATIO, cardInk, withAlpha } from '../lib/colors'
+import { cn } from '../lib/cn'
 
 const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => i + 1)
 const LIMIT_STEP = 100
@@ -180,82 +188,51 @@ export default function AddCard() {
     }
   }
 
+  const goBack = () => navigate(isEditMode ? `/cards/${cardId}` : '/dashboard')
+  const title = isEditMode ? 'Editar Cartão' : 'Adicionar Cartão'
+
   if (isLoadingCard) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando cartão...</p>
-        </div>
+      <div className="min-h-screen bg-background">
+        <StackHeader title={title} onBack={goBack} />
+        <LoadingState className="py-24" />
       </div>
     )
   }
 
   const selectedColorName = CARD_COLORS.find((c) => c.value === color)?.name
+  const ink = cardInk(color)
+  const stepButton = 'w-12 h-12 shrink-0 rounded-xl bg-surface-2 hover:bg-surface-3 text-foreground flex items-center justify-center transition-colors'
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors pb-16 lg:pb-0">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
-          <button
-            onClick={() => navigate(isEditMode ? `/cards/${cardId}` : '/dashboard')}
-            className="p-2 cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {isEditMode ? 'Editar Cartão' : 'Adicionar Cartão'}
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {isEditMode ? 'Atualize as informações do seu cartão' : 'Cadastre um novo cartão de crédito'}
-            </p>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background">
+      <StackHeader title={title} onBack={goBack} />
 
-      {/* Form */}
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 transition-colors">
-          {error && (
-            <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-              <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
-            </div>
-          )}
+      <StackContent className="space-y-4">
+        <p className="text-muted px-1">
+          {isEditMode ? 'Atualize as informações do seu cartão' : 'Cadastre um novo cartão de crédito'}
+        </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Nome do Cartão */}
+        <Card className="p-4 md:p-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && <Callout tone="danger" icon={AlertCircle}>{error}</Callout>}
+
+            <TextField
+              id="name"
+              label="Nome do Cartão"
+              icon={CreditCard}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ex: Nubank, Itaú, C6..."
+              required
+              autoFocus={!isEditMode}
+            />
+
             <div>
-              <label htmlFor="name" className={labelClass}>
-                <CreditCard className="w-3.5 h-3.5" />
-                Nome do Cartão
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Nubank, Itaú, C6..."
-                className={inputClass('purple')}
-                required
-                autoFocus
-              />
-            </div>
-
-            {/* Limite do Cartão */}
-            <div>
-              <label htmlFor="limit" className={labelClass}>
-                <DollarSign className="w-3.5 h-3.5" />
-                Limite do Cartão
-              </label>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => adjustLimit(-LIMIT_STEP)}
-                  className="cursor-pointer p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                >
-                  <Minus className="w-4 h-4" />
+              <FieldLabel label="Limite do Cartão" icon={DollarSign} htmlFor="limit" />
+              <div className="flex items-center gap-2">
+                <button type="button" aria-label="Diminuir limite" onClick={() => adjustLimit(-LIMIT_STEP)} className={stepButton}>
+                  <Minus size={18} />
                 </button>
                 <input
                   type="number"
@@ -265,71 +242,36 @@ export default function AddCard() {
                   placeholder="Ex: 5000.00"
                   step="0.01"
                   min="0"
-                  className="w-full px-2 py-2 text-sm text-center border border-gray-300 dark:border-gray-600 dark:bg-gray-900/40 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className={cn(fieldClass, 'no-spinner text-center font-semibold min-w-0')}
                   required
                 />
-                <button
-                  type="button"
-                  onClick={() => adjustLimit(LIMIT_STEP)}
-                  className="cursor-pointer p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                >
-                  <Plus className="w-4 h-4" />
+                <button type="button" aria-label="Aumentar limite" onClick={() => adjustLimit(LIMIT_STEP)} className={stepButton}>
+                  <Plus size={18} />
                 </button>
               </div>
             </div>
 
-            {/* Datas */}
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="closing" className={labelClass}>
-                  <Calendar className="w-3.5 h-3.5" />
-                  Dia de Fechamento
-                </label>
-                <select
-                  id="closing"
-                  value={closingDay}
-                  onChange={(e) => setClosingDay(e.target.value)}
-                  className={inputClass('purple')}
-                  required
-                >
-                  <option value="">Selecione...</option>
-                  {DAY_OPTIONS.map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="due" className={labelClass}>
-                  <Calendar className="w-3.5 h-3.5" />
-                  Dia de Vencimento
-                </label>
-                <select
-                  id="due"
-                  value={dueDay}
-                  onChange={(e) => setDueDay(e.target.value)}
-                  className={inputClass('purple')}
-                  required
-                >
-                  <option value="">Selecione...</option>
-                  {DAY_OPTIONS.map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </div>
+              <SelectField id="closing" label="Dia de Fechamento" icon={Calendar} value={closingDay} onChange={setClosingDay} required>
+                <option value="">Selecione...</option>
+                {DAY_OPTIONS.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </SelectField>
+              <SelectField id="due" label="Dia de Vencimento" icon={Calendar} value={dueDay} onChange={setDueDay} required>
+                <option value="">Selecione...</option>
+                {DAY_OPTIONS.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </SelectField>
             </div>
 
-            {/* Cor do Cartão */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className={`${labelClass} mb-0`}>
-                  <Palette className="w-3.5 h-3.5" />
-                  Cor do Cartão
-                </label>
-                {selectedColorName && (
-                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{selectedColorName}</span>
-                )}
-              </div>
+              <FieldLabel
+                label="Cor do Cartão"
+                icon={Palette}
+                right={selectedColorName && <span className="text-xs text-muted">{selectedColorName}</span>}
+              />
               <div className="flex flex-wrap gap-3">
                 {CARD_COLORS.map((c) => {
                   const selected = color === c.value
@@ -337,66 +279,61 @@ export default function AddCard() {
                     <button
                       key={c.value}
                       type="button"
-                      onClick={() => setColor(c.value)}
+                      role="radio"
+                      aria-checked={selected}
+                      aria-label={c.name}
                       title={c.name}
-                      className={`relative cursor-pointer w-10 h-10 rounded-full transition-all flex items-center justify-center ring-offset-2 ring-offset-white dark:ring-offset-gray-800 ${
-                        selected ? 'ring-2 ring-purple-500 scale-110' : 'hover:scale-105'
-                      }`}
-                      style={{ backgroundColor: c.value }}
+                      onClick={() => setColor(c.value)}
+                      className={cn('w-11 h-11 rounded-full flex items-center justify-center border-2 transition-colors', selected ? 'border-primary' : 'border-transparent hover:border-border')}
                     >
-                      {selected && <Check className="w-4 h-4 text-white drop-shadow" />}
+                      <span className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: c.value, color: cardInk(c.value) }}>
+                        {selected && <Check size={16} strokeWidth={3} />}
+                      </span>
                     </button>
                   )
                 })}
               </div>
             </div>
 
-            {/* Preview do Cartão */}
             <div>
-              <label className={labelClass}>Preview</label>
-              <div
-                className="p-5 rounded-2xl shadow-lg text-white"
-                style={{ backgroundColor: color }}
-              >
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <p className="text-xs opacity-80">Limite Total</p>
-                    <p className="text-2xl font-bold">
-                      R$ {parseFloat(cardLimit || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              <FieldLabel label="Preview" />
+              <CardSurface color={color} className="max-w-[400px]" style={{ aspectRatio: CARD_RATIO }}>
+                <div className="h-full flex flex-col p-[18px]" style={{ color: ink }}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-[1px]" style={{ color: withAlpha(ink, 0.75) }}>Limite total</p>
+                      <p className="text-2xl font-bold truncate">
+                        R$ {parseFloat(cardLimit || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <Nfc size={24} strokeWidth={1.8} className="shrink-0" style={{ color: withAlpha(ink, 0.85) }} />
+                  </div>
+                  <div className="mt-3">
+                    <CardChip />
+                  </div>
+                  <div className="mt-auto space-y-0.5">
+                    <p className="text-[17px] font-bold truncate">{name.trim() || 'Nome do Cartão'}</p>
+                    <p className="text-xs" style={{ color: withAlpha(ink, 0.8) }}>
+                      Fecha dia {closingDay || '__'} • Vence dia {dueDay || '__'}
                     </p>
                   </div>
-                  <CreditCard className="w-8 h-8 opacity-80" />
                 </div>
-                <div>
-                  <p className="text-base font-semibold">{name || 'Nome do Cartão'}</p>
-                  <p className="text-xs opacity-80 mt-1">
-                    Fecha dia {closingDay || '__'} • Vence dia {dueDay || '__'}
-                  </p>
-                </div>
-              </div>
+              </CardSurface>
             </div>
 
-            {/* Botões */}
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => navigate(isEditMode ? `/cards/${cardId}` : '/dashboard')}
-                className="flex-1 px-6 py-2.5 cursor-pointer border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium text-sm"
-              >
-                Cancelar
-              </button>
-              <button
+            <div className="flex gap-3 pt-1">
+              <Button label="Cancelar" variant="secondary" onClick={goBack} className="flex-1" />
+              <Button
                 type="submit"
-                disabled={isLoading}
-                className="flex-1 cursor-pointer px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <CreditCard className="w-4 h-4" />
-                {isLoading ? 'Salvando...' : (isEditMode ? 'Salvar' : 'Adicionar')}
-              </button>
+                label={isLoading ? 'Salvando...' : isEditMode ? 'Salvar' : 'Adicionar'}
+                icon={CreditCard}
+                loading={isLoading}
+                className="flex-1"
+              />
             </div>
           </form>
-        </div>
-      </div>
+        </Card>
+      </StackContent>
     </div>
   )
 }

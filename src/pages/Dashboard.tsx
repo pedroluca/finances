@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/auth.store'
 import { useAppStore } from '../store/app.store'
 import type { CardWithBalance } from '../types/database'
 import { phpApiRequest } from '../lib/api'
-import { DashboardHeader } from '../components/dashboard/d-header'
+import { HideValuesButton, ProfileButton, TabContent, TabHeader } from '../components/app-header'
 import { DashboardStats } from '../components/dashboard/d-stats'
 import { DashboardCardsList } from '../components/dashboard/d-cards-list'
 import { DashboardUpcomingPayments } from '../components/dashboard/d-upcoming-payments'
@@ -12,10 +12,12 @@ import { DashboardSkeleton } from '../components/dashboard/d-skeleton'
 import { InstallAppBanner } from '../components/InstallAppBanner'
 import { OnboardingModal } from '../components/OnboardingModal'
 import { useIsFirstVisitThisSession } from '../hooks/useFirstVisitThisSession'
+import { usePrefsStore } from '../store/prefs.store'
+import { weekdayLabel } from '../lib/format'
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { user, logout, isAuthenticated, completeOnboarding } = useAuthStore()
+  const { user, isAuthenticated, completeOnboarding } = useAuthStore()
   const showOnboarding = isAuthenticated && user?.onboarding_completed === false
   const {
     cards, setCards, setCategories, setAuthors, monthlyTotals, setMonthlyTotals, setCardOrder, orderedCards, authors,
@@ -26,7 +28,7 @@ export default function Dashboard() {
   const animateOnMount = useIsFirstVisitThisSession('dashboard')
 
   const [isLoading, setIsLoading] = useState(cards.length === 0)
-  const [hideValues, setHideValues] = useState(localStorage.getItem('hideValues') === 'true')
+  const hideValues = usePrefsStore((state) => state.hideValues)
 
   const activeCards = orderedCards() as CardWithBalance[]
   const ownerAuthor = authors.find((a) => a.is_owner)
@@ -35,11 +37,6 @@ export default function Dashboard() {
   const totalLimit = activeCards
     .filter((card) => !card.is_shared)
     .reduce((sum, card) => sum + Number(card.card_limit ?? 0), 0)
-
-  const toggleHideValues = () => {
-    setHideValues((prev) => !prev)
-    localStorage.setItem('hideValues', String(!hideValues))
-  }
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -150,17 +147,22 @@ export default function Dashboard() {
     return totalExpense
   }
 
+  const firstName = user?.name?.trim().split(' ')[0] ?? ''
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors pb-16 lg:pb-0">
-      <DashboardHeader
-        userName={user?.name || ''}
-        userEmail={user?.email || ''}
-        onLogout={logout}
-        hideValues={hideValues}
-        onToggleHideValues={toggleHideValues}
+    <div className="min-h-screen bg-background">
+      <TabHeader
+        title={firstName ? `Olá, ${firstName}` : 'Olá!'}
+        subtitle={weekdayLabel()}
+        right={(
+          <>
+            <HideValuesButton />
+            <ProfileButton />
+          </>
+        )}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <TabContent>
         {isLoading ? (
           <DashboardSkeleton />
         ) : (
@@ -185,7 +187,7 @@ export default function Dashboard() {
             />
           </>
         )}
-      </main>
+      </TabContent>
 
       {showOnboarding && <OnboardingModal onComplete={completeOnboarding} />}
 

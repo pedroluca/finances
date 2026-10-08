@@ -5,19 +5,24 @@ import { useAppStore } from "../store/app.store"
 import { phpApiRequest } from "../lib/api"
 import type { Author, CardWithBalance } from "../types/database"
 import {
+  AlertCircle,
   DollarSign,
   FileText,
   Calendar,
   Tag,
   Plus,
-  Minus,
-  X,
   Repeat,
   MessageSquare,
 } from "lucide-react"
 import CategoryBadgeSelector from "./CategoryBadgeSelector"
 import AuthorSplitSection, { type SplitAssignment } from "./AuthorSplitSection"
-import { labelClass, inputClass } from "../lib/formStyles"
+import { fieldClass, textareaClass } from "../lib/formStyles"
+import { cn } from "../lib/cn"
+import { plural } from "../lib/format"
+import { Sheet } from "./ui/sheet"
+import { Button } from "./ui/button"
+import { Callout, LoadingState } from "./ui/misc"
+import { FieldLabel, StepperField, TextField } from "./ui/field"
 
 const SUBSCRIPTION_CATEGORY_ID = 7
 
@@ -268,303 +273,174 @@ export default function AddItemModal({
     }
   }
 
-  if (!open) return null
+  const installmentsCount = Number(installments) || 1
+  const remainingInstallments = installmentsCount - Number(currentInstallment) + 1
+
+  const changeInstallments = (value: number) => {
+    setInstallments(String(value))
+    setIsInstallment(value > 1)
+    if (value < Number(currentInstallment)) setCurrentInstallment("1")
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.5)] p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md lg:max-w-2xl relative animate-fade-in max-h-[92vh] overflow-y-auto custom-scrollbar">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl">
-          <h2 className="text-lg font-bold dark:text-white">Adicionar Item</h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
+    <Sheet open={open} onClose={onClose} title="Adicionar Item" size="lg">
+      {isDataLoading ? (
+        <LoadingState className="py-12" />
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4 pb-2">
+          <TextField
+            id="description"
+            label="Descrição"
+            icon={FileText}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Ex: Compras no supermercado"
+            autoFocus
+            required
+          />
 
-        {isDataLoading ? (
-          <div className="py-12 text-center text-gray-500">
-            Carregando dados...
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="p-5 space-y-4">
-            {/* Descrição */}
-            <div>
-              <label htmlFor="description" className={labelClass}>
-                <FileText className="w-3.5 h-3.5" />
-                Descrição
-              </label>
-              <input
-                type="text"
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ex: Compras no supermercado"
-                className={inputClass()}
-                autoFocus
-                required
-              />
-            </div>
-
-            {/* Valor e Parcelamento */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="amount" className={labelClass}>
-                  <DollarSign className="w-3.5 h-3.5" />
-                  Valor Total
-                </label>
-                <input
-                  type="text"
-                  id="amount"
-                  value={displayAmount}
-                  onChange={(e) => handleAmountChange(e.target.value)}
-                  placeholder="R$ 0,00"
-                  className={inputClass()}
-                  required
-                />
-                {exceedsAvailableLimit && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                    O limite disponível é de R$ {formatCurrency(card.available_balance)}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="installments" className={labelClass}>
-                  Parcelas
-                </label>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const val = Math.max(1, Number(installments) - 1);
-                      setInstallments(val.toString());
-                      setIsInstallment(val > 1);
-                      if (val < Number(currentInstallment)) {
-                        setCurrentInstallment("1");
-                      }
-                    }}
-                    className="cursor-pointer p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <input
-                    type="number"
-                    id="installments"
-                    value={installments}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      setInstallments(value)
-                      setIsInstallment(Number(value) > 1)
-                      if (Number(value) < Number(currentInstallment)) {
-                        setCurrentInstallment("1")
-                      }
-                    }}
-                    min="1"
-                    max="24"
-                    className="w-full px-2 py-2 text-sm text-center border border-gray-300 dark:border-gray-600 dark:bg-gray-900/40 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const val = Math.min(24, Number(installments) + 1);
-                      setInstallments(val.toString());
-                      setIsInstallment(val > 1);
-                    }}
-                    className="cursor-pointer p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-                {isInstallment && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {Number(installments)}x de R${" "}
-                    {(
-                      parseFloat(amount || "0") / Number(installments)
-                    ).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Data da Compra e Parcela Atual */}
-            <div className={`grid gap-3 ${isInstallment ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}>
-              <div>
-                <label htmlFor="date" className={labelClass}>
-                  <Calendar className="w-3.5 h-3.5" />
-                  Data da Compra
-                </label>
-                <input
-                  type="date"
-                  id="date"
-                  value={purchaseDate}
-                  onChange={(e) => setPurchaseDate(e.target.value)}
-                  className={inputClass()}
-                />
-              </div>
-              {isInstallment && (
-                <div>
-                  <label htmlFor="currentInstallment" className={labelClass}>
-                    Parcela Atual
-                  </label>
-                  <input
-                    type="number"
-                    id="currentInstallment"
-                    value={currentInstallment}
-                    onChange={(e) => setCurrentInstallment(e.target.value)}
-                    min="1"
-                    max={installments}
-                    className={inputClass()}
-                  />
-                </div>
+          {/* Valor e Parcelamento */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <TextField
+              id="amount"
+              label="Valor Total"
+              icon={DollarSign}
+              inputMode="numeric"
+              value={displayAmount}
+              onChange={(e) => handleAmountChange(e.target.value)}
+              placeholder="R$ 0,00"
+              required
+              hint={exceedsAvailableLimit && (
+                <span className="text-warning">O limite disponível é de R$ {formatCurrency(card.available_balance)}</span>
               )}
-            </div>
+            />
+            <StepperField
+              label="Parcelas"
+              value={installmentsCount}
+              onChange={changeInstallments}
+              min={1}
+              max={24}
+              hint={isInstallment && `${installmentsCount}x de R$ ${formatCurrency(parseFloat(amount || "0") / installmentsCount)}`}
+            />
+          </div>
+
+          {/* Data da Compra e Parcela Atual */}
+          <div className={cn("grid gap-4", isInstallment ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1")}>
+            <TextField
+              id="date"
+              type="date"
+              label="Data da Compra"
+              icon={Calendar}
+              value={purchaseDate}
+              onChange={(e) => setPurchaseDate(e.target.value)}
+            />
             {isInstallment && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">
-                Será criada a partir da parcela {currentInstallment} até a{" "}
-                {installments} (
-                {Number(installments) - Number(currentInstallment) + 1} parcela
-                {Number(installments) - Number(currentInstallment) + 1 !== 1
-                  ? "s"
-                  : ""}
-                )
-              </p>
+              <StepperField
+                label="Parcela Atual"
+                value={Number(currentInstallment) || 1}
+                onChange={(value) => setCurrentInstallment(String(value))}
+                min={1}
+                max={installmentsCount}
+              />
             )}
+          </div>
+          {isInstallment && (
+            <p className="text-xs text-subtle -mt-2">
+              Será criada a partir da parcela {currentInstallment} até a {installments} ({remainingInstallments} {plural(remainingInstallments, "parcela", "parcelas")})
+            </p>
+          )}
 
-            {/* Categoria */}
-            <div>
-              <label className={labelClass}>
-                <Tag className="w-3.5 h-3.5" />
-                Categoria (Opcional)
-              </label>
-              <CategoryBadgeSelector
-                categories={categories}
-                value={categoryId}
-                onChange={setCategoryId}
-              />
-            </div>
+          {/* Categoria */}
+          <div>
+            <FieldLabel label="Categoria (Opcional)" icon={Tag} />
+            <CategoryBadgeSelector categories={categories} value={categoryId} onChange={setCategoryId} />
+          </div>
 
-            {/* Observação */}
-            <div>
-              <label htmlFor="notes" className={labelClass}>
-                <MessageSquare className="w-3.5 h-3.5" />
-                Observação (Opcional)
-              </label>
-              <textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Alguma anotação sobre esse item..."
-                rows={2}
-                className={`${inputClass()} resize-none`}
-              />
-            </div>
+          {/* Observação */}
+          <div>
+            <FieldLabel label="Observação (Opcional)" icon={MessageSquare} htmlFor="notes" />
+            <textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Alguma anotação sobre esse item..."
+              rows={2}
+              className={textareaClass}
+            />
+          </div>
 
-            {/* Quando Assinatura é selecionada: esconder o form e redirecionar */}
-            {categoryId === String(SUBSCRIPTION_CATEGORY_ID) ? (
-              <div className="rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 p-5 text-center space-y-3">
-                <div className="flex justify-center">
-                  <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
-                    <Repeat className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  </div>
-                </div>
-                <p className="text-sm font-semibold text-purple-800 dark:text-purple-300">
-                  Assinaturas têm configurações especiais
-                </p>
-                <p className="text-xs text-purple-600 dark:text-purple-400">
-                  Ciclo de cobrança, dia de vencimento e renovação automática só ficam disponíveis na página de Assinaturas.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => { onClose(); navigate('/settings/subscriptions'); }}
-                  className="w-full cursor-pointer px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition font-medium text-sm"
-                >
-                  Ir para Assinaturas
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCategoryId('')}
-                  className="w-full cursor-pointer px-4 py-2 text-sm text-purple-600 dark:text-purple-400 hover:underline"
-                >
-                  Voltar e escolher outra categoria
-                </button>
+          {/* Quando Assinatura é selecionada: esconder o form e redirecionar */}
+          {categoryId === String(SUBSCRIPTION_CATEGORY_ID) ? (
+            <div className="rounded-2xl p-5 bg-primary/8 flex flex-col items-center gap-3 text-center">
+              <div className="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center">
+                <Repeat size={20} />
               </div>
-            ) : (
-              <>
-                {/* Pessoas / Divisão */}
-                <AuthorSplitSection
-                  authors={availableAuthors}
-                  defaultAuthorId={defaultAuthor?.id}
-                  totalAmount={parseFloat(amount || "0")}
-                  authorId={authorId}
-                  onAuthorIdChange={setAuthorId}
-                  isSplit={isSplit}
-                  onIsSplitChange={setIsSplit}
-                  assignments={assignments}
-                  onAssignmentsChange={setAssignments}
-                  isLocked={isAuthorLocked}
-                  lockedAuthorName={defaultAuthor?.name}
-                  footer={
-                    !showNewAuthor ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowNewAuthor(true)}
-                        className="mt-1 cursor-pointer text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 flex items-center gap-1"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        Adicionar nova pessoa
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-2 mt-1">
-                        <input
-                          type="text"
-                          value={newAuthorName}
-                          onChange={(e) => setNewAuthorName(e.target.value)}
-                          placeholder="Nome da pessoa"
-                          className={inputClass()}
-                          autoFocus
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowNewAuthor(false)
-                            setNewAuthorName("")
-                          }}
-                          className="text-xs cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex-shrink-0"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    )
-                  }
-                />
+              <p className="text-sm font-semibold text-primary">Assinaturas têm configurações especiais</p>
+              <p className="text-xs text-muted">
+                Ciclo de cobrança, dia de vencimento e renovação automática só ficam disponíveis na página de Assinaturas.
+              </p>
+              <Button label="Ir para Assinaturas" fullWidth onClick={() => { onClose(); navigate('/settings/subscriptions') }} />
+              <Button label="Voltar e escolher outra categoria" variant="ghost" size="sm" onClick={() => setCategoryId('')} />
+            </div>
+          ) : (
+            <>
+              {/* Pessoas / Divisão */}
+              <AuthorSplitSection
+                authors={availableAuthors}
+                defaultAuthorId={defaultAuthor?.id}
+                totalAmount={parseFloat(amount || "0")}
+                authorId={authorId}
+                onAuthorIdChange={setAuthorId}
+                isSplit={isSplit}
+                onIsSplitChange={setIsSplit}
+                assignments={assignments}
+                onAssignmentsChange={setAssignments}
+                isLocked={isAuthorLocked}
+                lockedAuthorName={defaultAuthor?.name}
+                footer={
+                  !showNewAuthor ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowNewAuthor(true)}
+                      className="flex items-center gap-1 text-[13px] font-medium text-primary hover:opacity-80"
+                    >
+                      <Plus size={14} />
+                      Adicionar nova pessoa
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newAuthorName}
+                        onChange={(e) => setNewAuthorName(e.target.value)}
+                        placeholder="Nome da pessoa"
+                        className={fieldClass}
+                        autoFocus
+                      />
+                      <Button
+                        label="Cancelar"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowNewAuthor(false)
+                          setNewAuthorName("")
+                        }}
+                      />
+                    </div>
+                  )
+                }
+              />
 
-                {/* Botões */}
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="flex-1 cursor-pointer px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium text-sm"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="flex-1 cursor-pointer px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? "Salvando..." : "Adicionar"}
-                  </button>
-                </div>
-                {error && (
-                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-2 text-sm text-red-800 dark:text-red-300 text-center">
-                    {error}
-                  </div>
-                )}
-              </>
-            )}
-          </form>
-        )}
-      </div>
-    </div>
+              {error && <Callout tone="danger" icon={AlertCircle}>{error}</Callout>}
+
+              <div className="flex gap-3 pt-1">
+                <Button label="Cancelar" variant="secondary" onClick={onClose} className="flex-1" />
+                <Button type="submit" label={isLoading ? "Salvando..." : "Adicionar"} loading={isLoading} className="flex-1" />
+              </div>
+            </>
+          )}
+        </form>
+      )}
+    </Sheet>
   )
 }

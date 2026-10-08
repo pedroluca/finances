@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, type ReactNode } from "react"
 import AddItemModal from "../components/AddItemModal"
 import { useNavigate, useParams } from "react-router-dom"
 import { useAuthStore } from "../store/auth.store"
@@ -15,11 +15,13 @@ import {
   CheckCircle,
   MinusCircle,
   Circle,
-  Edit,
+  Pencil,
   Banknote,
   ChevronLeft,
   ChevronRight,
   Filter,
+  Check,
+  Nfc,
   X,
   User,
   BanknoteX,
@@ -31,6 +33,19 @@ import type {
 import ConfirmModal from "../components/ConfirmModal"
 import { useToast } from "../components/Toast"
 import { Skeleton } from "../components/ui/skeleton"
+import { Card } from "../components/ui/card"
+import { Button } from "../components/ui/button"
+import { IconButton } from "../components/ui/icon-button"
+import { EmptyState } from "../components/ui/misc"
+import { Sheet } from "../components/ui/sheet"
+import { StackHeader } from "../components/app-header"
+import { CardSurface } from "../components/cards/CreditCardTile"
+import { cardInk, withAlpha } from "../lib/colors"
+import { cn } from "../lib/cn"
+import { formatCurrency, monthYearTitle, plural } from "../lib/format"
+
+// Botões das ações em lote com texto branco: tons fixos, legíveis nos dois temas
+const ACTION_COLORS = { pay: "#16a34a", unpay: "#d97706", delete: "#dc2626" }
 
 export default function CardDetails() {
   const navigate = useNavigate()
@@ -652,113 +667,83 @@ export default function CardDetails() {
 
   if (!card) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Cartão não encontrado</p>
+      <div className="min-h-screen bg-background">
+        <StackHeader title="" onBack={handleBack} />
+        <EmptyState icon={CreditCard} title="Cartão não encontrado" />
       </div>
     )
   }
 
+  // Cabeçalho: voltar, nome do cartão, editar/excluir e a navegação entre meses
+  const header = (
+    <header className="sticky top-0 z-20 bg-surface border-b border-border pt-[env(safe-area-inset-top)]">
+      <div className="max-w-5xl mx-auto px-2 sm:px-4">
+        <div className="h-14 flex items-center gap-1">
+          <IconButton icon={ArrowLeft} label="Voltar" onClick={handleBack} />
+          {isLoading ? (
+            <Skeleton className="h-6 w-40 rounded-md flex-1 max-w-40 ml-1" />
+          ) : (
+            <h1 className="flex-1 min-w-0 pl-1 text-xl font-bold text-foreground truncate">{card.card_name ?? card.name}</h1>
+          )}
+          {!card.is_shared && (
+            <>
+              <IconButton icon={Pencil} label="Editar cartão" tone="muted" onClick={() => navigate(`/cards/${cardId}/edit`)} />
+              <IconButton icon={Trash2} label="Excluir cartão" tone="danger" onClick={handleDeleteCardClick} />
+            </>
+          )}
+        </div>
+        <div className="flex items-center justify-between pb-3">
+          <IconButton icon={ChevronLeft} label="Mês anterior" onClick={goToPreviousMonth} disabled={isLoading} />
+          <div className="flex-1 min-w-0 text-center">
+            <p className="text-base font-semibold text-foreground truncate">{monthYearTitle(viewingMonth, viewingYear)}</p>
+            {!isCurrentMonth && (
+              <button type="button" onClick={goToCurrentMonth} className="text-[13px] font-medium text-primary hover:underline mt-0.5">
+                Ir para o mês atual
+              </button>
+            )}
+          </div>
+          <IconButton icon={ChevronRight} label="Próximo mês" onClick={goToNextMonth} disabled={isLoading} />
+        </div>
+      </div>
+    </header>
+  )
+
+  const itemsSkeleton = (
+    <div className="space-y-2">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-border">
+          <Skeleton className="w-6 h-6 rounded-full shrink-0" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-1/3 rounded-md" />
+            <Skeleton className="h-3 w-1/2 rounded-md" />
+          </div>
+          <Skeleton className="h-5 w-16 rounded-md shrink-0" />
+        </div>
+      ))}
+    </div>
+  )
+
   if (isLoading) {
     return (
-      <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors overflow-hidden">
-        {/* Header */}
-        <div className="flex-none bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors z-10 relative shadow-sm">
-          <div className="max-w-7xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-                <button
-                  onClick={handleBack}
-                  className="p-1.5 sm:p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
-                >
-                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-300" />
-                </button>
-                <Skeleton className="h-6 sm:h-7 w-24 sm:w-40" />
-              </div>
-              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                <Skeleton className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg" />
-                <Skeleton className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg" />
-              </div>
+      <div className="min-h-screen bg-background">
+        {header}
+        <DetailsLayout
+          summary={<Skeleton className="h-[212px] rounded-[20px]" />}
+          action={<Skeleton className="h-9 w-24 rounded-lg" />}
+        >
+          <Card className="p-3 space-y-3">
+            <div className="flex items-center gap-2 px-1">
+              <Skeleton className="w-6 h-6 rounded-full" />
+              <Skeleton className="h-5 w-28 rounded-md" />
             </div>
-
-            {/* Navegação de Meses */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-gray-300 dark:text-gray-600">
-                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="hidden sm:inline">Anterior</span>
-              </div>
-              <Skeleton className="h-5 sm:h-6 w-32 sm:w-44" />
-              <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-gray-300 dark:text-gray-600">
-                <span className="hidden sm:inline">Próximo</span>
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-9 flex-1 rounded-lg" />
+              <Skeleton className="h-9 flex-1 rounded-lg" />
+              <Skeleton className="h-9 w-14 rounded-lg" />
             </div>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto w-full relative custom-scrollbar">
-          <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-8 pb-24">
-            {/* Card Info */}
-            <div className="rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-8 bg-gray-200 dark:bg-gray-700 animate-pulse">
-              <div className="flex justify-between items-start mb-4 sm:mb-8">
-                <div className="space-y-2">
-                  <Skeleton className="h-3 w-20 bg-gray-300/70 dark:bg-gray-600/70" />
-                  <Skeleton className="h-7 sm:h-8 w-28 sm:w-32 bg-gray-300/70 dark:bg-gray-600/70" />
-                </div>
-                <CreditCard className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300/70 dark:text-gray-600/70" />
-              </div>
-              <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="space-y-2">
-                    <Skeleton className="h-3 w-16 bg-gray-300/70 dark:bg-gray-600/70" />
-                    <Skeleton className="h-4 sm:h-5 w-14 sm:w-20 bg-gray-300/70 dark:bg-gray-600/70" />
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 sm:mt-6 flex gap-3 sm:gap-4">
-                <Skeleton className="h-4 w-20 bg-gray-300/70 dark:bg-gray-600/70" />
-                <Skeleton className="h-4 w-20 bg-gray-300/70 dark:bg-gray-600/70" />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2 px-1">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-                Últimos Lançamentos
-              </h2>
-              <Skeleton className="h-8 sm:h-9 w-20 sm:w-24 rounded-lg" />
-            </div>
-
-            {/* Items List */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-6 transition-colors">
-              <div className="flex items-center gap-2 mb-4 sm:mb-6">
-                <Skeleton className="w-5 h-5 sm:w-6 sm:h-6 rounded-full" />
-                <Skeleton className="h-5 w-24" />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 mb-4 sm:mb-6">
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-6 w-24" />
-                <Skeleton className="h-6 w-12" />
-                <Skeleton className="h-6 w-6" />
-              </div>
-
-              <div className="space-y-2 sm:space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg"
-                  >
-                    <Skeleton className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex-shrink-0" />
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <Skeleton className="h-4 w-1/3" />
-                      <Skeleton className="h-3 w-1/2" />
-                    </div>
-                    <Skeleton className="h-5 w-16 flex-shrink-0" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+            {itemsSkeleton}
+          </Card>
+        </DetailsLayout>
       </div>
     )
   }
@@ -852,582 +837,290 @@ export default function CardDetails() {
 
   const remainingAmount = totalAmount - paidAmount
 
-  return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors overflow-hidden">
-      {/* Header */}
-      <div className="flex-none bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors z-10 relative shadow-sm">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            {/* <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
-              >
-                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-300" />
-              </button>
-              <button
-                onClick={handleBack}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            </div> */}
+  const color = card.color ?? "#6366f1"
+  const ink = cardInk(color)
+  const paidColor = ink === "#ffffff" ? "#bbf7d0" : "#166534"
+  const remainingColor = ink === "#ffffff" ? "#fde68a" : "#92400e"
+  const dueMonth = card.closing_day > card.due_day ? (viewingMonth + 1 > 12 ? 1 : viewingMonth + 1) : viewingMonth
 
-            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-              <button
-                onClick={handleBack}
-                className="p-1.5 sm:p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
-              >
-                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-300" />
-              </button>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                  {card.card_name ?? card.name}
-                </h1>
-              </div>
+  const allSelected = filteredItems.length > 0 && filteredItems.every((i) => selectedItems.has(i.id))
+  const someSelected = !allSelected && filteredItems.some((i) => selectedItems.has(i.id))
+  const selectedUnpaidCount = Array.from(selectedItems).filter((itemId) => {
+    const item = items.find((i) => i.id === itemId)
+    return item && !getDisplayDetails(item).isPaid
+  }).length
+  const selectedPaidCount = selectedItems.size - selectedUnpaidCount
+
+  // Resumo da fatura sobre o visual do cartão
+  const summary = (
+    <CardSurface key={`${viewingMonth}-${viewingYear}`} color={color} className="animate-fade-in">
+      <div className="p-5 space-y-5" style={{ color: ink }}>
+        <div className="flex items-start justify-between gap-3">
+          {card.is_shared ? (
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <p className="text-xs" style={{ color: withAlpha(ink, 0.75) }}>Cartão Compartilhado</p>
+              <p className="text-xl font-bold truncate">{card.owner_name}</p>
+              <p className="text-xs mt-0.5" style={{ color: withAlpha(ink, 0.65) }}>Você visualiza apenas os itens vinculados a você.</p>
             </div>
+          ) : (
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <p className="text-xs" style={{ color: withAlpha(ink, 0.75) }}>Limite Total</p>
+              <p className="text-2xl font-bold truncate">{formatCurrency(Number(card.card_limit ?? 0))}</p>
+            </div>
+          )}
+          <Nfc size={26} strokeWidth={1.8} className="shrink-0" style={{ color: withAlpha(ink, 0.85) }} />
+        </div>
 
-            {/* Only show actions if NOT shared */}
+        <div className="flex gap-2">
+          <InfoColumn
+            label={selectedAuthorFilter.size > 0
+              ? `Total Fatura (${selectedAuthorFilter.size} ${plural(selectedAuthorFilter.size, "pessoa", "pessoas")})`
+              : "Total Fatura"}
+            value={formatCurrency(totalAmount)}
+            ink={ink}
+            color={ink}
+          />
+          <InfoColumn label="Pago" value={formatCurrency(paidAmount)} ink={ink} color={paidColor} />
+          <InfoColumn label="Restante" value={formatCurrency(remainingAmount)} ink={ink} color={remainingColor} />
+        </div>
+
+        <div className="flex gap-4 text-[13px]" style={{ color: withAlpha(ink, 0.75) }}>
+          <span>
+            Fecha dia <span className="font-semibold" style={{ color: ink }}>{card.closing_day}/{viewingMonth}</span>
+          </span>
+          <span>
+            Vence dia <span className="font-semibold" style={{ color: ink }}>{card.due_day}/{dueMonth}</span>
+          </span>
+        </div>
+      </div>
+    </CardSurface>
+  )
+
+  return (
+    <div className="min-h-screen bg-background">
+      {header}
+
+      <DetailsLayout
+        summary={summary}
+        action={<Button label="Novo" icon={Plus} size="sm" onClick={handleAddItemClick} />}
+      >
+        <Card className="p-3 space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            {filteredItems.length > 0 && (
+              <button
+                type="button"
+                role="checkbox"
+                aria-checked={allSelected ? true : someSelected ? "mixed" : false}
+                aria-label={allSelected ? "Desmarcar todos" : "Selecionar todos"}
+                title={allSelected ? "Desmarcar todos" : "Selecionar todos"}
+                onClick={() => setSelectedItems(allSelected ? new Set() : new Set(filteredItems.map((i) => i.id)))}
+                className="shrink-0"
+              >
+                {allSelected ? (
+                  <CheckCircle size={22} className="text-primary" />
+                ) : someSelected ? (
+                  <MinusCircle size={22} className="text-primary" />
+                ) : (
+                  <Circle size={22} className="text-subtle" />
+                )}
+              </button>
+            )}
+            <p className="flex-1 min-w-0 text-base font-semibold text-foreground truncate">
+              Total: {filteredItems.length} {plural(filteredItems.length, "item", "itens")}
+            </p>
             {!card.is_shared && (
-                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => navigate(`/cards/${cardId}/edit`)}
-                    className="p-1.5 sm:p-2 cursor-pointer text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
-                  <button
-                    onClick={handleDeleteCardClick}
-                    className="p-1.5 sm:p-2 cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
-                </div>
+              <>
+                <span className="hidden sm:block">
+                  <Button label="Filtrar por Pessoa" icon={Filter} variant="secondary" size="sm" onClick={() => setShowAuthorFilter(true)} />
+                </span>
+                <span className="sm:hidden">
+                  <IconButton icon={Filter} variant="surface" size={36} iconSize={17} label="Filtrar por Pessoa" onClick={() => setShowAuthorFilter(true)} />
+                </span>
+              </>
             )}
           </div>
 
-          {/* Navegação de Meses */}
-          <div className="flex items-center justify-between gap-2">
-            <button
-              onClick={goToPreviousMonth}
-              className="flex cursor-pointer items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm sm:text-base"
-            >
-              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="hidden sm:inline">Anterior</span>
-            </button>
-
-            <div className="text-center flex-1 min-w-0">
-              <p className="text-sm sm:text-lg font-semibold text-gray-900 dark:text-white capitalize truncate">
-                {new Date(viewingYear, viewingMonth - 1)
-                  .toLocaleDateString("pt-BR", {
-                    month: "long",
-                    year: "numeric",
-                  })
-                  .split(" ")
-                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(" ")}
-              </p>
-              {!isCurrentMonth && (
-                <button
-                  onClick={goToCurrentMonth}
-                  className="cursor-pointer text-xs sm:text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium mt-1"
-                >
-                  Ir para o mês atual
-                </button>
-              )}
-            </div>
-
-            <button
-              onClick={goToNextMonth}
-              className="flex cursor-pointer items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm sm:text-base"
-            >
-              <span className="hidden sm:inline">Próximo</span>
-              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto w-full relative custom-scrollbar" id="scrollable-content">
-        <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-8 pb-24">
-        {/* Card Info */}
-        <div
-          key={`${viewingMonth}-${viewingYear}`}
-          className="rounded-xl shadow-lg p-4 sm:p-6 text-white mb-4 sm:mb-8"
-          style={{
-            backgroundColor: card.color ?? "#6366f1",
-            animation: "slideInFromTop 0.25s ease-out",
-          }}
-        >
-          <div className="flex justify-between items-start mb-4 sm:mb-8">
-            <div>
-              {card.is_shared ? (
-                  <div>
-                    <p className="text-xs sm:text-sm opacity-80 mb-1">Cartão Compartilhado</p>
-                    <p className="text-lg sm:text-2xl font-bold flex items-center gap-2">
-                        <span>{card.owner_name}</span>
-                    </p>
-                    <p className="text-xs opacity-60 mt-1">Você visualiza apenas os itens vinculados a você.</p>
-                  </div>
-              ) : (
-                  <>
-                    <p className="text-xs sm:text-sm opacity-80">Limite Total</p>
-                    <p className="text-xl sm:text-3xl font-bold">
-                        R${" "}
-                        {Number(card.card_limit ?? 0).toLocaleString("pt-BR", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                        })}
-                    </p>
-                  </>
-              )}
-            </div>
-            <CreditCard className="w-8 h-8 sm:w-12 sm:h-12 opacity-80" />
-          </div>
-          <div className="grid grid-cols-3 gap-2 sm:gap-4">
-            <div>
-              <p className="text-xs opacity-80">Total Fatura {selectedAuthorFilter.size > 0 && (
-                <span className="truncate max-w-[100px]">
-                  ({selectedAuthorFilter.size} pessoa{selectedAuthorFilter.size > 1 ? 's' : ''})
-                </span>
-              )}</p>
-              <p className="text-sm sm:text-lg font-semibold">
-                R${" "}
-                {totalAmount.toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                  })}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs opacity-80">Pago</p>
-              <p className="text-sm sm:text-lg font-semibold text-green-200">
-                R${" "}
-                {paidAmount.toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs opacity-80">Restante</p>
-              <p className="text-sm sm:text-lg font-semibold text-yellow-200">
-                R${" "}
-                {remainingAmount.toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </p>
-            </div>
-          </div>
-          <div className="mt-4 sm:mt-6 flex gap-3 sm:gap-4 text-xs sm:text-sm">
-            <div>
-              <span className="opacity-80">Fecha dia</span>{" "}
-              <span className="font-semibold">{(card.closing_day ?? "") + '/' + viewingMonth}</span>
-            </div>
-            <div>
-              <span className="opacity-80">Vence dia</span>{" "}
-              <span className="font-semibold">{card.due_day}/{card.closing_day > card.due_day ? (viewingMonth + 1 > 12 ? 1 : viewingMonth + 1) : viewingMonth}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2 px-1">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Últimos Lançamentos</h2>
-
-          
-          <button
-            onClick={handleAddItemClick}
-            className="flex items-center cursor-pointer gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-xs sm:text-base"
-          >
-            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="">Novo</span>
-          </button>
-        </div>
-
-
-        {/* Items List */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-6 transition-colors">
-          <div className="flex flex-col justify-between mb-4 sm:mb-6 gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              {/* Select All — only show when there are visible items */}
-              {filteredItems.length > 0 && (() => {
-                const allSelected = filteredItems.every((i) => selectedItems.has(i.id))
-                const someSelected = !allSelected && filteredItems.some((i) => selectedItems.has(i.id))
-                return (
-                  <button
-                    title={allSelected ? "Desmarcar todos" : "Selecionar todos"}
-                    onClick={() => {
-                      if (allSelected) {
-                        setSelectedItems(new Set())
-                      } else {
-                        setSelectedItems(new Set(filteredItems.map((i) => i.id)))
-                      }
-                    }}
-                    className="flex-shrink-0 cursor-pointer"
-                  >
-                    {allSelected ? (
-                      <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-                    ) : someSelected ? (
-                      <MinusCircle className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-                    ) : (
-                      <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
-                    )}
-                  </button>
-                )
-              })()}
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
-                Total: {filteredItems.length} ite{filteredItems.length !== 1 ? 'ns' : 'm'}
-              </h2>
-              {selectedAuthorFilter.size > 0 && Array.from(selectedAuthorFilter).map((authorId) => (
+          {selectedAuthorFilter.size > 0 && (
+            <div className="flex flex-wrap gap-1.5 px-1">
+              {Array.from(selectedAuthorFilter).map((authorId) => (
                 <button
                   key={authorId}
+                  type="button"
                   onClick={() => setSelectedAuthorFilter((prev) => { const next = new Set(prev); next.delete(authorId); return next })}
-                  className="px-2 py-1 cursor-pointer bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-lg text-xs flex items-center gap-1 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition flex-shrink-0"
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 bg-primary/12 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
                 >
-                  <span className="truncate max-w-[80px]">
-                    {authors.find((a) => a.id === authorId)?.name}
-                  </span>
-                  <X className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate max-w-[120px]">{authors.find((a) => a.id === authorId)?.name}</span>
+                  <X size={12} className="shrink-0" />
                 </button>
               ))}
             </div>
-            <div className="flex justify-end items-center gap-1 sm:gap-2 flex-shrink-0">
-              {!card.is_shared && (() => {
-                const selectedUnpaidCount = Array.from(selectedItems).filter((itemId) => {
-                  const item = items.find((i) => i.id === itemId)
-                  return item && !getDisplayDetails(item).isPaid
-                }).length
-                const selectedPaidCount = selectedItems.size - selectedUnpaidCount
+          )}
 
-                return (
-                  <>
-                    <button
-                      onClick={markSelectedAsPaid}
-                      disabled={selectedUnpaidCount === 0}
-                      className="px-2 sm:px-4 cursor-pointer py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-600"
-                    >
-                      <Banknote className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">
-                        Marcar {selectedUnpaidCount} como pago
-                      </span>
-                      <span className="sm:hidden">
-                        Pagar ({selectedUnpaidCount})
-                      </span>
-                    </button>
-                    <button
-                      onClick={markSelectedAsUnpaid}
-                      disabled={selectedPaidCount === 0}
-                      className="px-2 sm:px-4 cursor-pointer py-1.5 sm:py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-amber-600"
-                    >
-                      <BanknoteX className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">
-                        Desmarcar {selectedPaidCount} como pago
-                      </span>
-                      <span className="sm:hidden">
-                        Desmarcar ({selectedPaidCount})
-                      </span>
-                    </button>
-                    <button
-                      onClick={deleteSelectedItems}
-                      disabled={selectedItems.size === 0}
-                      className="px-2 sm:px-4 cursor-pointer py-1.5 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-600"
-                    >
-                      <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">
-                        Excluir {selectedItems.size}
-                      </span>
-                      <span className="sm:hidden">
-                        ({selectedItems.size})
-                      </span>
-                    </button>
-                  </>
-                )
-              })()}
-              {!card.is_shared && (
-                <button
-                  onClick={() => setShowAuthorFilter(true)}
-                  className="flex items-center cursor-pointer gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-xs sm:text-base"
-                >
-                  <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="hidden sm:inline">Filtrar por Pessoa</span>
-                </button>
-              )}
+          {!card.is_shared && (
+            <div className="flex gap-2">
+              <ActionButton icon={Banknote} color={ACTION_COLORS.pay} disabled={selectedUnpaidCount === 0} onClick={markSelectedAsPaid}>
+                <span className="sm:hidden">Pagar ({selectedUnpaidCount})</span>
+                <span className="hidden sm:inline">Marcar {selectedUnpaidCount} como pago</span>
+              </ActionButton>
+              <ActionButton icon={BanknoteX} color={ACTION_COLORS.unpay} disabled={selectedPaidCount === 0} onClick={markSelectedAsUnpaid}>
+                <span className="sm:hidden">Desmarcar ({selectedPaidCount})</span>
+                <span className="hidden sm:inline">Desmarcar {selectedPaidCount} como pago</span>
+              </ActionButton>
+              <ActionButton icon={Trash2} color={ACTION_COLORS.delete} disabled={selectedItems.size === 0} onClick={deleteSelectedItems} compact>
+                <span className="sm:hidden">({selectedItems.size})</span>
+                <span className="hidden sm:inline">Excluir {selectedItems.size}</span>
+              </ActionButton>
             </div>
-          </div>
+          )}
 
           {isLoadingItems ? (
-            <div className="space-y-2 sm:space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg"
-                >
-                  <Skeleton className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex-shrink-0" />
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <Skeleton className="h-4 w-1/3" />
-                    <Skeleton className="h-3 w-1/2" />
-                  </div>
-                  <Skeleton className="h-5 w-16 flex-shrink-0" />
-                </div>
-              ))}
-            </div>
+            itemsSkeleton
           ) : items.length === 0 ? (
-            <div className="text-center py-8 sm:py-12 animate-fade-in">
-              <Calendar className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-2">
-                {card.is_shared && card.author_id_on_owner ? 'Nenhum item vinculado a você nesta fatura' : 'Nenhum item nesta fatura'}
-              </p>
-              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-500">
-                Clique em "Adicionar Item" para começar
-              </p>
-            </div>
+            <EmptyState
+              icon={Calendar}
+              tint="subtle"
+              title={card.is_shared && card.author_id_on_owner ? "Nenhum item vinculado a você nesta fatura" : "Nenhum item nesta fatura"}
+              description='Clique em "Novo" para começar'
+              className="py-8 animate-fade-in"
+            />
           ) : (
-            <div
-              key={`${viewingMonth}-${viewingYear}-items`}
-              className="space-y-2 sm:space-y-3 animate-fade-in"
-              style={{ animation: "fadeIn 0.2s ease-in" }}
-            >
-              {filteredItems
+            <div key={`${viewingMonth}-${viewingYear}-items`} className="space-y-2">
+              {[...filteredItems]
                 .sort((a, b) => b.id - a.id)
                 .map((item, index) => {
-                  const { amount: displayAmount, authorName: displayAuthorName, isPaid: displayIsPaid } =
-                    getDisplayDetails(item)
+                  const { amount: displayAmount, authorName: displayAuthorName, isPaid: displayIsPaid } = getDisplayDetails(item)
+                  const isSelected = selectedItems.has(item.id)
 
-                  // Calcular se há pagamento parcial (quando não está filtrado e não está totalmente pago)
-                  let partialPaid = 0;
+                  // Pagamento parcial: partes da divisão já pagas (sem filtro de pessoa)
+                  let partialPaid = 0
                   if (selectedAuthorFilter.size === 0 && !displayIsPaid && item.assignments) {
-                      partialPaid = item.assignments
-                        .filter(a => a.is_paid)
-                        .reduce((s, a) => s + Number(a.amount), 0);
+                    partialPaid = item.assignments
+                      .filter((a) => a.is_paid)
+                      .reduce((s, a) => s + Number(a.amount), 0)
                   }
-                  const isPartial = partialPaid > 0;
+                  const isPartial = partialPaid > 0
 
                   return (
                     <div
                       key={item.id}
-                      style={{
-                        animation: `slideInFromRight 0.25s ease-out ${Math.min(
-                          index * 0.02,
-                          0.3
-                        )}s both`,
-                      }}
-                      className={`flex items-start sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 border-2 rounded-lg transition cursor-pointer ${
-                        selectedItems.has(item.id)
-                          ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20"
-                          : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                      }`}
                       onClick={() => toggleSelectItem(item.id)}
-                    >
-                    <div className="flex-shrink-0 mt-0.5 sm:mt-0">
-                      {selectedItems.has(item.id) ? (
-                        <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-                      ) : displayIsPaid ? (
-                        <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
-                      ) : isPartial ? (
-                        <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500" />
-                      ) : (
-                        <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
+                      style={{ animationDelay: `${Math.min(index * 0.02, 0.3)}s` }}
+                      className={cn(
+                        "animate-slide-right flex items-stretch rounded-xl border-2 cursor-pointer transition-colors",
+                        isSelected ? "border-primary bg-primary/[0.07]" : "border-border hover:bg-surface-2",
                       )}
-                    </div>
-
-                    <div
-                      className="flex-1 min-w-0"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openEditModal(item)
-                      }}
                     >
-                      <p
-                        className={`font-medium text-sm sm:text-base truncate ${
-                          displayIsPaid
-                            ? "text-gray-500 dark:text-gray-500 line-through"
-                            : "text-gray-900 dark:text-white"
-                        }`}
-                      >
-                        {item.description}
-                      </p>
-                      <div className="flex flex-wrap gap-2 sm:gap-3 mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                        {item.category_name && (
-                          <span className="flex items-center gap-1 truncate">
-                            {item.category_icon} {item.category_name}
-                          </span>
+                      <div className="pl-3 pr-2 flex items-center shrink-0">
+                        {isSelected ? (
+                          <CheckCircle size={22} className="text-primary" />
+                        ) : displayIsPaid ? (
+                          <CheckCircle size={22} className="text-success" />
+                        ) : isPartial ? (
+                          <CheckCircle size={22} className="text-warning" />
+                        ) : (
+                          <Circle size={22} className="text-subtle" />
                         )}
-                        <span className="truncate">{displayAuthorName}</span>
-                        {item.purchase_date && (
-                          <span className="hidden sm:inline">
-                            {new Date(item.purchase_date + 'T00:00:00').toLocaleDateString(
-                              "pt-BR"
-                            )}
-                          </span>
+                      </div>
+
+                      <div
+                        className="flex-1 min-w-0 py-3 pr-2"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openEditModal(item)
+                        }}
+                      >
+                        <p className={cn("font-medium truncate", displayIsPaid ? "line-through text-subtle" : "text-foreground")}>
+                          {item.description}
+                        </p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs">
+                          {item.category_name && (
+                            <span className="text-muted truncate">{item.category_icon} {item.category_name}</span>
+                          )}
+                          <span className="text-muted truncate">{displayAuthorName}</span>
+                          {item.purchase_date && (
+                            <span className="text-subtle">
+                              {new Date(item.purchase_date + "T00:00:00").toLocaleDateString("pt-BR")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end justify-center pr-3 py-3 shrink-0">
+                        <p className={cn("font-semibold", displayIsPaid ? "text-subtle" : "text-foreground")}>{formatCurrency(displayAmount)}</p>
+                        {item.installment_number && (
+                          <p className="text-xs text-subtle">{item.installment_number}/{item.total_installments}x</p>
+                        )}
+                        {isPartial && (
+                          <p className="text-xs font-medium text-success">Pago: {formatCurrency(partialPaid)}</p>
                         )}
                       </div>
                     </div>
-
-                    <div className="text-right flex-shrink-0">
-                      <p
-                        className={`text-sm sm:text-lg font-semibold ${
-                          displayIsPaid
-                            ? "text-gray-400 dark:text-gray-600"
-                            : "text-gray-900 dark:text-white"
-                        }`}
-                      >
-                        R${" "}
-                        {displayAmount.toLocaleString("pt-BR", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </p>
-                      {item.installment_number && (
-                        <p className="text-xs text-gray-500 dark:text-gray-500">
-                          {item.installment_number}/{item.total_installments}x
-                        </p>
-                      )}
-                      {isPartial && (
-                        <p className="text-xs text-green-600 dark:text-green-400 font-medium">
-                           Pago: R$ {partialPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                      )}
-                    </div>
-                  </div>
                   )
                 })}
             </div>
           )}
-        </div>
-      </div>
+        </Card>
+      </DetailsLayout>
 
-      {/* Author Filter Modal */}
-      {showAuthorFilter && (
-        <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md lg:max-w-4xl w-full max-h-[80vh] flex flex-col">
-            <div className="p-4 flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Filtrar por Pessoa
-                  </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Selecione uma ou mais pessoas
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowAuthorFilter(false)}
-                  className="cursor-pointer p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-
-            <div className="overflow-y-auto px-4 pb-4 flex-1" style={{
-              scrollbarWidth: 'thin',
-              scrollbarColor: 'rgba(156, 163, 175, 0.3) transparent'
-            }}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {/* Todas as Pessoas — limpa o filtro */}
-                <button
-                  onClick={() => setSelectedAuthorFilter(new Set())}
-                  className={`w-full col-span-full p-3 rounded-2xl text-left transition border-2 ${
-                    selectedAuthorFilter.size === 0
-                      ? "border-purple-600 bg-purple-50 dark:bg-purple-900/20"
-                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <User className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        Todas as Pessoas
-                      </span>
-                    </div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {items.length} {items.length === 1 ? "item" : "itens"}
-                    </span>
-                  </div>
-                </button>
-
-                {authorTotals.map((author) => {
-                  const isChecked = selectedAuthorFilter.has(author.id)
-                  return (
-                    <button
-                      key={author.id}
-                      onClick={() => {
-                        setSelectedAuthorFilter((prev) => {
-                          const next = new Set(prev)
-                          if (next.has(author.id)) {
-                            next.delete(author.id)
-                          } else {
-                            next.add(author.id)
-                          }
-                          return next
-                        })
-                      }}
-                      className={`w-full cursor-pointer p-3 rounded-2xl text-left transition border-2 ${
-                        isChecked
-                          ? "border-purple-600 bg-purple-50 dark:bg-purple-900/20"
-                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <span className="font-medium text-gray-900 dark:text-white">
-                            {author.name}
-                          </span>
-                        </div>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {author.itemCount}{" "}
-                          {author.itemCount === 1 ? "item" : "itens"}
-                        </span>
-                      </div>
-                      <div className="text-sm">
-                        <div className="flex gap-2">
-                          {author.unpaidTotal > 0 && (
-                            <span className="font-semibold text-red-600 dark:text-red-400">
-                              R${" "}
-                              {author.unpaidTotal.toLocaleString("pt-BR", {
-                                minimumFractionDigits: 2,
-                              })}
-                            </span>
-                          )}
-                          {author.unpaidTotal > 0 && (
-                            <span className="text-gray-600 dark:text-gray-400">
-                            /
-                            </span>
-                          )}
-                          <span className={`font-semibold ${author.unpaidTotal == 0 ? "text-green-600 dark:text-green-400" : "text-gray-900 dark:text-white"}`}>
-                            R${" "}
-                            {author.total.toLocaleString("pt-BR", {
-                              minimumFractionDigits: 2,
-                            })}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Footer com botão Aplicar */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 flex items-center justify-between gap-3">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {selectedAuthorFilter.size === 0
-                  ? "Todas as pessoas"
-                  : `${selectedAuthorFilter.size} pessoa${selectedAuthorFilter.size > 1 ? 's' : ''} selecionada${selectedAuthorFilter.size > 1 ? 's' : ''}`
-                }
-              </span>
-              <button
-                onClick={() => setShowAuthorFilter(false)}
-                className="px-5 py-2 cursor-pointer bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium"
-              >
-                Aplicar
-              </button>
-            </div>
+      {/* Filtro por pessoa */}
+      <Sheet
+        open={showAuthorFilter}
+        onClose={() => setShowAuthorFilter(false)}
+        title="Filtrar por Pessoa"
+        description="Selecione uma ou mais pessoas"
+        size="lg"
+        footer={(
+          <div className="flex items-center justify-between gap-3 pt-3 border-t border-border">
+            <span className="text-sm text-muted">
+              {selectedAuthorFilter.size === 0
+                ? "Todas as pessoas"
+                : `${selectedAuthorFilter.size} ${plural(selectedAuthorFilter.size, "pessoa selecionada", "pessoas selecionadas")}`}
+            </span>
+            <Button label="Aplicar" size="sm" onClick={() => setShowAuthorFilter(false)} />
           </div>
+        )}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pb-2">
+          <FilterOption selected={selectedAuthorFilter.size === 0} onClick={() => setSelectedAuthorFilter(new Set())} className="md:col-span-2">
+            <span className="flex-1 flex items-center gap-2">
+              <User size={18} className="text-muted" />
+              <span className="font-medium text-foreground">Todas as Pessoas</span>
+            </span>
+            <span className="text-sm text-muted">{items.length} {plural(items.length, "item", "itens")}</span>
+          </FilterOption>
+
+          {authorTotals.map((author) => (
+            <FilterOption
+              key={author.id}
+              selected={selectedAuthorFilter.has(author.id)}
+              onClick={() => {
+                setSelectedAuthorFilter((prev) => {
+                  const next = new Set(prev)
+                  if (next.has(author.id)) next.delete(author.id)
+                  else next.add(author.id)
+                  return next
+                })
+              }}
+            >
+              <span className="flex-1 min-w-0">
+                <span className="block font-medium text-foreground truncate">{author.name}</span>
+                <span className="flex items-center gap-1.5 text-sm">
+                  {author.unpaidTotal > 0 && (
+                    <>
+                      <span className="font-semibold text-danger">{formatCurrency(author.unpaidTotal)}</span>
+                      <span className="text-subtle">/</span>
+                    </>
+                  )}
+                  <span className={cn("font-semibold", author.unpaidTotal === 0 ? "text-success" : "text-foreground")}>
+                    {formatCurrency(author.total)}
+                  </span>
+                </span>
+              </span>
+              <span className="text-sm text-muted shrink-0">{author.itemCount} {plural(author.itemCount, "item", "itens")}</span>
+            </FilterOption>
+          ))}
         </div>
-      )}
-      </div>
+      </Sheet>
 
       {/* Delete Confirmation Modal (Card) */}
       <ConfirmModal
@@ -1438,40 +1131,30 @@ export default function CardDetails() {
         }}
         onConfirm={handleDeleteCard}
         title="Excluir Cartão?"
+        icon={Trash2}
         message={
           (() => {
-            // Calculate total unpaid amount across ALL invoices
-            const unpaidAmount = allUnpaidItems.reduce((sum, item) => {
+            // Pendências em todas as faturas (descontando as partes já pagas das divisões)
+            const pending = allUnpaidItems.map((item) => {
               let itemAmount = Number(item.amount)
-              // If item has assignments, check for partial payments
               if (item.assignments && item.assignments.length > 0) {
-                 const paidPartial = item.assignments
-                   .filter(a => !!Number(a.is_paid))
-                   .reduce((s, a) => s + Number(a.amount), 0)
-                 itemAmount -= paidPartial
+                const paidPartial = item.assignments
+                  .filter(a => !!Number(a.is_paid))
+                  .reduce((s, a) => s + Number(a.amount), 0)
+                itemAmount -= paidPartial
               }
-              return sum + itemAmount
-            }, 0)
-            
+              return itemAmount
+            })
+            const unpaidAmount = pending.reduce((sum, value) => sum + value, 0)
+
             let msg = `Tem certeza que deseja excluir o cartão "${card.card_name ?? card.name}"?`
-            
+
             if (unpaidAmount > 0) {
-              msg += `\n\n⚠️ ATENÇÃO: Este cartão possui ${allUnpaidItems.filter(i => {
-                  let itemAmount = Number(i.amount)
-                  if (i.assignments && i.assignments.length > 0) {
-                     const paidPartial = i.assignments
-                       .filter(a => !!Number(a.is_paid))
-                       .reduce((s, a) => s + Number(a.amount), 0)
-                     itemAmount -= paidPartial
-                  }
-                  return itemAmount > 0.01 // Só conta se ainda tiver algo a pagar
-              }).length} item(ns) com pendência(s) no valor total de R$ ${
-                unpaidAmount.toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}.`
+              // Só conta os itens que ainda têm algo a pagar
+              const unpaidCount = pending.filter((value) => value > 0.01).length
+              msg += `\n\nAtenção: este cartão possui ${unpaidCount} item(ns) com pendência(s) no valor total de ${formatCurrency(unpaidAmount)}.`
             }
-            
+
             msg += "\n\nEsta ação não pode ser desfeita."
             return msg
           })()
@@ -1486,21 +1169,20 @@ export default function CardDetails() {
         onClose={() => setShowDeleteItemsModal(false)}
         onConfirm={confirmDeleteItems}
         title="Excluir Itens?"
+        icon={Trash2}
         message={(() => {
           const hasInstallment = items.some(
             (item) => selectedItems.has(item.id) && item.is_installment
           )
           const base = `Tem certeza que deseja excluir ${selectedItems.size} item(ns)?`
           return hasInstallment
-            ? `${base}\n\n⚠️ Um ou mais itens selecionados são parcelados. Todas as parcelas (pagas ou futuras) também serão apagadas.`
+            ? `${base}\n\nUm ou mais itens selecionados são parcelados. Todas as parcelas (pagas ou futuras) também serão apagadas.`
             : base
         })()}
         confirmText="Excluir"
         isDestructive
       />
 
-
-      {/* Edit Item Modal */}
       {/* Add Item Modal */}
       {showAddItemModal && card && modalInvoiceId && (
         <AddItemModal
@@ -1528,7 +1210,7 @@ export default function CardDetails() {
                   inv.reference_month === viewingMonth &&
                   inv.reference_year === viewingYear
               )
-              
+
               let itemsToShow = (invoiceAtual?.items || []).map((item) => ({
                 ...item,
                 is_installment: !!Number(item.is_installment),
@@ -1572,5 +1254,77 @@ export default function CardDetails() {
         />
       )}
     </div>
+  )
+}
+
+/** Resumo à esquerda (fixo ao rolar) e lançamentos à direita no desktop largo; empilhados no resto */
+function DetailsLayout({ summary, action, children }: { summary: ReactNode; action: ReactNode; children: ReactNode }) {
+  return (
+    <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-[max(2rem,env(safe-area-inset-bottom))] lg:pb-12">
+      <div className="space-y-4 xl:space-y-0 xl:grid xl:grid-cols-[minmax(0,360px)_minmax(0,1fr)] xl:gap-6 xl:items-start">
+        <div className="xl:sticky xl:top-32">{summary}</div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-2 px-1">
+            <h2 className="text-lg font-semibold text-foreground">Últimos Lançamentos</h2>
+            {action}
+          </div>
+          {children}
+        </div>
+      </div>
+    </main>
+  )
+}
+
+function InfoColumn({ label, value, ink, color }: { label: string; value: string; ink: string; color: string }) {
+  return (
+    <div className="flex-1 min-w-0 space-y-0.5">
+      <p className="text-xs line-clamp-2" style={{ color: withAlpha(ink, 0.75) }}>{label}</p>
+      <p className="text-[15px] font-semibold truncate" style={{ color }}>{value}</p>
+    </div>
+  )
+}
+
+function ActionButton({ icon: Icon, color, disabled, onClick, compact, children }: {
+  icon: typeof Banknote
+  color: string
+  disabled: boolean
+  onClick: () => void
+  compact?: boolean
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      style={{ backgroundColor: color }}
+      className={cn(
+        "inline-flex items-center justify-center gap-1.5 h-9 rounded-lg text-[13px] font-semibold text-white whitespace-nowrap transition-opacity",
+        compact ? "px-3" : "flex-1 min-w-0 px-2",
+        disabled ? "opacity-40" : "hover:opacity-90 active:opacity-80",
+      )}
+    >
+      <Icon size={15} className="shrink-0" />
+      <span className="truncate">{children}</span>
+    </button>
+  )
+}
+
+function FilterOption({ selected, onClick, className, children }: { selected: boolean; onClick: () => void; className?: string; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={selected}
+      onClick={onClick}
+      className={cn(
+        "w-full flex items-center gap-3 p-3.5 rounded-2xl border-2 text-left transition-colors",
+        selected ? "border-primary bg-primary/[0.08]" : "border-border hover:bg-surface-2",
+        className,
+      )}
+    >
+      {children}
+      {selected && <Check size={16} className="text-primary shrink-0" />}
+    </button>
   )
 }

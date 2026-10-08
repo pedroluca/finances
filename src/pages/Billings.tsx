@@ -1,17 +1,27 @@
 import { useState, useEffect, useMemo, useRef, type FormEvent } from 'react'
 import {
-  Plus, Pencil, Trash2, X, ChevronDown, Receipt,
+  Plus, Pencil, Trash2, ChevronDown, Receipt, ReceiptText,
   AlertCircle, CheckCircle2, Circle, Repeat, CalendarClock,
 } from 'lucide-react'
 import { useAuthStore } from '../store/auth.store'
 import { useAppStore } from '../store/app.store'
+import { usePrefsStore } from '../store/prefs.store'
 import { phpApiRequest } from '../lib/api'
-import { DashboardHeader } from '../components/dashboard/d-header'
+import { HeaderAddButton, HideValuesButton, SectionTitle, TabContent, TabHeader } from '../components/app-header'
 import type { Bill, BillCharge, CreateBillDTO, UpdateBillDTO } from '../types/database'
-import { labelClass, inputClass } from '../lib/formStyles'
-import Switch from '../components/Switch'
+import { fieldClass, textareaClass } from '../lib/formStyles'
+import { cn } from '../lib/cn'
+import { plural } from '../lib/format'
 import { Skeleton } from '../components/ui/skeleton'
 import { AnimatedCurrency } from '../components/ui/animated-currency'
+import { Card } from '../components/ui/card'
+import { Button } from '../components/ui/button'
+import { IconButton } from '../components/ui/icon-button'
+import { Badge, Callout, Divider, EmptyState, SwitchField } from '../components/ui/misc'
+import { FieldLabel, SelectField, StepperField, TextField } from '../components/ui/field'
+import { Sheet } from '../components/ui/sheet'
+import { SummaryCard } from '../components/summary-card'
+import ConfirmModal from '../components/ConfirmModal'
 import { useIsFirstVisitThisSession } from '../hooks/useFirstVisitThisSession'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -44,17 +54,17 @@ function daysUntil(dateStr: string): number {
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function Billings() {
-  const { user, logout } = useAuthStore()
+  const { user } = useAuthStore()
   const { authors, setAuthors, categories, setCategories, bills, setBills } = useAppStore()
+  const hideValues = usePrefsStore((state) => state.hideValues)
 
   const hadCacheRef = useRef(bills.length > 0)
   const animateOnMount = useIsFirstVisitThisSession('billings')
 
-  const [hideValues, setHideValues] = useState(localStorage.getItem('hideValues') === 'true')
   const [isLoading, setIsLoading] = useState(bills.length === 0)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [deletingBill, setDeletingBill] = useState<Bill | null>(null)
   const [showInactive, setShowInactive] = useState(false)
   const [globalError, setGlobalError] = useState('')
 
@@ -142,6 +152,11 @@ export default function Billings() {
     setShowForm(true)
   }
 
+  function closeForm() {
+    setShowForm(false)
+    resetForm()
+  }
+
   function handleDefaultAmountChange(raw: string) {
     const { numeric, display } = parseAmountInput(raw)
     setFDefaultAmount(String(numeric))
@@ -222,8 +237,7 @@ export default function Billings() {
           return
         }
       }
-      setShowForm(false)
-      resetForm()
+      closeForm()
     } catch (err) {
       console.error(err)
       setFormError('Erro de rede. Tente novamente.')
@@ -243,8 +257,7 @@ export default function Billings() {
         body: JSON.stringify({ id, user_id: user.id }),
       })
       if (res?.success) {
-        setBills(bills.filter((b) => b.id !== id))
-        setDeletingId(null)
+        setBills(useAppStore.getState().bills.filter((b) => b.id !== id))
       }
     } catch (err) {
       console.error(err)
@@ -286,315 +299,192 @@ export default function Billings() {
 
   // ── render ────────────────────────────────────────────────────────────────
 
-  function toggleHideValues() {
-    setHideValues((prev) => !prev)
-    localStorage.setItem('hideValues', String(!hideValues))
-  }
+  const renderBill = (bill: Bill) => (
+    <BillCard
+      key={bill.id}
+      bill={bill}
+      hideValues={hideValues}
+      animateOnMount={animateOnMount}
+      onEdit={() => openEdit(bill)}
+      onDelete={() => setDeletingBill(bill)}
+      onUpdateCharge={(chargeId, payload) => handleUpdateCharge(bill.id, chargeId, payload)}
+    />
+  )
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors pb-16 lg:pb-0">
-      <DashboardHeader
-        userName={user?.name || ''}
-        userEmail={user?.email || ''}
-        onLogout={logout}
-        hideValues={hideValues}
-        onToggleHideValues={toggleHideValues}
+    <div className="min-h-screen bg-background">
+      <TabHeader
+        title="Contas"
+        right={(
+          <>
+            <HideValuesButton />
+            <HeaderAddButton label="Nova conta" onClick={openCreate} />
+          </>
+        )}
       />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Contas</h1>
-
-          {isLoading ? (
-            <Skeleton className="h-9 w-24 rounded-lg" />
-          ) : (
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition cursor-pointer"
-            >
-              <Plus className="w-4 h-4" /> Nova
-            </button>
-          )}
-        </div>
-
-        {globalError && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-red-800 dark:text-red-400 text-sm">
-            {globalError}
-          </div>
-        )}
+      <TabContent>
+        {globalError && <Callout tone="danger" icon={AlertCircle}>{globalError}</Callout>}
 
         {isLoading ? (
-          <Skeleton className="rounded-2xl p-6 h-[104px]" />
-        ) : activeList.length > 0 && (
-          <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 text-white shadow-lg">
-            <div className="flex items-center gap-3 mb-1">
-              <Receipt className="w-5 h-5 opacity-80" />
-              <span className="text-purple-200 text-sm font-medium">Total em contas</span>
-            </div>
-            <p className="text-3xl font-bold"><AnimatedCurrency value={monthlyTotal} hide={hideValues} animateOnMount={animateOnMount} /></p>
-            <p className="text-purple-300 text-sm mt-1">{activeList.length} conta{activeList.length !== 1 ? 's' : ''} ativa{activeList.length !== 1 ? 's' : ''}</p>
-          </div>
-        )}
-
-        {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <BillCardSkeleton key={i} />
-            ))}
-          </div>
-        )}
-
-        {!isLoading && bills.length === 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-12 text-center">
-            <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Receipt className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Nenhuma conta cadastrada</h3>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
-              Cadastre contas pagas fora do cartão (água, luz, internet, aluguel...) e acompanhe os vencimentos aqui.
-            </p>
-            <button
-              onClick={openCreate}
-              className="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              Adicionar conta
-            </button>
-          </div>
-        )}
-
-        {!isLoading && activeList.length > 0 && (
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Ativas</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {activeList.map((bill) => (
-                <BillCard
-                  key={bill.id}
-                  bill={bill}
-                  hideValues={hideValues}
-                  animateOnMount={animateOnMount}
-                  onEdit={() => openEdit(bill)}
-                  onDelete={() => setDeletingId(bill.id)}
-                  isConfirmingDelete={deletingId === bill.id}
-                  onConfirmDelete={() => handleDelete(bill.id)}
-                  onCancelDelete={() => setDeletingId(null)}
-                  onUpdateCharge={(chargeId, payload) => handleUpdateCharge(bill.id, chargeId, payload)}
-                />
+          <>
+            <Skeleton className="h-[116px] rounded-2xl" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <BillCardSkeleton key={i} />
               ))}
             </div>
-          </div>
-        )}
+          </>
+        ) : bills.length === 0 ? (
+          <Card>
+            <EmptyState
+              icon={Receipt}
+              title="Nenhuma conta cadastrada"
+              description="Cadastre contas pagas fora do cartão (água, luz, internet, aluguel...) e acompanhe os vencimentos aqui."
+              actionLabel="Adicionar conta"
+              actionIcon={Plus}
+              onAction={openCreate}
+            />
+          </Card>
+        ) : (
+          <>
+            {activeList.length > 0 && (
+              <>
+                <SummaryCard
+                  icon={Receipt}
+                  label="Total em contas"
+                  value={<AnimatedCurrency value={monthlyTotal} hide={hideValues} animateOnMount={animateOnMount} />}
+                  caption={`${activeList.length} ${plural(activeList.length, 'conta ativa', 'contas ativas')}`}
+                />
+                <SectionTitle title="Ativas" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">{activeList.map(renderBill)}</div>
+              </>
+            )}
 
-        {!isLoading && inactiveList.length > 0 && (
-          <div>
-            <button
-              onClick={() => setShowInactive((v) => !v)}
-              className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition"
-            >
-              <ChevronDown className={`w-4 h-4 transition-transform ${showInactive ? 'rotate-180' : ''}`} />
-              {inactiveList.length} conta{inactiveList.length !== 1 ? 's' : ''} inativa{inactiveList.length !== 1 ? 's' : ''}
-            </button>
-            {showInactive && (
-              <div className="mt-3 space-y-3 opacity-60">
-                {inactiveList.map((bill) => (
-                  <BillCard
-                    key={bill.id}
-                    bill={bill}
-                    hideValues={hideValues}
-                    animateOnMount={animateOnMount}
-                    onEdit={() => openEdit(bill)}
-                    onDelete={() => setDeletingId(bill.id)}
-                    isConfirmingDelete={deletingId === bill.id}
-                    onConfirmDelete={() => handleDelete(bill.id)}
-                    onCancelDelete={() => setDeletingId(null)}
-                    onUpdateCharge={(chargeId, payload) => handleUpdateCharge(bill.id, chargeId, payload)}
-                  />
-                ))}
+            {inactiveList.length > 0 && (
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setShowInactive((v) => !v)}
+                  className="flex items-center gap-2 py-1 px-1 text-sm text-muted hover:text-foreground transition-colors"
+                >
+                  <ChevronDown className={cn('w-4 h-4 transition-transform', showInactive && 'rotate-180')} />
+                  {inactiveList.length} {plural(inactiveList.length, 'conta inativa', 'contas inativas')}
+                </button>
+                {showInactive && <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">{inactiveList.map(renderBill)}</div>}
               </div>
             )}
-          </div>
+          </>
         )}
-      </main>
+      </TabContent>
 
-      {/* ── Modal de formulário ── */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {editingId !== null ? 'Editar conta' : 'Nova conta'}
-              </h2>
-              <button
-                onClick={() => { setShowForm(false); resetForm() }}
-                className="cursor-pointer p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {/* ── Formulário: folha no celular, diálogo no desktop ── */}
+      <Sheet open={showForm} onClose={closeForm} title={editingId !== null ? 'Editar conta' : 'Nova conta'}>
+        <form onSubmit={handleSubmit} className="space-y-4 pb-2">
+          <TextField
+            label="Nome da conta *"
+            value={fDescription}
+            onChange={(e) => setFDescription(e.target.value)}
+            placeholder="Ex: Internet, Energia, Aluguel..."
+            autoFocus={editingId === null}
+            required
+          />
 
-            <div className="overflow-y-auto flex-1 custom-scrollbar">
-              <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                {formError && (
-                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-800 dark:text-red-400">
-                    {formError}
-                  </div>
-                )}
+          <StepperField
+            label="Dia de vencimento *"
+            value={Number(fDueDay) || 1}
+            onChange={(value) => setFDueDay(String(value))}
+            min={1}
+            max={31}
+          />
 
-                {/* Descrição */}
-                <div>
-                  <label className={labelClass}>Nome da conta *</label>
-                  <input
-                    type="text"
-                    value={fDescription}
-                    onChange={(e) => setFDescription(e.target.value)}
-                    placeholder="Ex: Internet, Energia, Aluguel..."
-                    autoFocus
-                    className={inputClass('purple')}
-                    required
-                  />
-                </div>
+          <SwitchField title="Conta recorrente" description="Repete todo mês automaticamente" checked={fIsRecurring} onChange={setFIsRecurring} />
 
-                {/* Dia de vencimento */}
-                <div>
-                  <label className={labelClass}>Dia de vencimento *</label>
-                  <input
-                    type="number"
-                    value={fDueDay}
-                    onChange={(e) => setFDueDay(e.target.value)}
-                    min="1" max="31"
-                    placeholder="Ex: 10"
-                    className={inputClass('purple')}
-                    required
-                  />
-                </div>
+          <Divider />
 
-                {/* Recorrente */}
-                <div className="flex items-center justify-between py-2">
-                  <div>
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Conta recorrente</span>
-                    <p className="text-xs text-gray-400 mt-0.5">Repete todo mês automaticamente</p>
-                  </div>
-                  <Switch checked={fIsRecurring} onChange={setFIsRecurring} accent="purple" />
-                </div>
+          <SwitchField
+            title="Valor sempre igual"
+            description="Ex: internet. Desligue para contas que oscilam, como energia."
+            checked={fIsFixedAmount}
+            onChange={setFIsFixedAmount}
+          />
 
-                {/* Valor fixo */}
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Valor sempre igual</span>
-                      <p className="text-xs text-gray-400 mt-0.5">Ex: internet. Desligue para contas que oscilam, como energia.</p>
-                    </div>
-                    <Switch checked={fIsFixedAmount} onChange={setFIsFixedAmount} accent="purple" />
-                  </div>
+          {fIsFixedAmount ? (
+            <TextField
+              label="Valor fixo *"
+              inputMode="numeric"
+              value={fDefaultAmountDisplay}
+              onChange={(e) => handleDefaultAmountChange(e.target.value)}
+              placeholder="R$ 0,00"
+              required
+            />
+          ) : editingId === null && (
+            <TextField
+              label="Valor desta cobrança (opcional, se já souber)"
+              inputMode="numeric"
+              value={fInitialAmountDisplay}
+              onChange={(e) => handleInitialAmountChange(e.target.value)}
+              placeholder="Deixe em branco se ainda não sabe"
+            />
+          )}
 
-                  {fIsFixedAmount ? (
-                    <div className="mt-2">
-                      <label className={labelClass}>Valor fixo *</label>
-                      <input
-                        type="text"
-                        value={fDefaultAmountDisplay}
-                        onChange={(e) => handleDefaultAmountChange(e.target.value)}
-                        placeholder="R$ 0,00"
-                        className={inputClass('purple')}
-                        required
-                      />
-                    </div>
-                  ) : editingId === null && (
-                    <div className="mt-2">
-                      <label className={labelClass}>
-                        Valor desta cobrança <span className="text-gray-400 font-normal">(opcional, se já souber)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={fInitialAmountDisplay}
-                        onChange={(e) => handleInitialAmountChange(e.target.value)}
-                        placeholder="R$ 0,00 — deixe em branco se ainda não sabe"
-                        className={inputClass('purple')}
-                      />
-                    </div>
-                  )}
-                </div>
+          <SelectField label="Categoria (opcional)" id="bill-category" value={fCategoryId} onChange={setFCategoryId}>
+            <option value="">Sem categoria</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+            ))}
+          </SelectField>
 
-                {/* Categoria */}
-                <div>
-                  <label className={labelClass}>
-                    Categoria <span className="text-gray-400 font-normal">(opcional)</span>
-                  </label>
-                  <select
-                    value={fCategoryId}
-                    onChange={(e) => setFCategoryId(e.target.value)}
-                    className={inputClass('purple')}
-                  >
-                    <option value="">Sem categoria</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                    ))}
-                  </select>
-                </div>
+          <SelectField label="Quem paga (opcional)" id="bill-author" value={fAuthorId} onChange={setFAuthorId}>
+            <option value="">Não definido</option>
+            {authors.map((a) => (
+              <option key={a.id} value={a.id}>{a.name}{a.is_owner ? ' (Você)' : ''}</option>
+            ))}
+          </SelectField>
 
-                {/* Responsável */}
-                <div>
-                  <label className={labelClass}>
-                    Quem paga <span className="text-gray-400 font-normal">(opcional)</span>
-                  </label>
-                  <select
-                    value={fAuthorId}
-                    onChange={(e) => setFAuthorId(e.target.value)}
-                    className={inputClass('purple')}
-                  >
-                    <option value="">Não definido</option>
-                    {authors.map((a) => (
-                      <option key={a.id} value={a.id}>{a.name}{a.is_owner ? ' (Você)' : ''}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Observações */}
-                <div>
-                  <label className={labelClass}>
-                    Observações <span className="text-gray-400 font-normal">(opcional)</span>
-                  </label>
-                  <textarea
-                    value={fNotes}
-                    onChange={(e) => setFNotes(e.target.value)}
-                    rows={2}
-                    placeholder="Ex: conta da casa, plano residencial..."
-                    className={`${inputClass('purple')} resize-none`}
-                  />
-                </div>
-
-                {/* Toggle ativo/inativo (só na edição) */}
-                {editingId !== null && (
-                  <div className="flex items-center justify-between py-3 border-t border-gray-100 dark:border-gray-700">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Conta ativa</span>
-                    <Switch checked={fActive} onChange={setFActive} accent="purple" />
-                  </div>
-                )}
-
-                {/* Botões */}
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => { setShowForm(false); resetForm() }}
-                    className="flex-1 cursor-pointer px-4 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm font-medium"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex-1 cursor-pointer px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? 'Salvando...' : editingId !== null ? 'Salvar' : 'Criar conta'}
-                  </button>
-                </div>
-              </form>
-            </div>
+          <div>
+            <FieldLabel label="Observações (opcional)" htmlFor="bill-notes" />
+            <textarea
+              id="bill-notes"
+              value={fNotes}
+              onChange={(e) => setFNotes(e.target.value)}
+              rows={2}
+              placeholder="Ex: conta da casa, plano residencial..."
+              className={textareaClass}
+            />
           </div>
-        </div>
-      )}
+
+          {editingId !== null && (
+            <>
+              <Divider />
+              <SwitchField title="Conta ativa" checked={fActive} onChange={setFActive} />
+            </>
+          )}
+
+          {formError && <Callout tone="danger" icon={AlertCircle}>{formError}</Callout>}
+
+          <div className="flex gap-3 pt-1">
+            <Button label="Cancelar" variant="secondary" onClick={closeForm} className="flex-1" />
+            <Button
+              type="submit"
+              label={isSubmitting ? 'Salvando...' : editingId !== null ? 'Salvar' : 'Criar conta'}
+              loading={isSubmitting}
+              className="flex-1"
+            />
+          </div>
+        </form>
+      </Sheet>
+
+      <ConfirmModal
+        isOpen={!!deletingBill}
+        onClose={() => setDeletingBill(null)}
+        onConfirm={() => (deletingBill ? handleDelete(deletingBill.id) : undefined)}
+        title="Excluir conta?"
+        message={`Excluir "${deletingBill?.description ?? ''}" e todas as cobranças dela? Esta ação não pode ser desfeita.`}
+        confirmText="Excluir"
+        icon={Trash2}
+        isDestructive
+      />
     </div>
   )
 }
@@ -603,27 +493,20 @@ export default function Billings() {
 
 function BillCardSkeleton() {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
-      <div className="flex items-start gap-4">
-        <Skeleton className="w-10 h-10 rounded-xl shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-3 w-20" />
-            </div>
-            <Skeleton className="h-5 w-16 shrink-0" />
-          </div>
-          <div className="flex items-center justify-between mt-3">
-            <Skeleton className="h-5 w-24 rounded-full" />
-            <div className="flex items-center gap-1">
-              <Skeleton className="w-7 h-7 rounded-lg" />
-              <Skeleton className="w-7 h-7 rounded-lg" />
-            </div>
-          </div>
+    <Card className="p-4 space-y-3">
+      <div className="flex items-start gap-3">
+        <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-32 rounded-md" />
+          <Skeleton className="h-3 w-20 rounded-md" />
         </div>
+        <Skeleton className="h-5 w-16 rounded-md" />
       </div>
-    </div>
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-6 w-24 rounded-full" />
+        <Skeleton className="h-8 w-16 rounded-lg" />
+      </div>
+    </Card>
   )
 }
 
@@ -635,13 +518,10 @@ interface BillCardProps {
   animateOnMount: boolean
   onEdit: () => void
   onDelete: () => void
-  isConfirmingDelete: boolean
-  onConfirmDelete: () => void
-  onCancelDelete: () => void
   onUpdateCharge: (chargeId: number, payload: Record<string, unknown>) => void
 }
 
-function BillCard({ bill, hideValues, animateOnMount, onEdit, onDelete, isConfirmingDelete, onConfirmDelete, onCancelDelete, onUpdateCharge }: BillCardProps) {
+function BillCard({ bill, hideValues, animateOnMount, onEdit, onDelete, onUpdateCharge }: BillCardProps) {
   const charge = relevantCharge(bill.charges)
   const [editingAmount, setEditingAmount] = useState(false)
   const [amountDisplay, setAmountDisplay] = useState('')
@@ -660,135 +540,104 @@ function BillCard({ bill, hideValues, animateOnMount, onEdit, onDelete, isConfir
   }
 
   const days = charge ? daysUntil(charge.due_date) : null
-  const isOverdue = days !== null && days < 0 && !charge?.is_paid
-  const isDueToday = days === 0 && !charge?.is_paid
-  const isDueSoon = days !== null && days > 0 && days <= 7 && !charge?.is_paid
+  const paid = !!charge?.is_paid
+  const isOverdue = days !== null && days < 0 && !paid
+  const isDueToday = days === 0 && !paid
+  const isDueSoon = days !== null && days > 0 && days <= 7 && !paid
+
+  const status = paid
+    ? { label: 'Paga', className: 'bg-success/12 text-success' }
+    : isOverdue
+      ? { label: 'Vencida', className: 'bg-danger/12 text-danger' }
+      : isDueToday
+        ? { label: 'Vence hoje', className: 'bg-orange/12 text-orange' }
+        : isDueSoon
+          ? { label: days === 1 ? 'Vence amanhã' : `Vence em ${days}d`, className: 'bg-warning/12 text-warning' }
+          : { label: `Vence em ${days}d`, className: 'bg-surface-2 text-muted' }
+
+  const tint = bill.category_color ?? '#6366f1'
+  const details = [
+    `Vence dia ${bill.due_day}`,
+    bill.author_name,
+    !bill.is_fixed_amount && bill.is_recurring ? 'Valor variável' : null,
+  ].filter(Boolean).join(' · ')
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 transition-all ${!bill.active ? 'opacity-60' : ''}`}>
-      <div className="flex items-start gap-4">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 mt-0.5"
-          style={{ backgroundColor: bill.category_color ? `${bill.category_color}20` : '#6366f120' }}
-        >
-          {bill.category_icon ?? '🧾'}
+    <Card className={cn('p-4 space-y-3', !bill.active && 'opacity-60')}>
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-lg" style={{ backgroundColor: `${tint}26`, color: tint }}>
+          {bill.category_icon ?? <ReceiptText size={19} />}
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-gray-900 dark:text-white truncate flex items-center gap-2">
-                {bill.description}
-                {bill.is_recurring && (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
-                    <Repeat className="w-3 h-3" /> Recorrente
-                  </span>
-                )}
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                Vence dia {bill.due_day}
-                {bill.author_name ? ` · ${bill.author_name}` : ''}
-                {!bill.is_fixed_amount && bill.is_recurring && ' · Valor variável'}
-              </p>
-            </div>
-
-            <div className="text-right shrink-0">
-              {charge && charge.amount !== null ? (
-                <p className="font-bold text-gray-900 dark:text-white">
-                  <AnimatedCurrency value={charge.amount} hide={hideValues} animateOnMount={animateOnMount} />
-                </p>
-              ) : (
-                <button
-                  onClick={startEditAmount}
-                  className="text-xs font-medium text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
-                >
-                  Definir valor
-                </button>
-              )}
-            </div>
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-semibold text-foreground truncate">{bill.description}</h3>
+            {bill.is_recurring && <Badge label="Recorrente" tone="primary" icon={Repeat} />}
           </div>
+          <p className="text-xs text-muted">{details}</p>
+        </div>
 
-          {editingAmount && (
-            <div className="flex items-center gap-2 mt-3">
-              <input
-                type="text"
-                autoFocus
-                value={amountDisplay}
-                onChange={(e) => setAmountDisplay(parseAmountInput(e.target.value).display)}
-                placeholder="R$ 0,00"
-                className="flex-1 px-3 py-1.5 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
-              />
-              <button onClick={confirmAmount} className="px-3 py-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition cursor-pointer">Salvar</button>
-              <button onClick={() => setEditingAmount(false)} className="px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">Cancelar</button>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between mt-3 gap-2">
-            <div className="flex items-center gap-2">
-              {charge ? (
-                <button
-                  onClick={() => onUpdateCharge(charge.id, { is_paid: !charge.is_paid })}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition ${
-                    charge.is_paid
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                      : isOverdue
-                      ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                      : isDueToday
-                      ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                      : isDueSoon
-                      ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                  }`}
-                >
-                  {charge.is_paid ? <CheckCircle2 className="w-3 h-3" /> : <Circle className="w-3 h-3" />}
-                  {charge.is_paid
-                    ? 'Paga'
-                    : isOverdue
-                    ? 'Vencida'
-                    : isDueToday
-                    ? 'Vence hoje'
-                    : days === 1
-                    ? 'Vence amanhã'
-                    : `Vence em ${days}d`}
-                </button>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-                  <CalendarClock className="w-3 h-3" /> Sem cobrança gerada
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-1">
-              {!isConfirmingDelete ? (
-                <>
-                  <button onClick={onEdit} className="cursor-pointer p-1.5 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition" title="Editar">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button onClick={onDelete} className="cursor-pointer p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Excluir">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Excluir?</span>
-                  <button onClick={onCancelDelete} className="px-3 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Não</button>
-                  <button onClick={onConfirmDelete} className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg transition">Sim</button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {bill.notes && (
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 italic">{bill.notes}</p>
-          )}
-
-          {!charge?.is_paid && charge?.amount === null && (
-            <p className="text-xs text-amber-500 dark:text-amber-400 mt-2 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" /> Valor desta conta ainda não foi informado.
+        <div className="text-right shrink-0">
+          {charge && charge.amount !== null ? (
+            <p className="font-bold text-foreground">
+              <AnimatedCurrency value={charge.amount} hide={hideValues} animateOnMount={animateOnMount} />
             </p>
+          ) : (
+            <button type="button" onClick={startEditAmount} className="text-xs font-semibold text-warning hover:underline">
+              Definir valor
+            </button>
           )}
         </div>
       </div>
-    </div>
+
+      {editingAmount && (
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            inputMode="numeric"
+            autoFocus
+            value={amountDisplay}
+            onChange={(e) => setAmountDisplay(parseAmountInput(e.target.value).display)}
+            onKeyDown={(e) => e.key === 'Enter' && confirmAmount()}
+            placeholder="R$ 0,00"
+            className={cn(fieldClass, 'flex-1 min-w-0')}
+          />
+          <Button label="Salvar" onClick={confirmAmount} />
+          <Button label="Cancelar" variant="secondary" onClick={() => setEditingAmount(false)} />
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-2">
+        {charge ? (
+          <button
+            type="button"
+            onClick={() => onUpdateCharge(charge.id, { is_paid: !charge.is_paid })}
+            aria-label={paid ? 'Marcar como não paga' : 'Marcar como paga'}
+            title={paid ? 'Marcar como não paga' : 'Marcar como paga'}
+            className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-opacity hover:opacity-80', status.className)}
+          >
+            {paid ? <CheckCircle2 size={13} /> : <Circle size={13} />}
+            {status.label}
+          </button>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium bg-surface-2 text-muted">
+            <CalendarClock size={13} /> Sem cobrança gerada
+          </span>
+        )}
+
+        <div className="flex items-center">
+          <IconButton icon={Pencil} label="Editar" size={36} iconSize={17} tone="muted" onClick={onEdit} />
+          <IconButton icon={Trash2} label="Excluir" size={36} iconSize={17} tone="muted" onClick={onDelete} />
+        </div>
+      </div>
+
+      {bill.notes && <p className="text-xs text-subtle italic">{bill.notes}</p>}
+
+      {!paid && charge?.amount === null && (
+        <p className="text-xs text-warning flex items-center gap-1">
+          <AlertCircle size={12} /> Valor desta conta ainda não foi informado.
+        </p>
+      )}
+    </Card>
   )
 }

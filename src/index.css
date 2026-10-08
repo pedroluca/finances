@@ -2,28 +2,98 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-:root {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+/*
+ * Tokens de cor (os mesmos do app nativo, finances-app/src/global.css).
+ * Os valores em @theme são os do tema claro; .dark sobrescreve no escuro.
+ * A primária é o centro do degradê do logo, mais clara no escuro para manter o contraste.
+ */
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --color-primary: #573fec;
+  --color-primary-strong: #4a2bc0;
+  --color-on-primary: #ffffff;
+
+  --color-background: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-surface-2: #f3f4f6;
+  --color-surface-3: #e5e7eb;
+  --color-border: #e5e7eb;
+  --color-foreground: #111827;
+  --color-muted: #4b5563;
+  --color-subtle: #9ca3af;
+
+  --color-danger: #dc2626;
+  --color-warning: #d97706;
+  --color-info: #2563eb;
+  --color-success: #16a34a;
+  --color-orange: #f97316;
+
+  --animate-fade-in: fade-in 0.18s ease-out;
+  --animate-dialog-in: dialog-in 0.18s ease-out;
+  --animate-sheet-in: sheet-in 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-toast-in: toast-in 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-slide-right: slide-right 0.22s ease-out both;
 }
 
-body {
+.dark {
+  --color-primary: #7a66ff;
+  --color-primary-strong: #573fec;
+  --color-on-primary: #ffffff;
+  --color-background: #111827;
+  --color-surface: #1f2937;
+  --color-surface-2: #2a3443;
+  --color-surface-3: #374151;
+  --color-border: #313c4c;
+  --color-foreground: #f9fafb;
+  --color-muted: #9ca3af;
+  --color-subtle: #6b7280;
+  --color-danger: #f87171;
+  --color-warning: #fbbf24;
+  --color-info: #60a5fa;
+  --color-success: #4ade80;
+  color-scheme: dark;
+}
+
+@layer base {
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:focus {
+    outline: none;
+  }
+
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-primary) 30%, transparent);
+  }
+}
+
+/* Campos numéricos sem as setinhas do navegador (os steppers têm os próprios botões) */
+.no-spinner {
+  appearance: textfield;
+}
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+  appearance: none;
   margin: 0;
-  min-height: 100vh;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-button:focus {
-  outline: none;
-}
-
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
@@ -35,7 +105,7 @@ button:focus-visible {
   scrollbar-width: none;
 }
 
-/* Custom Scrollbar */
+/* Barra de rolagem fina no desktop; escondida no celular */
 @media (max-width: 767px) {
   .custom-scrollbar::-webkit-scrollbar {
     display: none;
@@ -49,12 +119,8 @@ button:focus-visible {
 @media (min-width: 768px) {
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 transparent;
+    scrollbar-color: var(--color-surface-3) transparent;
   }
-  .dark .custom-scrollbar {
-    scrollbar-color: #4b5563 transparent;
-  }
-  
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -63,71 +129,39 @@ button:focus-visible {
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
+    background-color: var(--color-surface-3);
     border-radius: 10px;
   }
-  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #4b5563;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #94a3b8;
-  }
-  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #6b7280;
-  }
 }
 
-
-/* Animações customizadas */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-@keyframes slideInFromTop {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes dialog-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
 }
 
-@keyframes slideInFromRight {
-  from {
-    opacity: 0;
-    transform: translateX(15px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+@keyframes sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.2s ease-in;
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+@keyframes slide-right {
+  from { opacity: 0; transform: translateX(15px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
-.animate-slide-up {
-  animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+/* No desktop a folha vira um diálogo central: entra como diálogo */
+@media (min-width: 640px) {
+  .sheet-panel {
+    animation: var(--animate-dialog-in);
+  }
 }
