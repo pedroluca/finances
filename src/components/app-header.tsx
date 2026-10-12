@@ -25,9 +25,9 @@ export function LogoMark({ size = 40 }: { size?: number }) {
  * Cabeçalho das abas: título (ou saudação) à esquerda e ações redondas à direita.
  * A navegação fica na tab bar flutuante (celular) ou na barra lateral (desktop).
  */
-export function TabHeader({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
+export function TabHeader({ title, subtitle, right, className }: { title: string; subtitle?: string; right?: ReactNode; className?: string }) {
   return (
-    <header className="sticky top-0 z-20 bg-background/85 backdrop-blur-xl pt-[env(safe-area-inset-top)]">
+    <header className={cn('sticky top-0 z-20 bg-background/85 backdrop-blur-xl pt-[env(safe-area-inset-top)]', className)}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-2 lg:pt-8 lg:pb-3 flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <h1 className="text-[26px] leading-8 lg:text-3xl lg:leading-9 font-bold text-foreground truncate">{title}</h1>

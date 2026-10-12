@@ -10,7 +10,7 @@ import { cn } from '../../lib/cn';
 import { plural } from '../../lib/format';
 import AuthorSplitSection, { type SplitAssignment } from '../../components/AuthorSplitSection';
 import ConfirmModal from '../../components/ConfirmModal';
-import { SectionTitle, StackContent, StackHeader } from '../../components/app-header';
+import { SectionTitle, StackContent, StackHeader, TabHeader } from '../../components/app-header';
 import { SummaryCard } from '../../components/summary-card';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -365,12 +365,16 @@ export default function ManageSubscriptions() {
   );
 
   const hasActive = subscriptions.some((s) => s.active);
+  // Uma coluna no celular; no desktop, duas como em Contas
+  const listClass = 'grid gap-3 lg:grid-cols-2 lg:gap-4';
 
   return (
     <div className="min-h-screen bg-background">
-      <StackHeader title="Assinaturas" onBack={() => navigate('/settings')} />
+      {/* No desktop Assinaturas é item da barra lateral, então ganha o cabeçalho e a largura das abas */}
+      <StackHeader title="Assinaturas" onBack={() => navigate('/settings')} className="lg:hidden" />
+      <TabHeader title="Assinaturas" className="hidden lg:block" />
 
-      <StackContent className="space-y-4">
+      <StackContent className="space-y-4 lg:max-w-6xl lg:pt-4">
         {globalError && <Callout tone="danger" icon={AlertCircle}>{globalError}</Callout>}
 
         {/* Filtros */}
@@ -431,7 +435,7 @@ export default function ManageSubscriptions() {
           <>
             <SectionTitle title="Ativas" action={<Button label="Nova" icon={Plus} size="sm" onClick={openCreate} />} />
             {activeList.length > 0 ? (
-              <div className="space-y-3">{activeList.map((sub) => renderCard(sub))}</div>
+              <div className={listClass}>{activeList.map((sub) => renderCard(sub))}</div>
             ) : (
               <p className="text-sm text-subtle px-1">
                 Nenhuma assinatura ativa{filterAuthor !== null || filterCycle !== null ? ' com esses filtros' : ''}.
@@ -450,7 +454,7 @@ export default function ManageSubscriptions() {
                   <Pause className="w-3.5 h-3.5" />
                   {pausedList.length} {plural(pausedList.length, 'pausada', 'pausadas')}
                 </button>
-                {showPaused && <div className="space-y-3">{pausedList.map((sub) => renderCard(sub))}</div>}
+                {showPaused && <div className={listClass}>{pausedList.map((sub) => renderCard(sub))}</div>}
               </div>
             )}
 
@@ -465,7 +469,7 @@ export default function ManageSubscriptions() {
                   <ChevronDown className={cn('w-4 h-4 transition-transform', showInactive && 'rotate-180')} />
                   {inactiveList.length} {plural(inactiveList.length, 'assinatura inativa', 'assinaturas inativas')}
                 </button>
-                {showInactive && <div className="space-y-3">{inactiveList.map((sub) => renderCard(sub, false))}</div>}
+                {showInactive && <div className={listClass}>{inactiveList.map((sub) => renderCard(sub, false))}</div>}
               </div>
             )}
           </>

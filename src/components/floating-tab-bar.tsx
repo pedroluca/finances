@@ -1,4 +1,4 @@
-import { CreditCard, LayoutDashboard, Plus, ReceiptText, Settings } from 'lucide-react'
+import { CreditCard, LayoutDashboard, Plus, ReceiptText, Repeat, Settings } from 'lucide-react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import logoMark from '../assets/logo-mark.png'
 import { cn } from '../lib/cn'
@@ -15,6 +15,10 @@ const TABS = [
 
 const TAB_ROUTES = TABS.map((tab) => tab.to)
 
+// No desktop sobra espaço, então a barra lateral ganha atalhos além das abas da cápsula
+const SIDEBAR_TABS = [...TABS, { to: '/settings/subscriptions', label: 'Assinaturas', icon: Repeat }]
+const SIDEBAR_ROUTES = SIDEBAR_TABS.map((tab) => tab.to)
+
 // Vidro da tab bar: preenchimento translúcido com desfoque, borda clara e sombra suave
 const glass = cn(
   'border backdrop-blur-xl backdrop-saturate-150',
@@ -25,9 +29,9 @@ const glass = cn(
 // Halo da aba ativa
 const indicator = 'border bg-primary/[0.13] border-primary/20 dark:bg-primary/20 dark:border-primary/30'
 
-function useActiveIndex() {
+function useActiveIndex(routes = TAB_ROUTES) {
   const { pathname } = useLocation()
-  return TAB_ROUTES.findIndex((route) => pathname === route || pathname.startsWith(`${route}/`))
+  return routes.findIndex((route) => pathname === route || pathname.startsWith(`${route}/`))
 }
 
 /** Reflexo do vidro: mais claro em cima, sumindo até o meio, e um fio de luz na borda de cima */
@@ -109,21 +113,22 @@ export function FloatingTabBar() {
 }
 
 /**
- * Navegação do desktop (a partir de 1024px): barra lateral fixa com as mesmas abas da cápsula
- * do celular e o perfil no rodapé (como no Tractus web).
+ * Navegação do desktop (a partir de 1024px): barra lateral fixa com as abas da cápsula do celular
+ * mais Assinaturas, e o perfil no rodapé (como no Tractus web).
  */
 export function Sidebar() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const user = useAuthStore((state) => state.user)
   const showQuickExpense = useQuickExpense((state) => state.show)
-  const activeIndex = useActiveIndex()
+  const activeIndex = useActiveIndex(SIDEBAR_ROUTES)
   const { pathname } = useLocation()
   const navigate = useNavigate()
 
   if (!isAuthenticated) return null
 
   const initial = user?.name?.trim().charAt(0).toUpperCase() || '?'
-  const onSettings = pathname.startsWith('/settings')
+  // Assinaturas mora em /settings, mas com o item ativo no menu o perfil não acende junto
+  const onSettings = activeIndex < 0 && pathname.startsWith('/settings')
 
   return (
     <aside className="hidden lg:flex fixed inset-y-0 left-0 z-30 w-64 flex-col border-r border-border bg-surface px-3 py-5">
@@ -135,7 +140,7 @@ export function Sidebar() {
       <Button label="Nova despesa" icon={Plus} fullWidth onClick={showQuickExpense} className="mb-5" />
 
       <nav aria-label="Navegação principal" className="flex flex-col gap-1">
-        {TABS.map(({ to, label, icon: Icon }, index) => {
+        {SIDEBAR_TABS.map(({ to, label, icon: Icon }, index) => {
           const active = index === activeIndex
           return (
             <Link
