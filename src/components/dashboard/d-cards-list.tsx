@@ -36,6 +36,8 @@ export function DashboardCardsList({ cards, monthlyTotals, hideValues, animateOn
   // Índice do primeiro cartão visível
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
   const [perPage, setPerPage] = useState(1)
+  // Se ainda há cartão escondido em cada ponta (controla o degradê das bordas no celular)
+  const [edges, setEdges] = useState({ atStart: true, atEnd: false })
   const cardsContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -86,82 +88,102 @@ export function DashboardCardsList({ cards, monthlyTotals, hideValues, animateOn
         />
       ) : (
         <>
-          <div
-            ref={cardsContainerRef}
-            onScroll={(event) => {
-              const container = event.currentTarget
-              const { step } = measure(container)
-              if (!step) return
-              const index = Math.round(container.scrollLeft / step)
-              setCurrentCardIndex(Math.min(cards.length - 1, Math.max(0, index)))
-            }}
-            className="flex overflow-x-auto snap-x snap-mandatory scroll-px-4 md:scroll-px-0 gap-3.5 md:gap-4 px-4 md:px-0 md:mx-5 pt-1 pb-7 scrollbar-hide"
-          >
-            {cards.map((card) => {
-              const availableLimit = Number(card.available_balance) || 0
-              const totalLimit = Number(card.card_limit) || 0
+          <div className="relative">
+            <div
+              ref={cardsContainerRef}
+              onScroll={(event) => {
+                const container = event.currentTarget
+                const atStart = container.scrollLeft <= 2
+                const atEnd = container.scrollLeft >= container.scrollWidth - container.clientWidth - 2
+                setEdges((prev) => (prev.atStart === atStart && prev.atEnd === atEnd ? prev : { atStart, atEnd }))
+                const { step } = measure(container)
+                if (!step) return
+                const index = Math.round(container.scrollLeft / step)
+                setCurrentCardIndex(Math.min(cards.length - 1, Math.max(0, index)))
+              }}
+              className="flex overflow-x-auto snap-x snap-mandatory scroll-px-4 md:scroll-px-0 gap-3.5 md:gap-4 px-4 md:px-0 md:mx-5 pt-1 pb-7 scrollbar-hide"
+            >
+              {cards.map((card) => {
+                const availableLimit = Number(card.available_balance) || 0
+                const totalLimit = Number(card.card_limit) || 0
 
-              let currentInvoiceAmount = 0
-              const today = new Date()
-              const todayDay = today.getDate()
-              const todayMonth = today.getMonth() + 1
-              const todayYear = today.getFullYear()
+                let currentInvoiceAmount = 0
+                const today = new Date()
+                const todayDay = today.getDate()
+                const todayMonth = today.getMonth() + 1
+                const todayYear = today.getFullYear()
 
-              const cardId = card.card_id ?? card.id
+                const cardId = card.card_id ?? card.id
 
-              if (card.closing_day && cardId && monthlyTotals?.length > 0) {
-                let currentInvoiceMonth = todayMonth
-                let currentInvoiceYear = todayYear
+                if (card.closing_day && cardId && monthlyTotals?.length > 0) {
+                  let currentInvoiceMonth = todayMonth
+                  let currentInvoiceYear = todayYear
 
-                if (todayDay > card.closing_day) {
-                  if (todayMonth === 12) {
-                    currentInvoiceMonth = 1
-                    currentInvoiceYear = todayYear + 1
-                  } else {
-                    currentInvoiceMonth = todayMonth + 1
+                  if (todayDay > card.closing_day) {
+                    if (todayMonth === 12) {
+                      currentInvoiceMonth = 1
+                      currentInvoiceYear = todayYear + 1
+                    } else {
+                      currentInvoiceMonth = todayMonth + 1
+                    }
+                  }
+
+                  const invoiceTotal = monthlyTotals.find(
+                    (t) =>
+                      t.card_id === cardId &&
+                      t.reference_month === currentInvoiceMonth &&
+                      t.reference_year === currentInvoiceYear,
+                  )
+
+                  if (invoiceTotal && invoiceTotal.unpaid_amount != null) {
+                    currentInvoiceAmount = Number(invoiceTotal.unpaid_amount)
                   }
                 }
 
-                const invoiceTotal = monthlyTotals.find(
-                  (t) =>
-                    t.card_id === cardId &&
-                    t.reference_month === currentInvoiceMonth &&
-                    t.reference_year === currentInvoiceYear,
+                const otherInvoices = Math.max(0, totalLimit - availableLimit - currentInvoiceAmount)
+                const totalReference = Math.max(totalLimit, availableLimit + currentInvoiceAmount + otherInvoices) || 1
+
+                const percCurrent = (currentInvoiceAmount / totalReference) * 100
+                const percOther = (otherInvoices / totalReference) * 100
+
+                return (
+                  <CreditCardTile
+                    key={card.card_id}
+                    card={card}
+                    hideValues={hideValues}
+                    animateOnMount={animateOnMount}
+                    totalLimit={totalLimit}
+                    currentInvoiceAmount={currentInvoiceAmount}
+                    otherInvoices={otherInvoices}
+                    availableLimit={availableLimit}
+                    percCurrent={percCurrent}
+                    percOther={percOther}
+                    onClick={() => navigate(`/cards/${card.card_id}`)}
+                    className={cn(
+                      'shrink-0 snap-start',
+                      // Celular: o próximo cartão aparece na borda; tablet: 2 por vez; desktop: 3
+                      cards.length > 1 ? 'w-[calc(100%-18px)]' : 'w-full',
+                      'max-w-[400px] md:max-w-none md:w-[calc((100%-1rem)/2)] xl:w-[calc((100%-2rem)/3)]',
+                    )}
+                  />
                 )
-
-                if (invoiceTotal && invoiceTotal.unpaid_amount != null) {
-                  currentInvoiceAmount = Number(invoiceTotal.unpaid_amount)
-                }
-              }
-
-              const otherInvoices = Math.max(0, totalLimit - availableLimit - currentInvoiceAmount)
-              const totalReference = Math.max(totalLimit, availableLimit + currentInvoiceAmount + otherInvoices) || 1
-
-              const percCurrent = (currentInvoiceAmount / totalReference) * 100
-              const percOther = (otherInvoices / totalReference) * 100
-
-              return (
-                <CreditCardTile
-                  key={card.card_id}
-                  card={card}
-                  hideValues={hideValues}
-                  animateOnMount={animateOnMount}
-                  totalLimit={totalLimit}
-                  currentInvoiceAmount={currentInvoiceAmount}
-                  otherInvoices={otherInvoices}
-                  availableLimit={availableLimit}
-                  percCurrent={percCurrent}
-                  percOther={percOther}
-                  onClick={() => navigate(`/cards/${card.card_id}`)}
-                  className={cn(
-                    'shrink-0 snap-start',
-                    // Celular: o próximo cartão aparece na borda; tablet: 2 por vez; desktop: 3
-                    cards.length > 1 ? 'w-[calc(100%-18px)]' : 'w-full',
-                    'max-w-[400px] md:max-w-none md:w-[calc((100%-1rem)/2)] xl:w-[calc((100%-2rem)/3)]',
-                  )}
-                />
-              )
-            })}
+              })}
+            </div>
+            {/* Celular: esmaece a ponta do cartão vizinho; à esquerda só cobre o respiro, já que o ativo encosta nele */}
+            <div
+              aria-hidden
+              className={cn(
+                'pointer-events-none absolute inset-y-0 left-0 w-4 bg-linear-to-r from-surface via-surface/70 via-35% to-surface/0 transition-opacity duration-200 md:hidden',
+                cards.length > 1 && !edges.atStart ? 'opacity-100' : 'opacity-0',
+              )}
+            />
+            <div
+              aria-hidden
+              className={cn(
+                'pointer-events-none absolute inset-y-0 right-0 w-[30px] bg-linear-to-l from-surface via-surface/70 via-35% to-surface/0 transition-opacity duration-200 md:hidden',
+                cards.length > 1 && !edges.atEnd ? 'opacity-100' : 'opacity-0',
+              )}
+            />
           </div>
 
           {perPage === 1 ? (
