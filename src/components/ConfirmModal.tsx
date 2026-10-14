@@ -3,6 +3,7 @@ import { CircleAlert, type LucideIcon } from 'lucide-react';
 import { Dialog } from './ui/sheet';
 import { Button } from './ui/button';
 import { cn } from '../lib/cn';
+import { useTranslation } from 'react-i18next';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -24,11 +25,12 @@ export default function ConfirmModal({
   onConfirm,
   title,
   message,
-  confirmText = 'Confirmar',
-  cancelText = 'Cancelar',
+  confirmText,
+  cancelText,
   isDestructive = false,
   icon: Icon = CircleAlert,
 }: ConfirmModalProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
   const close = () => {
@@ -58,9 +60,9 @@ export default function ConfirmModal({
         </div>
 
         <div className="flex gap-3 self-stretch mt-1">
-          <Button label={cancelText} variant="secondary" onClick={close} disabled={loading} className="flex-1" />
+          <Button label={cancelText ?? t('common.cancel')} variant="secondary" onClick={close} disabled={loading} className="flex-1" />
           <Button
-            label={confirmText}
+            label={confirmText ?? t('common.confirm')}
             variant={isDestructive ? 'danger' : 'primary'}
             onClick={handleConfirm}
             loading={loading}

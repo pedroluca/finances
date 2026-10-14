@@ -1,3 +1,5 @@
+import { categoryName } from '../lib/category-name'
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect, useMemo, useRef, type FormEvent } from 'react'
 import {
   Plus, Pencil, Trash2, ChevronDown, Receipt, ReceiptText,
@@ -8,10 +10,11 @@ import { useAppStore } from '../store/app.store'
 import { usePrefsStore } from '../store/prefs.store'
 import { phpApiRequest } from '../lib/api'
 import { HeaderAddButton, HideValuesButton, SectionTitle, TabContent, TabHeader } from '../components/app-header'
+import { NotificationsButton } from '../components/notifications/NotificationsButton'
 import type { Bill, BillCharge, CreateBillDTO, UpdateBillDTO } from '../types/database'
 import { fieldClass, textareaClass } from '../lib/formStyles'
 import { cn } from '../lib/cn'
-import { plural } from '../lib/format'
+import { formatCurrency } from '../lib/format'
 import { Skeleton } from '../components/ui/skeleton'
 import { AnimatedCurrency } from '../components/ui/animated-currency'
 import { Card } from '../components/ui/card'
@@ -30,7 +33,7 @@ function parseAmountInput(raw: string): { numeric: number; display: string } {
   const numbers = raw.replace(/\D/g, '')
   if (!numbers) return { numeric: 0, display: '' }
   const numeric = parseInt(numbers) / 100
-  const display = `R$ ${numeric.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const display = formatCurrency(numeric)
   return { numeric, display }
 }
 
@@ -54,6 +57,7 @@ function daysUntil(dateStr: string): number {
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function Billings() {
+  const { t } = useTranslation()
   const { user } = useAuthStore()
   const { authors, setAuthors, categories, setCategories, bills, setBills } = useAppStore()
   const hideValues = usePrefsStore((state) => state.hideValues)
@@ -101,7 +105,7 @@ export default function Billings() {
         if (!categories.length) setCategories(catData)
       } catch (err) {
         console.error(err)
-        setGlobalError('Erro ao carregar dados')
+        setGlobalError(t('common.loadError'))
       } finally {
         setIsLoading(false)
       }
@@ -142,7 +146,7 @@ export default function Billings() {
     setFIsRecurring(bill.is_recurring)
     setFIsFixedAmount(bill.is_fixed_amount)
     setFDefaultAmount(bill.default_amount != null ? String(bill.default_amount) : '')
-    setFDefaultAmountDisplay(bill.default_amount != null ? `R$ ${bill.default_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '')
+    setFDefaultAmountDisplay(bill.default_amount != null ? formatCurrency(bill.default_amount) : '')
     setFInitialAmount('')
     setFInitialAmountDisplay('')
     setFNotes(bill.notes ?? '')
@@ -176,13 +180,13 @@ export default function Billings() {
     setFormError('')
     if (!user) return
 
-    if (!fDescription.trim()) return setFormError('Digite uma descrição')
+    if (!fDescription.trim()) return setFormError(t('bills.form.errors.description'))
     const dueDayVal = parseInt(fDueDay)
-    if (isNaN(dueDayVal) || dueDayVal < 1 || dueDayVal > 31) return setFormError('Dia de vencimento deve ser entre 1 e 31')
+    if (isNaN(dueDayVal) || dueDayVal < 1 || dueDayVal > 31) return setFormError(t('bills.form.errors.dueDay'))
 
     const defaultAmountVal = fIsFixedAmount ? parseFloat(fDefaultAmount) : null
     if (fIsFixedAmount && (isNaN(defaultAmountVal as number) || (defaultAmountVal as number) <= 0)) {
-      return setFormError('Digite o valor fixo desta conta')
+      return setFormError(t('bills.form.errors.fixedAmount'))
     }
 
     setIsSubmitting(true)
@@ -209,7 +213,7 @@ export default function Billings() {
         if (res?.success) {
           setBills(bills.map((b) => b.id === editingId ? res.data : b))
         } else {
-          setFormError(res?.message ?? 'Erro ao atualizar')
+          setFormError(res?.message ?? t('bills.form.errors.update'))
           return
         }
       } else {
@@ -233,14 +237,14 @@ export default function Billings() {
         if (res?.success) {
           setBills([res.data, ...bills])
         } else {
-          setFormError(res?.message ?? 'Erro ao criar')
+          setFormError(res?.message ?? t('bills.form.errors.create'))
           return
         }
       }
       closeForm()
     } catch (err) {
       console.error(err)
-      setFormError('Erro de rede. Tente novamente.')
+      setFormError(t('errors.network'))
     } finally {
       setIsSubmitting(false)
     }
@@ -314,11 +318,12 @@ export default function Billings() {
   return (
     <div className="min-h-screen bg-background">
       <TabHeader
-        title="Contas"
+        title={t('tabs.bills')}
         right={(
           <>
             <HideValuesButton />
-            <HeaderAddButton label="Nova conta" onClick={openCreate} />
+            <NotificationsButton />
+            <HeaderAddButton label={t('bills.new')} onClick={openCreate} />
           </>
         )}
       />
@@ -339,9 +344,9 @@ export default function Billings() {
           <Card>
             <EmptyState
               icon={Receipt}
-              title="Nenhuma conta cadastrada"
-              description="Cadastre contas pagas fora do cartão (água, luz, internet, aluguel...) e acompanhe os vencimentos aqui."
-              actionLabel="Adicionar conta"
+              title={t('bills.emptyTitle')}
+              description={t('bills.emptyDescription')}
+              actionLabel={t('bills.add')}
               actionIcon={Plus}
               onAction={openCreate}
             />
@@ -352,11 +357,11 @@ export default function Billings() {
               <>
                 <SummaryCard
                   icon={Receipt}
-                  label="Total em contas"
+                  label={t('bills.total')}
                   value={<AnimatedCurrency value={monthlyTotal} hide={hideValues} animateOnMount={animateOnMount} />}
-                  caption={`${activeList.length} ${plural(activeList.length, 'conta ativa', 'contas ativas')}`}
+                  caption={t('bills.activeCount', { count: activeList.length })}
                 />
-                <SectionTitle title="Ativas" />
+                <SectionTitle title={t('bills.activeSection')} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">{activeList.map(renderBill)}</div>
               </>
             )}
@@ -369,7 +374,7 @@ export default function Billings() {
                   className="flex items-center gap-2 py-1 px-1 text-sm text-muted hover:text-foreground transition-colors"
                 >
                   <ChevronDown className={cn('w-4 h-4 transition-transform', showInactive && 'rotate-180')} />
-                  {inactiveList.length} {plural(inactiveList.length, 'conta inativa', 'contas inativas')}
+                  {t('bills.inactiveCount', { count: inactiveList.length })}
                 </button>
                 {showInactive && <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">{inactiveList.map(renderBill)}</div>}
               </div>
@@ -379,77 +384,77 @@ export default function Billings() {
       </TabContent>
 
       {/* ── Formulário: folha no celular, diálogo no desktop ── */}
-      <Sheet open={showForm} onClose={closeForm} title={editingId !== null ? 'Editar conta' : 'Nova conta'}>
+      <Sheet open={showForm} onClose={closeForm} title={editingId !== null ? t('bills.form.editTitle') : t('bills.form.newTitle')}>
         <form onSubmit={handleSubmit} className="space-y-4 pb-2">
           <TextField
-            label="Nome da conta *"
+            label={t('bills.form.name')}
             value={fDescription}
             onChange={(e) => setFDescription(e.target.value)}
-            placeholder="Ex: Internet, Energia, Aluguel..."
+            placeholder={t('bills.form.namePlaceholder')}
             autoFocus={editingId === null}
             required
           />
 
           <StepperField
-            label="Dia de vencimento *"
+            label={t('bills.form.dueDay')}
             value={Number(fDueDay) || 1}
             onChange={(value) => setFDueDay(String(value))}
             min={1}
             max={31}
           />
 
-          <SwitchField title="Conta recorrente" description="Repete todo mês automaticamente" checked={fIsRecurring} onChange={setFIsRecurring} />
+          <SwitchField title={t('bills.form.recurring')} description={t('bills.form.recurringHint')} checked={fIsRecurring} onChange={setFIsRecurring} />
 
           <Divider />
 
           <SwitchField
-            title="Valor sempre igual"
-            description="Ex: internet. Desligue para contas que oscilam, como energia."
+            title={t('bills.form.fixed')}
+            description={t('bills.form.fixedHint')}
             checked={fIsFixedAmount}
             onChange={setFIsFixedAmount}
           />
 
           {fIsFixedAmount ? (
             <TextField
-              label="Valor fixo *"
+              label={t('bills.form.fixedAmount')}
               inputMode="numeric"
               value={fDefaultAmountDisplay}
               onChange={(e) => handleDefaultAmountChange(e.target.value)}
-              placeholder="R$ 0,00"
+              placeholder={formatCurrency(0)}
               required
             />
           ) : editingId === null && (
             <TextField
-              label="Valor desta cobrança (opcional, se já souber)"
+              label={t('bills.form.initialAmount')}
               inputMode="numeric"
               value={fInitialAmountDisplay}
               onChange={(e) => handleInitialAmountChange(e.target.value)}
-              placeholder="Deixe em branco se ainda não sabe"
+              placeholder={t('bills.form.initialAmountPlaceholder')}
             />
           )}
 
-          <SelectField label="Categoria (opcional)" id="bill-category" value={fCategoryId} onChange={setFCategoryId}>
-            <option value="">Sem categoria</option>
+          <SelectField label={t('bills.form.category')} id="bill-category" value={fCategoryId} onChange={setFCategoryId}>
+            <option value="">{t('bills.form.noCategory')}</option>
             {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+              <option key={c.id} value={c.id}>{c.icon} {categoryName(c.name)}</option>
             ))}
           </SelectField>
 
-          <SelectField label="Quem paga (opcional)" id="bill-author" value={fAuthorId} onChange={setFAuthorId}>
-            <option value="">Não definido</option>
+          <SelectField label={t('bills.form.payer')} id="bill-author" value={fAuthorId} onChange={setFAuthorId}>
+            <option value="">{t('bills.form.notDefined')}</option>
             {authors.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}{a.is_owner ? ' (Você)' : ''}</option>
+              <option key={a.id} value={a.id}>{a.is_owner ? `${a.name} ${t('common.youSuffix')}` : a.name}</option>
             ))}
           </SelectField>
 
           <div>
-            <FieldLabel label="Observações (opcional)" htmlFor="bill-notes" />
+            <FieldLabel label={t('bills.form.notes')} htmlFor="bill-notes" />
             <textarea
               id="bill-notes"
               value={fNotes}
               onChange={(e) => setFNotes(e.target.value)}
               rows={2}
-              placeholder="Ex: conta da casa, plano residencial..."
+              placeholder={t('bills.form.notesPlaceholder')}
               className={textareaClass}
             />
           </div>
@@ -457,17 +462,17 @@ export default function Billings() {
           {editingId !== null && (
             <>
               <Divider />
-              <SwitchField title="Conta ativa" checked={fActive} onChange={setFActive} />
+              <SwitchField title={t('bills.form.active')} checked={fActive} onChange={setFActive} />
             </>
           )}
 
           {formError && <Callout tone="danger" icon={AlertCircle}>{formError}</Callout>}
 
           <div className="flex gap-3 pt-1">
-            <Button label="Cancelar" variant="secondary" onClick={closeForm} className="flex-1" />
+            <Button label={t('common.cancel')} variant="secondary" onClick={closeForm} className="flex-1" />
             <Button
               type="submit"
-              label={isSubmitting ? 'Salvando...' : editingId !== null ? 'Salvar' : 'Criar conta'}
+              label={isSubmitting ? t('common.saving') : editingId !== null ? t('common.save') : t('bills.form.create')}
               loading={isSubmitting}
               className="flex-1"
             />
@@ -479,9 +484,9 @@ export default function Billings() {
         isOpen={!!deletingBill}
         onClose={() => setDeletingBill(null)}
         onConfirm={() => (deletingBill ? handleDelete(deletingBill.id) : undefined)}
-        title="Excluir conta?"
-        message={`Excluir "${deletingBill?.description ?? ''}" e todas as cobranças dela? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
+        title={t('bills.deleteTitle')}
+        message={t('bills.deleteMessage', { name: deletingBill?.description ?? '' })}
+        confirmText={t('common.delete')}
         icon={Trash2}
         isDestructive
       />
@@ -522,6 +527,7 @@ interface BillCardProps {
 }
 
 function BillCard({ bill, hideValues, animateOnMount, onEdit, onDelete, onUpdateCharge }: BillCardProps) {
+  const { t } = useTranslation()
   const charge = relevantCharge(bill.charges)
   const [editingAmount, setEditingAmount] = useState(false)
   const [amountDisplay, setAmountDisplay] = useState('')
@@ -546,20 +552,20 @@ function BillCard({ bill, hideValues, animateOnMount, onEdit, onDelete, onUpdate
   const isDueSoon = days !== null && days > 0 && days <= 7 && !paid
 
   const status = paid
-    ? { label: 'Paga', className: 'bg-success/12 text-success' }
+    ? { label: t('bills.status.paid'), className: 'bg-success/12 text-success' }
     : isOverdue
-      ? { label: 'Vencida', className: 'bg-danger/12 text-danger' }
+      ? { label: t('bills.status.overdue'), className: 'bg-danger/12 text-danger' }
       : isDueToday
-        ? { label: 'Vence hoje', className: 'bg-orange/12 text-orange' }
+        ? { label: t('bills.status.dueToday'), className: 'bg-orange/12 text-orange' }
         : isDueSoon
-          ? { label: days === 1 ? 'Vence amanhã' : `Vence em ${days}d`, className: 'bg-warning/12 text-warning' }
-          : { label: `Vence em ${days}d`, className: 'bg-surface-2 text-muted' }
+          ? { label: days === 1 ? t('bills.status.dueTomorrow') : t('bills.status.dueIn', { days }), className: 'bg-warning/12 text-warning' }
+          : { label: t('bills.status.dueIn', { days }), className: 'bg-surface-2 text-muted' }
 
   const tint = bill.category_color ?? '#6366f1'
   const details = [
-    `Vence dia ${bill.due_day}`,
+    t('bills.dueDay', { day: bill.due_day }),
     bill.author_name,
-    !bill.is_fixed_amount && bill.is_recurring ? 'Valor variável' : null,
+    !bill.is_fixed_amount && bill.is_recurring ? t('bills.variable') : null,
   ].filter(Boolean).join(' · ')
 
   return (
@@ -572,7 +578,7 @@ function BillCard({ bill, hideValues, animateOnMount, onEdit, onDelete, onUpdate
         <div className="flex-1 min-w-0 space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-foreground truncate">{bill.description}</h3>
-            {bill.is_recurring && <Badge label="Recorrente" tone="primary" icon={Repeat} />}
+            {bill.is_recurring && <Badge label={t('bills.recurring')} tone="primary" icon={Repeat} />}
           </div>
           <p className="text-xs text-muted">{details}</p>
         </div>
@@ -584,7 +590,7 @@ function BillCard({ bill, hideValues, animateOnMount, onEdit, onDelete, onUpdate
             </p>
           ) : (
             <button type="button" onClick={startEditAmount} className="text-xs font-semibold text-warning hover:underline">
-              Definir valor
+              {t('bills.setAmount')}
             </button>
           )}
         </div>
@@ -599,11 +605,11 @@ function BillCard({ bill, hideValues, animateOnMount, onEdit, onDelete, onUpdate
             value={amountDisplay}
             onChange={(e) => setAmountDisplay(parseAmountInput(e.target.value).display)}
             onKeyDown={(e) => e.key === 'Enter' && confirmAmount()}
-            placeholder="R$ 0,00"
+            placeholder={formatCurrency(0)}
             className={cn(fieldClass, 'flex-1 min-w-0')}
           />
-          <Button label="Salvar" onClick={confirmAmount} />
-          <Button label="Cancelar" variant="secondary" onClick={() => setEditingAmount(false)} />
+          <Button label={t('common.save')} onClick={confirmAmount} />
+          <Button label={t('common.cancel')} variant="secondary" onClick={() => setEditingAmount(false)} />
         </div>
       )}
 
@@ -612,8 +618,8 @@ function BillCard({ bill, hideValues, animateOnMount, onEdit, onDelete, onUpdate
           <button
             type="button"
             onClick={() => onUpdateCharge(charge.id, { is_paid: !charge.is_paid })}
-            aria-label={paid ? 'Marcar como não paga' : 'Marcar como paga'}
-            title={paid ? 'Marcar como não paga' : 'Marcar como paga'}
+            aria-label={paid ? t('bills.markUnpaid') : t('bills.markPaid')}
+            title={paid ? t('bills.markUnpaid') : t('bills.markPaid')}
             className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-opacity hover:opacity-80', status.className)}
           >
             {paid ? <CheckCircle2 size={13} /> : <Circle size={13} />}
@@ -621,13 +627,13 @@ function BillCard({ bill, hideValues, animateOnMount, onEdit, onDelete, onUpdate
           </button>
         ) : (
           <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium bg-surface-2 text-muted">
-            <CalendarClock size={13} /> Sem cobrança gerada
+            <CalendarClock size={13} /> {t('bills.noCharge')}
           </span>
         )}
 
         <div className="flex items-center">
-          <IconButton icon={Pencil} label="Editar" size={36} iconSize={17} tone="muted" onClick={onEdit} />
-          <IconButton icon={Trash2} label="Excluir" size={36} iconSize={17} tone="muted" onClick={onDelete} />
+          <IconButton icon={Pencil} label={t('common.edit')} size={36} iconSize={17} tone="muted" onClick={onEdit} />
+          <IconButton icon={Trash2} label={t('common.delete')} size={36} iconSize={17} tone="muted" onClick={onDelete} />
         </div>
       </div>
 
@@ -635,7 +641,7 @@ function BillCard({ bill, hideValues, animateOnMount, onEdit, onDelete, onUpdate
 
       {!paid && charge?.amount === null && (
         <p className="text-xs text-warning flex items-center gap-1">
-          <AlertCircle size={12} /> Valor desta conta ainda não foi informado.
+          <AlertCircle size={12} /> {t('bills.amountMissing')}
         </p>
       )}
     </Card>

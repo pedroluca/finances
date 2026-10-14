@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CreditCard, GripVertical, Save } from 'lucide-react'
@@ -11,6 +12,7 @@ import { Button } from '../../components/ui/button'
 import { EmptyState } from '../../components/ui/misc'
 
 export default function ManageCardOrder() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { orderedCards, setCardOrder, cardOrder, setCards } = useAppStore()
@@ -81,10 +83,10 @@ export default function ManageCardOrder() {
       // Atualiza o store global com a nova ordem
       setCardOrder(order.map((o) => o.card_id))
 
-      showToast('Ordem salva com sucesso!', 'success')
+      showToast(t('cardOrder.saved'), 'success')
     } catch (err) {
       console.error('Erro ao salvar ordem:', err)
-      showToast('Erro ao salvar a ordem dos cartões.', 'error')
+      showToast(t('cardOrder.saveError'), 'error')
     } finally {
       setIsSaving(false)
     }
@@ -92,15 +94,15 @@ export default function ManageCardOrder() {
 
   return (
     <div className="min-h-screen bg-background">
-      <StackHeader title="Ordem dos Cartões" onBack={() => navigate('/settings')} />
+      <StackHeader title={t('screens.cardOrder')} onBack={() => navigate('/settings')} />
 
       <StackContent className="space-y-5">
         <p className="text-sm text-muted px-1">
-          Arraste os cartões para definir a ordem em que aparecem no dashboard.
+          {t('cardOrder.hintDrag')}
         </p>
 
         {localOrder.length === 0 ? (
-          <EmptyState icon={CreditCard} title="Nenhum cartão encontrado." tint="subtle" />
+          <EmptyState icon={CreditCard} title={t('cardOrder.empty')} tint="subtle" />
         ) : (
           <>
             <div className="space-y-3">
@@ -117,7 +119,7 @@ export default function ManageCardOrder() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground truncate">{card.card_name}</p>
                     {!!card.is_shared && (
-                      <p className="text-xs text-subtle truncate">Compartilhado com {card.owner_name}</p>
+                      <p className="text-xs text-subtle truncate">{t('cardOrder.sharedBy', { name: card.owner_name })}</p>
                     )}
                   </div>
                   <span className="text-xs font-medium text-subtle w-5 text-center shrink-0">{index + 1}</span>
@@ -126,7 +128,7 @@ export default function ManageCardOrder() {
               ))}
             </div>
 
-            <Button label={isSaving ? 'Salvando...' : 'Salvar ordem'} icon={Save} loading={isSaving} onClick={handleSave} />
+            <Button label={isSaving ? t('common.saving') : t('cardOrder.save')} icon={Save} loading={isSaving} onClick={handleSave} />
           </>
         )}
       </StackContent>

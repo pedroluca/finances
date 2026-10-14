@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { CreditCard, DollarSign, TrendingDown, Repeat } from 'lucide-react'
 import type { Subscription, BillingCycle } from '../../types/database'
@@ -23,6 +24,7 @@ interface DashboardStatsProps {
 }
 
 export function DashboardStats({ totalCards, totalLimit, currentMonthExpense, hideValues, subscriptions, ownerAuthorId, animateOnMount }: DashboardStatsProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const animatedTotalCards = Math.round(useAnimatedNumber(totalCards, { animateOnMount }))
 
@@ -36,29 +38,29 @@ export function DashboardStats({ totalCards, totalLimit, currentMonthExpense, hi
 
   return (
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
-      <StatCard label="Cartões" value={animatedTotalCards} icon={CreditCard} color="var(--color-primary)" onClick={() => navigate('/cards')} />
+      <StatCard label={t('dashboard.stats.cards')} value={animatedTotalCards} icon={CreditCard} color="var(--color-primary)" onClick={() => navigate('/cards')} />
 
       <StatCard
-        label="Limite Total"
+        label={t('dashboard.stats.totalLimit')}
         value={<StatValue><AnimatedCurrency value={totalLimit} hide={hideValues} animateOnMount={animateOnMount} /></StatValue>}
         icon={DollarSign}
         color={accents.green}
       />
 
       <StatCard
-        label="Gasto do Mês"
+        label={t('dashboard.stats.monthSpending')}
         value={<StatValue><AnimatedCurrency value={currentMonthExpense} hide={hideValues} animateOnMount={animateOnMount} /></StatValue>}
         icon={TrendingDown}
         color={accents.red}
       />
 
       <StatCard
-        label="Assinaturas"
+        label={t('dashboard.stats.subscriptions')}
         value={
           hasSubscriptions ? (
             <StatValue><AnimatedCurrency value={monthlySubTotal} hide={hideValues} animateOnMount={animateOnMount} /></StatValue>
           ) : (
-            <p className="text-sm font-semibold text-primary">Gerenciar →</p>
+            <p className="text-sm font-semibold text-primary">{t('dashboard.stats.manage')}</p>
           )
         }
         icon={Repeat}

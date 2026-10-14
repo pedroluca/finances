@@ -1,3 +1,4 @@
+import { i18n } from '../i18n'
 import { phpApiRequest } from './api'
 import type { CardWithBalance, InvoiceWithCard } from '../types/database'
 
@@ -44,5 +45,5 @@ export async function ensureInvoice(card: CardWithBalance, month: number, year: 
       due_date: toDateKey(dueDate),
     }),
   })
-  if (!created?.id) throw new Error('Erro ao criar fatura')
+  if (!created?.id) throw new Error(i18n.t('invoice.createInvoiceError'))
 }

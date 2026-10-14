@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -9,13 +10,7 @@ import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Callout } from '../components/ui/misc';
 
-const BENEFITS = [
-  'Gerenciar múltiplos cartões',
-  'Controle de parcelas automático',
-  'Categorização de gastos',
-  'Compartilhamento com familiares',
-  'Resumos mensais detalhados',
-];
+const BENEFITS = ['cards', 'installments', 'categories', 'sharing', 'summaries'] as const;
 
 function PasswordHint({ ok, okText, errorText }: { ok: boolean; okText: string; errorText: string }) {
   return ok ? (
@@ -28,6 +23,7 @@ function PasswordHint({ ok, okText, errorText }: { ok: boolean; okText: string; 
 }
 
 export default function Register() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { register, isLoading } = useAuthStore();
 
@@ -43,22 +39,22 @@ export default function Register() {
 
     // Validações
     if (!name || !email || !password || !confirmPassword) {
-      setError('Preencha todos os campos');
+      setError(t('auth.fillAllFields'));
       return;
     }
 
     if (name.length < 3) {
-      setError('Nome deve ter pelo menos 3 caracteres');
+      setError(t('auth.nameTooShort'));
       return;
     }
 
     if (password.length < 6) {
-      setError('Senha deve ter pelo menos 6 caracteres');
+      setError(t('auth.passwordTooShort'));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('As senhas não coincidem');
+      setError(t('auth.passwordsDontMatch'));
       return;
     }
 
@@ -67,22 +63,22 @@ export default function Register() {
     if (result.success) {
       navigate('/dashboard');
     } else {
-      setError(result.message || 'Erro ao criar conta');
+      setError(result.message || t('auth.registerError'));
     }
   };
 
   return (
     <AuthShell
-      title="Criar conta"
-      subtitle="Comece a gerenciar suas faturas hoje"
+      title={t('auth.createAccount')}
+      subtitle={t('auth.registerSubtitle')}
       footer={(
         <Card className="p-5 space-y-3">
-          <h3 className="font-semibold text-foreground">O que você terá acesso:</h3>
+          <h3 className="font-semibold text-foreground">{t('auth.benefitsTitle')}</h3>
           <ul className="space-y-2">
             {BENEFITS.map((benefit) => (
               <li key={benefit} className="flex items-center gap-2 text-sm text-muted">
                 <CheckCircle className="w-4 h-4 text-success shrink-0" />
-                {benefit}
+                {t(`auth.benefits.${benefit}`)}
               </li>
             ))}
           </ul>
@@ -95,11 +91,11 @@ export default function Register() {
         <div className="space-y-4">
           <TextField
             id="name"
-            label="Nome completo"
+            label={t('auth.fullName')}
             leadingIcon={User}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Seu nome"
+            placeholder={t('auth.namePlaceholder')}
             autoComplete="name"
             disabled={isLoading}
             autoFocus
@@ -107,17 +103,17 @@ export default function Register() {
           <TextField
             id="email"
             type="email"
-            label="Email"
+            label={t('auth.email')}
             leadingIcon={Mail}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="seu@email.com"
+            placeholder={t('auth.emailPlaceholder')}
             autoComplete="email"
             disabled={isLoading}
           />
           <TextField
             id="password"
-            label="Senha"
+            label={t('auth.password')}
             leadingIcon={Lock}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -125,11 +121,11 @@ export default function Register() {
             autoComplete="new-password"
             secureToggle
             disabled={isLoading}
-            hint={password && <PasswordHint ok={password.length >= 6} okText="Senha válida" errorText="Mínimo 6 caracteres" />}
+            hint={password && <PasswordHint ok={password.length >= 6} okText={t('auth.passwordValid')} errorText={t('auth.passwordMin')} />}
           />
           <TextField
             id="confirmPassword"
-            label="Confirmar senha"
+            label={t('auth.confirmPassword')}
             leadingIcon={Lock}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -137,17 +133,17 @@ export default function Register() {
             autoComplete="new-password"
             secureToggle
             disabled={isLoading}
-            hint={confirmPassword && <PasswordHint ok={password === confirmPassword} okText="Senhas coincidem" errorText="As senhas não coincidem" />}
+            hint={confirmPassword && <PasswordHint ok={password === confirmPassword} okText={t('auth.passwordsMatch')} errorText={t('auth.passwordsDontMatch')} />}
           />
         </div>
 
-        <Button type="submit" label={isLoading ? 'Criando conta...' : 'Criar conta'} loading={isLoading} fullWidth />
+        <Button type="submit" label={isLoading ? t('auth.creatingAccount') : t('auth.createAccount')} loading={isLoading} fullWidth />
       </form>
 
       <p className="text-center text-sm text-muted">
-        Já tem uma conta?{' '}
+        {t('auth.haveAccount')}{' '}
         <Link to="/login" className="font-semibold text-primary hover:underline">
-          Entrar
+          {t('auth.signIn')}
         </Link>
       </p>
     </AuthShell>

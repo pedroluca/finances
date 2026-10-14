@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
@@ -42,6 +43,7 @@ type SheetProps = {
  * diálogo central no desktop. Formulários, filtros e ações rápidas.
  */
 export function Sheet({ open, onClose, title, description, children, footer, size = 'md', dismissable = true, contentClassName }: SheetProps) {
+  const { t } = useTranslation()
   const close = dismissable ? onClose : undefined
   useOverlay(open, close)
   if (!open) return null
@@ -72,7 +74,7 @@ export function Sheet({ open, onClose, title, description, children, footer, siz
               <button
                 type="button"
                 onClick={close}
-                aria-label="Fechar"
+                aria-label={t('common.close')}
                 className="hidden sm:flex -mr-2 -mt-1 w-9 h-9 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-foreground transition-colors"
               >
                 <X size={20} />

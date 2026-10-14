@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
@@ -9,6 +10,7 @@ import { Button } from '../components/ui/button'
 import { Callout } from '../components/ui/misc'
 
 export default function Login() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { login, isLoading } = useAuthStore()
 
@@ -21,7 +23,7 @@ export default function Login() {
     setError('')
 
     if (!email || !password) {
-      setError('Preencha todos os campos')
+      setError(t('auth.fillAllFields'))
       return
     }
 
@@ -30,17 +32,17 @@ export default function Login() {
     if (result.success) {
       navigate('/dashboard')
     } else {
-      setError(result.message || 'Erro ao fazer login')
+      setError(result.message || t('auth.loginError'))
     }
   }
 
   return (
     <AuthShell
-      title="Bem-vindo ao Finances"
-      subtitle="Seu dashboard de controle de faturas"
+      title={t('auth.loginTitle')}
+      subtitle={t('auth.loginSubtitle')}
       footer={(
         <p className="text-center text-sm text-muted">
-          Desenvolvido por{' '}
+          {t('auth.developedBy')}{' '}
           <a href="https://pedroluca.dev.br" target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
             Pedro Luca Prates
           </a>
@@ -54,18 +56,18 @@ export default function Login() {
           <TextField
             id="email"
             type="email"
-            label="Email"
+            label={t('auth.email')}
             leadingIcon={Mail}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="seu@email.com"
+            placeholder={t('auth.emailPlaceholder')}
             autoComplete="email"
             disabled={isLoading}
             autoFocus
           />
           <TextField
             id="password"
-            label="Senha"
+            label={t('auth.password')}
             leadingIcon={Lock}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -76,13 +78,13 @@ export default function Login() {
           />
         </div>
 
-        <Button type="submit" label={isLoading ? 'Entrando...' : 'Entrar'} loading={isLoading} fullWidth />
+        <Button type="submit" label={isLoading ? t('auth.signingIn') : t('auth.signIn')} loading={isLoading} fullWidth />
       </form>
 
       <p className="text-center text-sm text-muted">
-        Não tem uma conta?{' '}
+        {t('auth.noAccount')}{' '}
         <Link to="/register" className="font-semibold text-primary hover:underline">
-          Criar conta
+          {t('auth.createAccount')}
         </Link>
       </p>
     </AuthShell>

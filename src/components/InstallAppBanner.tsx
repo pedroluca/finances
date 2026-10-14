@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { Download, Smartphone, Bell, Share } from 'lucide-react'
 import { Sheet } from './ui/sheet'
@@ -38,6 +39,7 @@ function detectPlatform(): 'android' | 'ios' | null {
 }
 
 export function InstallAppBanner() {
+  const { t } = useTranslation()
   const [visible, setVisible] = useState(false)
   const [showIosInstructions, setShowIosInstructions] = useState(false)
   const [platform] = useState(detectPlatform)
@@ -72,22 +74,22 @@ export function InstallAppBanner() {
         {platform === 'ios' && showIosInstructions ? (
           <>
             {icon(Share)}
-            <h2 className="text-xl font-bold text-foreground mb-3">Como instalar</h2>
+            <h2 className="text-xl font-bold text-foreground mb-3">{t('install.howTo')}</h2>
             <ol className="text-sm leading-relaxed text-muted text-left list-decimal list-inside space-y-1.5 mb-6">
-              <li>Toque no ícone de compartilhar <Share className="w-4 h-4 inline align-text-bottom" /> na barra do Safari</li>
-              <li>Selecione "Adicionar à Tela de Início"</li>
-              <li>Toque em "Adicionar" no canto superior direito</li>
+              <li>{t('install.step1Before')} <Share className="w-4 h-4 inline align-text-bottom" /> {t('install.step1After')}</li>
+              <li>{t('install.step2')}</li>
+              <li>{t('install.step3')}</li>
             </ol>
-            <Button label="Entendi" size="lg" fullWidth onClick={() => dismiss(true)} />
+            <Button label={t('install.gotIt')} size="lg" fullWidth onClick={() => dismiss(true)} />
           </>
         ) : (
           <>
             {icon(Smartphone)}
-            <h2 className="text-xl font-bold text-foreground mb-2">Instale o app Finances!</h2>
+            <h2 className="text-xl font-bold text-foreground mb-2">{t('install.title')}</h2>
             <p className="text-sm leading-relaxed text-muted mb-6">
               {platform === 'android'
-                ? 'O app está chegando na Google Play! Entre na lista de espera para ser avisado(a) assim que for lançado.'
-                : 'Adicione o Finances à tela de início para uma experiência mais rápida, com notificações push.'}
+                ? t('install.android')
+                : t('install.ios')}
             </p>
 
             <div className="flex flex-col gap-2">
@@ -100,13 +102,13 @@ export function InstallAppBanner() {
                   className="flex items-center justify-center gap-2.5 w-full h-14 rounded-2xl bg-primary hover:bg-primary-strong text-on-primary text-[17px] font-semibold transition-colors"
                 >
                   <Bell size={20} />
-                  Entrar na lista de espera
+                  {t('install.waitlist')}
                 </a>
               ) : (
-                <Button label="Instalar" icon={Download} size="lg" fullWidth onClick={() => setShowIosInstructions(true)} />
+                <Button label={t('install.install')} icon={Download} size="lg" fullWidth onClick={() => setShowIosInstructions(true)} />
               )}
               <button type="button" onClick={() => dismiss(true)} className="w-full h-11 text-sm text-muted hover:text-foreground transition-colors">
-                Não mostrar novamente
+                {t('install.dontShowAgain')}
               </button>
             </div>
           </>

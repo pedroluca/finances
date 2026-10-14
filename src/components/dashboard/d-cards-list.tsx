@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, CreditCard, Plus } from 'lucide-react'
@@ -30,6 +31,7 @@ function measure(container: HTMLDivElement) {
  * (indicando que dá para arrastar); no tablet/desktop cabem 2 ou 3 por vez, com setas.
  */
 export function DashboardCardsList({ cards, monthlyTotals, hideValues, animateOnMount }: DashboardCardsListProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   // Índice do primeiro cartão visível
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
@@ -61,23 +63,23 @@ export function DashboardCardsList({ cards, monthlyTotals, hideValues, animateOn
   return (
     <Card className="pt-4 pb-2 md:pt-5 md:pb-3 overflow-hidden">
       <div className="flex items-center justify-between gap-2 px-4 md:px-5 mb-3">
-        <h2 className="text-lg font-semibold text-foreground">Meus Cartões</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t('dashboard.myCards')}</h2>
         <div className="flex items-center gap-2">
           {perPage > 1 && cards.length > perPage && (
             <div className="flex items-center gap-1">
-              <IconButton icon={ChevronLeft} label="Cartões anteriores" variant="surface" size={36} iconSize={18} disabled={!canGoPrev} onClick={() => scrollToCard(Math.max(0, currentCardIndex - perPage))} />
-              <IconButton icon={ChevronRight} label="Próximos cartões" variant="surface" size={36} iconSize={18} disabled={!canGoNext} onClick={() => scrollToCard(Math.min(maxStart, currentCardIndex + perPage))} />
+              <IconButton icon={ChevronLeft} label={t('dashboard.previousCards')} variant="surface" size={36} iconSize={18} disabled={!canGoPrev} onClick={() => scrollToCard(Math.max(0, currentCardIndex - perPage))} />
+              <IconButton icon={ChevronRight} label={t('dashboard.nextCards')} variant="surface" size={36} iconSize={18} disabled={!canGoNext} onClick={() => scrollToCard(Math.min(maxStart, currentCardIndex + perPage))} />
             </div>
           )}
-          <Button label="Ver todos" variant="outline" size="sm" onClick={() => navigate('/cards')} />
+          <Button label={t('dashboard.seeAll')} variant="outline" size="sm" onClick={() => navigate('/cards')} />
         </div>
       </div>
 
       {cards.length === 0 ? (
         <EmptyState
           icon={CreditCard}
-          title="Você ainda não tem cartões cadastrados"
-          actionLabel="Adicionar Primeiro Cartão"
+          title={t('dashboard.noCards')}
+          actionLabel={t('dashboard.addFirstCard')}
           actionIcon={Plus}
           onAction={() => navigate('/cards/new')}
           className="py-6"
@@ -177,7 +179,7 @@ export function DashboardCardsList({ cards, monthlyTotals, hideValues, animateOn
                     type="button"
                     onClick={() => scrollToCard(Math.min(maxStart, index))}
                     className="w-[22px] h-3 flex items-center justify-center"
-                    aria-label={`Ir para o cartão ${index + 1}`}
+                    aria-label={t('dashboard.goToCard', { number: index + 1 })}
                   >
                     <span className={cn('h-2 rounded-full transition-all duration-300', isVisible ? 'w-5 bg-primary' : 'w-2 bg-primary/30 hover:bg-primary/50')} />
                   </button>

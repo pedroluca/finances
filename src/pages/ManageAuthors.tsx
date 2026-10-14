@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Fragment, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, Plus, Trash2, Link as LinkIcon, Unlink, UserPlus } from 'lucide-react'
@@ -16,6 +17,7 @@ import { Sheet } from '../components/ui/sheet'
 import { accents } from '../lib/colors'
 
 export default function ManageAuthors() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { showToast } = useToast()
@@ -52,7 +54,7 @@ export default function ManageAuthors() {
       setAuthors([...data].sort((a, b) => Number(b.is_owner) - Number(a.is_owner)))
     } catch (error) {
       console.error('Erro ao carregar autores:', error)
-      showToast('Erro ao carregar pessoas', 'error')
+      showToast(t('authors.loadError'), 'error')
     } finally {
       setIsLoading(false)
     }
@@ -75,10 +77,10 @@ export default function ManageAuthors() {
       setNewAuthorName('')
       setShowAddAuthor(false)
       loadAuthors()
-      showToast('Pessoa adicionada com sucesso!', 'success')
+      showToast(t('authors.added'), 'success')
     } catch (error) {
       console.error('Erro ao criar autor:', error)
-      showToast('Erro ao criar pessoa. Tente novamente.', 'error')
+      showToast(t('authors.createError'), 'error')
     }
   }
 
@@ -90,10 +92,10 @@ export default function ManageAuthors() {
       })
       setConfirmDelete({ show: false, author: null })
       loadAuthors()
-      showToast('Pessoa excluída com sucesso!', 'success')
+      showToast(t('authors.deleted'), 'success')
     } catch (error) {
       console.error('Erro ao excluir autor:', error)
-      showToast('Erro ao excluir pessoa', 'error')
+      showToast(t('authors.deleteError'), 'error')
       setConfirmDelete({ show: false, author: null })
     }
   }
@@ -116,10 +118,10 @@ export default function ManageAuthors() {
       setShowLinkModal(false)
       setSelectedAuthor(null)
       loadAuthors()
-      showToast(response.message || 'Vínculo realizado com sucesso!', 'success')
+      showToast(response.message || t('authors.linked'), 'success')
     } catch (error) {
       console.error('Erro ao vincular:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Erro ao vincular. Verifique o email e tente novamente.'
+      const errorMessage = error instanceof Error ? error.message : t('authors.linkError')
       showToast(errorMessage, 'error')
       // NÃO fecha o modal em caso de erro para facilitar correção
     }
@@ -138,32 +140,32 @@ export default function ManageAuthors() {
       })
       setConfirmUnlink({ show: false, author: null })
       loadAuthors()
-      showToast('Vínculo removido com sucesso!', 'success')
+      showToast(t('authors.unlinked'), 'success')
     } catch (error) {
       console.error('Erro ao desvincular:', error)
-      showToast('Erro ao desvincular', 'error')
+      showToast(t('authors.unlinkError'), 'error')
       setConfirmUnlink({ show: false, author: null })
     }
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <StackHeader title="Gerenciar Pessoas" onBack={() => navigate('/settings')} />
+      <StackHeader title={t('screens.manageAuthors')} onBack={() => navigate('/settings')} />
 
       <StackContent>
         <Card className="overflow-hidden">
           <div className="flex items-center justify-between gap-3 p-4 border-b border-border">
             <div className="flex items-center gap-2.5 min-w-0">
               <Users size={22} className="text-primary shrink-0" />
-              <h2 className="text-lg font-semibold text-foreground truncate">Pessoas Cadastradas</h2>
+              <h2 className="text-lg font-semibold text-foreground truncate">{t('authors.title')}</h2>
             </div>
-            <Button label="Nova" icon={Plus} size="sm" onClick={() => setShowAddAuthor(true)} />
+            <Button label={t('common.new')} icon={Plus} size="sm" onClick={() => setShowAddAuthor(true)} />
           </div>
 
           {isLoading && authors.length === 0 ? (
             <LoadingState />
           ) : authors.length === 0 ? (
-            <p className="p-8 text-center text-muted">Nenhuma pessoa cadastrada.</p>
+            <p className="p-8 text-center text-muted">{t('authors.empty')}</p>
           ) : (
             authors.map((author, index) => (
               <Fragment key={author.id}>
@@ -175,7 +177,7 @@ export default function ManageAuthors() {
                   <div className="flex-1 min-w-0 space-y-0.5">
                     <div className="flex items-center gap-2 min-w-0">
                       <p className="font-medium text-foreground truncate">{author.name}</p>
-                      {!!author.is_owner && <Badge label="Você" />}
+                      {!!author.is_owner && <Badge label={t('common.you')} />}
                     </div>
                     {author.linked_user_email ? (
                       <p className="flex items-center gap-1.5 text-xs text-success min-w-0">
@@ -183,17 +185,17 @@ export default function ManageAuthors() {
                         <span className="truncate">{author.linked_user_email}</span>
                       </p>
                     ) : !author.is_owner && (
-                      <p className="text-xs text-muted">Não vinculado</p>
+                      <p className="text-xs text-muted">{t('authors.notLinked')}</p>
                     )}
                   </div>
                   {!author.is_owner && (
                     <div className="flex items-center">
                       {author.linked_user_email ? (
-                        <IconButton icon={Unlink} label="Desvincular conta" size={38} iconSize={17} tone="warning" onClick={() => setConfirmUnlink({ show: true, author })} />
+                        <IconButton icon={Unlink} label={t('authors.unlinkAccount')} size={38} iconSize={17} tone="warning" onClick={() => setConfirmUnlink({ show: true, author })} />
                       ) : (
                         <IconButton
                           icon={UserPlus}
-                          label="Vincular conta"
+                          label={t('authors.linkAccount')}
                           variant="soft"
                           size={38}
                           iconSize={17}
@@ -203,7 +205,7 @@ export default function ManageAuthors() {
                           }}
                         />
                       )}
-                      <IconButton icon={Trash2} label="Excluir pessoa" size={38} iconSize={17} tone="danger" onClick={() => setConfirmDelete({ show: true, author })} />
+                      <IconButton icon={Trash2} label={t('authors.deletePerson')} size={38} iconSize={17} tone="danger" onClick={() => setConfirmDelete({ show: true, author })} />
                     </div>
                   )}
                 </div>
@@ -214,18 +216,18 @@ export default function ManageAuthors() {
       </StackContent>
 
       {/* Nova pessoa */}
-      <Sheet open={showAddAuthor} onClose={() => setShowAddAuthor(false)} title="Nova Pessoa">
+      <Sheet open={showAddAuthor} onClose={() => setShowAddAuthor(false)} title={t('authors.newTitle')}>
         <form onSubmit={handleCreateAuthor} className="space-y-4 pb-2">
           <TextField
-            label="Nome"
+            label={t('authors.name')}
             value={newAuthorName}
             onChange={(e) => setNewAuthorName(e.target.value)}
-            placeholder="Ex: Mãe, João..."
+            placeholder={t('authors.namePlaceholder')}
             autoFocus
           />
           <div className="flex gap-3">
-            <Button label="Cancelar" variant="secondary" onClick={() => setShowAddAuthor(false)} className="flex-1" />
-            <Button type="submit" label="Adicionar" disabled={!newAuthorName.trim()} className="flex-1" />
+            <Button label={t('common.cancel')} variant="secondary" onClick={() => setShowAddAuthor(false)} className="flex-1" />
+            <Button type="submit" label={t('common.add')} disabled={!newAuthorName.trim()} className="flex-1" />
           </div>
         </form>
       </Sheet>
@@ -234,23 +236,23 @@ export default function ManageAuthors() {
       <Sheet
         open={showLinkModal && !!selectedAuthor}
         onClose={() => setShowLinkModal(false)}
-        title="Vincular Conta"
+        title={t('authors.linkTitle')}
         description={selectedAuthor && (
-          <>Vincule <strong className="text-foreground">{selectedAuthor.name}</strong> a uma conta de usuário existente. Essa pessoa poderá visualizar os cartões onde ela é autora.</>
+          <>{t('authors.linkDescriptionBefore')} <strong className="text-foreground">{selectedAuthor.name}</strong> {t('authors.linkDescriptionAfter')}</>
         )}
       >
         <form onSubmit={handleLinkAuthor} className="space-y-4 pb-2">
           <TextField
             type="email"
-            label="Email da conta"
+            label={t('authors.email')}
             value={linkEmail}
             onChange={(e) => setLinkEmail(e.target.value)}
-            placeholder="email@exemplo.com"
+            placeholder={t('authors.emailPlaceholder')}
             autoFocus
           />
           <div className="flex gap-3">
-            <Button label="Cancelar" variant="secondary" onClick={() => setShowLinkModal(false)} className="flex-1" />
-            <Button type="submit" label="Vincular" disabled={!linkEmail.trim()} className="flex-1" />
+            <Button label={t('common.cancel')} variant="secondary" onClick={() => setShowLinkModal(false)} className="flex-1" />
+            <Button type="submit" label={t('authors.link')} disabled={!linkEmail.trim()} className="flex-1" />
           </div>
         </form>
       </Sheet>
@@ -260,10 +262,9 @@ export default function ManageAuthors() {
         isOpen={confirmDelete.show}
         onClose={() => setConfirmDelete({ show: false, author: null })}
         onConfirm={handleDeleteAuthor}
-        title="Excluir Pessoa"
-        message={`Tem certeza que deseja excluir ${confirmDelete.author?.name}?`}
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t('authors.deleteTitle')}
+        message={t('authors.deleteMessage', { name: confirmDelete.author?.name })}
+        confirmText={t('common.delete')}
         icon={Trash2}
         isDestructive
       />
@@ -273,10 +274,9 @@ export default function ManageAuthors() {
         isOpen={confirmUnlink.show}
         onClose={() => setConfirmUnlink({ show: false, author: null })}
         onConfirm={handleUnlinkAuthor}
-        title="Desvincular Conta"
-        message={`Desvincular a conta de ${confirmUnlink.author?.linked_user_email} deste autor?`}
-        confirmText="Desvincular"
-        cancelText="Cancelar"
+        title={t('authors.unlinkTitle')}
+        message={t('authors.unlinkMessage', { email: confirmUnlink.author?.linked_user_email })}
+        confirmText={t('authors.unlink')}
         icon={Unlink}
         isDestructive
       />

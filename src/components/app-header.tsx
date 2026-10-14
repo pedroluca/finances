@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Eye, EyeOff, Plus } from 'lucide-react'
@@ -41,11 +42,12 @@ export function TabHeader({ title, subtitle, right, className }: { title: string
 
 /** Cabeçalho das telas internas (Configurações, Adicionar Cartão...): voltar + título */
 export function StackHeader({ title, onBack, right, className }: { title: ReactNode; onBack?: () => void; right?: ReactNode; className?: string }) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   return (
     <header className={cn('sticky top-0 z-20 bg-background/85 backdrop-blur-xl pt-[env(safe-area-inset-top)]', className)}>
       <div className="max-w-3xl mx-auto h-14 lg:h-24 lg:pt-4 px-2 sm:px-4 lg:px-6 flex items-center gap-1 lg:gap-3">
-        <IconButton icon={ArrowLeft} label="Voltar" onClick={onBack ?? (() => navigate(-1))} className="lg:bg-surface-2 lg:hover:bg-surface-3" />
+        <IconButton icon={ArrowLeft} label={t('common.back')} onClick={onBack ?? (() => navigate(-1))} className="lg:bg-surface-2 lg:hover:bg-surface-3" />
         <h1 className="flex-1 min-w-0 text-lg lg:text-2xl font-semibold lg:font-bold text-foreground truncate pl-1">{title}</h1>
         {right && <div className="flex items-center gap-1 shrink-0">{right}</div>}
       </div>
@@ -55,13 +57,14 @@ export function StackHeader({ title, onBack, right, className }: { title: ReactN
 
 /** Olho para mostrar/ocultar os valores (a preferência vale para todas as telas) */
 export function HideValuesButton() {
+  const { t } = useTranslation()
   const hideValues = usePrefsStore((state) => state.hideValues)
   const toggleHideValues = usePrefsStore((state) => state.toggleHideValues)
   return (
     <IconButton
       icon={hideValues ? EyeOff : Eye}
       variant="surface"
-      label={hideValues ? 'Mostrar valores' : 'Ocultar valores'}
+      label={hideValues ? t('common.showValues') : t('common.hideValues')}
       onClick={toggleHideValues}
     />
   )
@@ -69,6 +72,7 @@ export function HideValuesButton() {
 
 /** Avatar com a inicial do usuário; abre o perfil e as configurações */
 export function ProfileButton() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
   const initial = user?.name?.trim().charAt(0).toUpperCase() || '?'
@@ -76,8 +80,8 @@ export function ProfileButton() {
     <button
       type="button"
       onClick={() => navigate('/settings')}
-      aria-label="Perfil e configurações"
-      title="Perfil e configurações"
+      aria-label={t('common.profileAndSettings')}
+      title={t('common.profileAndSettings')}
       className="lg:hidden w-10 h-10 shrink-0 rounded-full bg-primary text-on-primary text-base font-bold flex items-center justify-center hover:bg-primary-strong transition-colors"
     >
       {initial}

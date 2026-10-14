@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, CreditCard, Plus } from 'lucide-react'
@@ -45,6 +46,7 @@ export function QuickExpenseSheet() {
  * Item" da fatura. A fatura em que a compra cai é criada antes, se ainda não existir.
  */
 function QuickExpense({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { showToast } = useToast()
   const hideValues = usePrefsStore((state) => state.hideValues)
@@ -70,19 +72,19 @@ function QuickExpense({ open, onClose }: { open: boolean; onClose: () => void })
     const cardId = cardIdOf(card)
     setLastQuickCardId(cardId)
     onClose()
-    showToast(`Despesa adicionada no ${card.card_name}`, 'success')
+    showToast(t('items.quick.added', { card: card.card_name }), 'success')
     reloadCards().catch(() => {})
     window.dispatchEvent(new CustomEvent(EXPENSE_ADDED_EVENT, { detail: { cardId } }))
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Nova despesa" size="lg">
+    <Sheet open={open} onClose={onClose} title={t('common.newExpense')} size="lg">
       {!card ? (
         <EmptyState
           icon={CreditCard}
-          title="Nenhum cartão cadastrado"
-          description="Cadastre um cartão para lançar despesas nele."
-          actionLabel="Adicionar cartão"
+          title={t('items.quick.noCards')}
+          description={t('items.quick.noCardsHint')}
+          actionLabel={t('items.quick.addCard')}
           actionIcon={Plus}
           onAction={() => {
             onClose()
@@ -93,11 +95,11 @@ function QuickExpense({ open, onClose }: { open: boolean; onClose: () => void })
       ) : (
         <div className="space-y-4">
           <div>
-            <FieldLabel label="Cartão" icon={CreditCard} />
+            <FieldLabel label={t('items.quick.card')} icon={CreditCard} />
             {/* No celular os cartões rolam de lado até a borda da folha; no desktop quebram em linhas */}
             <div
               role="radiogroup"
-              aria-label="Cartão"
+              aria-label={t('items.quick.card')}
               className="-mx-5 px-5 flex gap-3 overflow-x-auto scrollbar-hide pt-1.5 pb-5 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-x-visible sm:pb-3"
             >
               {ordered.map((item) => (
@@ -132,6 +134,7 @@ function QuickExpense({ open, onClose }: { open: boolean; onClose: () => void })
 }
 
 function MiniCard({ card, selected, hideValues, onSelect }: { card: CardWithBalance; selected: boolean; hideValues: boolean; onSelect: () => void }) {
+  const { t } = useTranslation()
   const ink = cardInk(card.color)
   return (
     <button
@@ -147,11 +150,11 @@ function MiniCard({ card, selected, hideValues, onSelect }: { card: CardWithBala
           <p className="text-[13px] font-bold truncate">{card.card_name}</p>
           {card.is_shared ? (
             <p className="text-[10px] font-semibold uppercase tracking-[0.6px] truncate" style={{ color: withAlpha(ink, 0.8) }}>
-              Compartilhado
+              {t('items.quick.shared')}
             </p>
           ) : (
             <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.6px]" style={{ color: withAlpha(ink, 0.75) }}>Disponível</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.6px]" style={{ color: withAlpha(ink, 0.75) }}>{t('cardTile.available')}</p>
               <p className="text-xs font-bold truncate">{money(Number(card.available_balance), hideValues)}</p>
             </div>
           )}

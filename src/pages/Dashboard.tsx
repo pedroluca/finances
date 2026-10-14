@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth.store'
@@ -5,6 +6,7 @@ import { useAppStore } from '../store/app.store'
 import type { CardWithBalance } from '../types/database'
 import { phpApiRequest } from '../lib/api'
 import { HideValuesButton, ProfileButton, TabContent, TabHeader } from '../components/app-header'
+import { NotificationsButton } from '../components/notifications/NotificationsButton'
 import { DashboardStats } from '../components/dashboard/d-stats'
 import { DashboardCardsList } from '../components/dashboard/d-cards-list'
 import { DashboardUpcomingPayments } from '../components/dashboard/d-upcoming-payments'
@@ -16,6 +18,7 @@ import { usePrefsStore } from '../store/prefs.store'
 import { weekdayLabel } from '../lib/format'
 
 export default function Dashboard() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user, isAuthenticated, completeOnboarding } = useAuthStore()
   const showOnboarding = isAuthenticated && user?.onboarding_completed === false
@@ -152,11 +155,12 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <TabHeader
-        title={firstName ? `Olá, ${firstName}` : 'Olá!'}
+        title={firstName ? t('dashboard.greeting', { name: firstName }) : t('dashboard.greetingNoName')}
         subtitle={weekdayLabel()}
         right={(
           <>
             <HideValuesButton />
+            <NotificationsButton />
             <ProfileButton />
           </>
         )}

@@ -1,3 +1,4 @@
+import { formatCurrency, HIDDEN_VALUE } from '../../lib/format'
 import { useAnimatedNumber } from '../../hooks/useAnimatedNumber'
 
 interface AnimatedCurrencyProps {
@@ -7,10 +8,10 @@ interface AnimatedCurrencyProps {
   hiddenText?: string
 }
 
-export function AnimatedCurrency({ value, hide = false, animateOnMount = false, hiddenText = 'R$ ••••' }: AnimatedCurrencyProps) {
+export function AnimatedCurrency({ value, hide = false, animateOnMount = false, hiddenText = HIDDEN_VALUE }: AnimatedCurrencyProps) {
   const display = useAnimatedNumber(value, { animateOnMount })
 
   if (hide) return <>{hiddenText}</>
 
-  return <>{`R$ ${display.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</>
+  return <>{formatCurrency(display)}</>
 }

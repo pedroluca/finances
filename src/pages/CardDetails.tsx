@@ -1,3 +1,5 @@
+import { categoryName } from "../lib/category-name"
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect, useCallback, type ReactNode } from "react"
 import AddItemModal from "../components/AddItemModal"
 import { useNavigate, useParams } from "react-router-dom"
@@ -42,13 +44,14 @@ import { StackHeader } from "../components/app-header"
 import { CardSurface } from "../components/cards/CreditCardTile"
 import { cardInk, withAlpha } from "../lib/colors"
 import { cn } from "../lib/cn"
-import { formatCurrency, monthYearTitle, plural } from "../lib/format"
+import { dayMonthLabel, formatCurrency, fullDate, monthYearTitle } from "../lib/format"
 import { EXPENSE_ADDED_EVENT } from "../store/quick-expense.store"
 
 // Botões das ações em lote com texto branco: tons fixos, legíveis nos dois temas
 const ACTION_COLORS = { pay: "#16a34a", unpay: "#d97706", delete: "#dc2626" }
 
 export default function CardDetails() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { cardId: paramCardId } = useParams<{ cardId: string }>()
   // Recupera o cardId do localStorage se não vier da URL
@@ -89,7 +92,7 @@ export default function CardDetails() {
       setModalInvoiceId(invId)
       setShowAddItemModal(true)
     } else {
-      showToast('Erro ao criar fatura', 'error')
+      showToast(t('invoice.createInvoiceError'), 'error')
     }
   };
 
@@ -499,7 +502,7 @@ export default function CardDetails() {
       navigate("/dashboard")
     } catch (error) {
       console.error("Erro ao excluir cartão:", error)
-      showToast("Erro ao excluir cartão", 'error')
+      showToast(t('invoice.deleteCardError'), 'error')
     }
   }
 
@@ -600,11 +603,11 @@ export default function CardDetails() {
         )
       )
       
-      showToast(`${selectedItems.size} item(ns) excluído(s) com sucesso`, 'success')
+      showToast(t('invoice.itemsDeleted', { count: selectedItems.size }), 'success')
       setSelectedItems(new Set())
     } catch (error) {
       console.error("Erro ao excluir itens:", error)
-      showToast("Erro ao excluir itens", 'error')
+      showToast(t('invoice.deleteItemsError'), 'error')
     }
   }
 
@@ -679,7 +682,7 @@ export default function CardDetails() {
     return (
       <div className="min-h-screen bg-background">
         <StackHeader title="" onBack={handleBack} />
-        <EmptyState icon={CreditCard} title="Cartão não encontrado" />
+        <EmptyState icon={CreditCard} title={t('cards.notFound')} />
       </div>
     )
   }
@@ -689,7 +692,7 @@ export default function CardDetails() {
     <header className="sticky top-0 z-20 bg-surface border-b border-border pt-[env(safe-area-inset-top)]">
       <div className="max-w-5xl mx-auto px-2 sm:px-4">
         <div className="h-14 flex items-center gap-1">
-          <IconButton icon={ArrowLeft} label="Voltar" onClick={handleBack} />
+          <IconButton icon={ArrowLeft} label={t('common.back')} onClick={handleBack} />
           {isLoading ? (
             <Skeleton className="h-6 w-40 rounded-md flex-1 max-w-40 ml-1" />
           ) : (
@@ -697,22 +700,22 @@ export default function CardDetails() {
           )}
           {!card.is_shared && (
             <>
-              <IconButton icon={Pencil} label="Editar cartão" tone="muted" onClick={() => navigate(`/cards/${cardId}/edit`)} />
-              <IconButton icon={Trash2} label="Excluir cartão" tone="danger" onClick={handleDeleteCardClick} />
+              <IconButton icon={Pencil} label={t('invoice.editCard')} tone="muted" onClick={() => navigate(`/cards/${cardId}/edit`)} />
+              <IconButton icon={Trash2} label={t('invoice.deleteCard')} tone="danger" onClick={handleDeleteCardClick} />
             </>
           )}
         </div>
         <div className="flex items-center justify-between pb-3">
-          <IconButton icon={ChevronLeft} label="Mês anterior" onClick={goToPreviousMonth} disabled={isLoading} />
+          <IconButton icon={ChevronLeft} label={t('invoice.previousMonth')} onClick={goToPreviousMonth} disabled={isLoading} />
           <div className="flex-1 min-w-0 text-center">
             <p className="text-base font-semibold text-foreground truncate">{monthYearTitle(viewingMonth, viewingYear)}</p>
             {!isCurrentMonth && (
               <button type="button" onClick={goToCurrentMonth} className="text-[13px] font-medium text-primary hover:underline mt-0.5">
-                Ir para o mês atual
+                {t('invoice.goToCurrentMonth')}
               </button>
             )}
           </div>
-          <IconButton icon={ChevronRight} label="Próximo mês" onClick={goToNextMonth} disabled={isLoading} />
+          <IconButton icon={ChevronRight} label={t('invoice.nextMonth')} onClick={goToNextMonth} disabled={isLoading} />
         </div>
       </div>
     </header>
@@ -868,13 +871,13 @@ export default function CardDetails() {
         <div className="flex items-start justify-between gap-3">
           {card.is_shared ? (
             <div className="flex-1 min-w-0 space-y-0.5">
-              <p className="text-xs" style={{ color: withAlpha(ink, 0.75) }}>Cartão Compartilhado</p>
+              <p className="text-xs" style={{ color: withAlpha(ink, 0.75) }}>{t('invoice.sharedCard')}</p>
               <p className="text-xl font-bold truncate">{card.owner_name}</p>
-              <p className="text-xs mt-0.5" style={{ color: withAlpha(ink, 0.65) }}>Você visualiza apenas os itens vinculados a você.</p>
+              <p className="text-xs mt-0.5" style={{ color: withAlpha(ink, 0.65) }}>{t('invoice.sharedHint')}</p>
             </div>
           ) : (
             <div className="flex-1 min-w-0 space-y-0.5">
-              <p className="text-xs" style={{ color: withAlpha(ink, 0.75) }}>Limite Total</p>
+              <p className="text-xs" style={{ color: withAlpha(ink, 0.75) }}>{t('invoice.totalLimit')}</p>
               <p className="text-2xl font-bold truncate">{formatCurrency(Number(card.card_limit ?? 0))}</p>
             </div>
           )}
@@ -884,22 +887,22 @@ export default function CardDetails() {
         <div className="flex gap-2">
           <InfoColumn
             label={selectedAuthorFilter.size > 0
-              ? `Total Fatura (${selectedAuthorFilter.size} ${plural(selectedAuthorFilter.size, "pessoa", "pessoas")})`
-              : "Total Fatura"}
+              ? t('invoice.totalForPeople', { count: selectedAuthorFilter.size })
+              : t('invoice.total')}
             value={formatCurrency(totalAmount)}
             ink={ink}
             color={ink}
           />
-          <InfoColumn label="Pago" value={formatCurrency(paidAmount)} ink={ink} color={paidColor} />
-          <InfoColumn label="Restante" value={formatCurrency(remainingAmount)} ink={ink} color={remainingColor} />
+          <InfoColumn label={t('invoice.paid')} value={formatCurrency(paidAmount)} ink={ink} color={paidColor} />
+          <InfoColumn label={t('invoice.remaining')} value={formatCurrency(remainingAmount)} ink={ink} color={remainingColor} />
         </div>
 
         <div className="flex gap-4 text-[13px]" style={{ color: withAlpha(ink, 0.75) }}>
           <span>
-            Fecha dia <span className="font-semibold" style={{ color: ink }}>{card.closing_day}/{viewingMonth}</span>
+            {t('invoice.closesOn')} <span className="font-semibold" style={{ color: ink }}>{dayMonthLabel(card.closing_day, viewingMonth)}</span>
           </span>
           <span>
-            Vence dia <span className="font-semibold" style={{ color: ink }}>{card.due_day}/{dueMonth}</span>
+            {t('invoice.dueOn')} <span className="font-semibold" style={{ color: ink }}>{dayMonthLabel(card.due_day, dueMonth)}</span>
           </span>
         </div>
       </div>
@@ -912,7 +915,7 @@ export default function CardDetails() {
 
       <DetailsLayout
         summary={summary}
-        action={<Button label="Novo" icon={Plus} size="sm" onClick={handleAddItemClick} />}
+        action={<Button label={t('invoice.newItem')} icon={Plus} size="sm" onClick={handleAddItemClick} />}
       >
         <Card className="p-3 space-y-3">
           <div className="flex items-center gap-2 px-1">
@@ -921,8 +924,8 @@ export default function CardDetails() {
                 type="button"
                 role="checkbox"
                 aria-checked={allSelected ? true : someSelected ? "mixed" : false}
-                aria-label={allSelected ? "Desmarcar todos" : "Selecionar todos"}
-                title={allSelected ? "Desmarcar todos" : "Selecionar todos"}
+                aria-label={allSelected ? t('invoice.deselectAll') : t('invoice.selectAll')}
+                title={allSelected ? t('invoice.deselectAll') : t('invoice.selectAll')}
                 onClick={() => setSelectedItems(allSelected ? new Set() : new Set(filteredItems.map((i) => i.id)))}
                 className="shrink-0"
               >
@@ -936,15 +939,15 @@ export default function CardDetails() {
               </button>
             )}
             <p className="flex-1 min-w-0 text-base font-semibold text-foreground truncate">
-              Total: {filteredItems.length} {plural(filteredItems.length, "item", "itens")}
+              {t('invoice.itemsTotal', { count: filteredItems.length })}
             </p>
             {!card.is_shared && (
               <>
                 <span className="hidden sm:block">
-                  <Button label="Filtrar por Pessoa" icon={Filter} variant="secondary" size="sm" onClick={() => setShowAuthorFilter(true)} />
+                  <Button label={t('invoice.filterByPerson')} icon={Filter} variant="secondary" size="sm" onClick={() => setShowAuthorFilter(true)} />
                 </span>
                 <span className="sm:hidden">
-                  <IconButton icon={Filter} variant="surface" size={36} iconSize={17} label="Filtrar por Pessoa" onClick={() => setShowAuthorFilter(true)} />
+                  <IconButton icon={Filter} variant="surface" size={36} iconSize={17} label={t('invoice.filterByPerson')} onClick={() => setShowAuthorFilter(true)} />
                 </span>
               </>
             )}
@@ -969,16 +972,16 @@ export default function CardDetails() {
           {!card.is_shared && (
             <div className="flex gap-2">
               <ActionButton icon={Banknote} color={ACTION_COLORS.pay} disabled={selectedUnpaidCount === 0} onClick={markSelectedAsPaid}>
-                <span className="sm:hidden">Pagar ({selectedUnpaidCount})</span>
-                <span className="hidden sm:inline">Marcar {selectedUnpaidCount} como pago</span>
+                <span className="sm:hidden">{t('invoice.pay', { n: selectedUnpaidCount })}</span>
+                <span className="hidden sm:inline">{t('invoice.payLong', { n: selectedUnpaidCount })}</span>
               </ActionButton>
               <ActionButton icon={BanknoteX} color={ACTION_COLORS.unpay} disabled={selectedPaidCount === 0} onClick={markSelectedAsUnpaid}>
-                <span className="sm:hidden">Desmarcar ({selectedPaidCount})</span>
-                <span className="hidden sm:inline">Desmarcar {selectedPaidCount} como pago</span>
+                <span className="sm:hidden">{t('invoice.unmark', { n: selectedPaidCount })}</span>
+                <span className="hidden sm:inline">{t('invoice.unmarkLong', { n: selectedPaidCount })}</span>
               </ActionButton>
               <ActionButton icon={Trash2} color={ACTION_COLORS.delete} disabled={selectedItems.size === 0} onClick={deleteSelectedItems} compact>
                 <span className="sm:hidden">({selectedItems.size})</span>
-                <span className="hidden sm:inline">Excluir {selectedItems.size}</span>
+                <span className="hidden sm:inline">{t('invoice.deleteLong', { n: selectedItems.size })}</span>
               </ActionButton>
             </div>
           )}
@@ -989,8 +992,8 @@ export default function CardDetails() {
             <EmptyState
               icon={Calendar}
               tint="subtle"
-              title={card.is_shared && card.author_id_on_owner ? "Nenhum item vinculado a você nesta fatura" : "Nenhum item nesta fatura"}
-              description='Clique em "Novo" para começar'
+              title={card.is_shared && card.author_id_on_owner ? t('invoice.emptyLinked') : t('invoice.empty')}
+              description={t('invoice.emptyHintClick')}
               className="py-8 animate-fade-in"
             />
           ) : (
@@ -1044,12 +1047,12 @@ export default function CardDetails() {
                         </p>
                         <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs">
                           {item.category_name && (
-                            <span className="text-muted truncate">{item.category_icon} {item.category_name}</span>
+                            <span className="text-muted truncate">{item.category_icon} {categoryName(item.category_name)}</span>
                           )}
                           <span className="text-muted truncate">{displayAuthorName}</span>
                           {item.purchase_date && (
                             <span className="text-subtle">
-                              {new Date(item.purchase_date + "T00:00:00").toLocaleDateString("pt-BR")}
+                              {fullDate(new Date(item.purchase_date + "T00:00:00"))}
                             </span>
                           )}
                         </div>
@@ -1061,7 +1064,7 @@ export default function CardDetails() {
                           <p className="text-xs text-subtle">{item.installment_number}/{item.total_installments}x</p>
                         )}
                         {isPartial && (
-                          <p className="text-xs font-medium text-success">Pago: {formatCurrency(partialPaid)}</p>
+                          <p className="text-xs font-medium text-success">{t('invoice.paidPartial', { amount: formatCurrency(partialPaid) })}</p>
                         )}
                       </div>
                     </div>
@@ -1076,17 +1079,17 @@ export default function CardDetails() {
       <Sheet
         open={showAuthorFilter}
         onClose={() => setShowAuthorFilter(false)}
-        title="Filtrar por Pessoa"
-        description="Selecione uma ou mais pessoas"
+        title={t('invoice.filterByPerson')}
+        description={t('invoice.filter.description')}
         size="lg"
         footer={(
           <div className="flex items-center justify-between gap-3 pt-3 border-t border-border">
             <span className="text-sm text-muted">
               {selectedAuthorFilter.size === 0
-                ? "Todas as pessoas"
-                : `${selectedAuthorFilter.size} ${plural(selectedAuthorFilter.size, "pessoa selecionada", "pessoas selecionadas")}`}
+                ? t('invoice.filter.everyone')
+                : t('invoice.filter.selected', { count: selectedAuthorFilter.size })}
             </span>
-            <Button label="Aplicar" size="sm" onClick={() => setShowAuthorFilter(false)} />
+            <Button label={t('common.apply')} size="sm" onClick={() => setShowAuthorFilter(false)} />
           </div>
         )}
       >
@@ -1094,9 +1097,9 @@ export default function CardDetails() {
           <FilterOption selected={selectedAuthorFilter.size === 0} onClick={() => setSelectedAuthorFilter(new Set())} className="md:col-span-2">
             <span className="flex-1 flex items-center gap-2">
               <User size={18} className="text-muted" />
-              <span className="font-medium text-foreground">Todas as Pessoas</span>
+              <span className="font-medium text-foreground">{t('invoice.filter.allPeople')}</span>
             </span>
-            <span className="text-sm text-muted">{items.length} {plural(items.length, "item", "itens")}</span>
+            <span className="text-sm text-muted">{t('invoice.filter.items', { count: items.length })}</span>
           </FilterOption>
 
           {authorTotals.map((author) => (
@@ -1126,7 +1129,7 @@ export default function CardDetails() {
                   </span>
                 </span>
               </span>
-              <span className="text-sm text-muted shrink-0">{author.itemCount} {plural(author.itemCount, "item", "itens")}</span>
+              <span className="text-sm text-muted shrink-0">{t('invoice.filter.items', { count: author.itemCount })}</span>
             </FilterOption>
           ))}
         </div>
@@ -1140,7 +1143,7 @@ export default function CardDetails() {
           setAllUnpaidItems([])
         }}
         onConfirm={handleDeleteCard}
-        title="Excluir Cartão?"
+        title={t('invoice.deleteCardTitle')}
         icon={Trash2}
         message={
           (() => {
@@ -1157,19 +1160,19 @@ export default function CardDetails() {
             })
             const unpaidAmount = pending.reduce((sum, value) => sum + value, 0)
 
-            let msg = `Tem certeza que deseja excluir o cartão "${card.card_name ?? card.name}"?`
+            let msg = t('invoice.deleteCardMessage', { name: card.card_name ?? card.name })
 
             if (unpaidAmount > 0) {
               // Só conta os itens que ainda têm algo a pagar
               const unpaidCount = pending.filter((value) => value > 0.01).length
-              msg += `\n\nAtenção: este cartão possui ${unpaidCount} item(ns) com pendência(s) no valor total de ${formatCurrency(unpaidAmount)}.`
+              msg += `\n\n${t('invoice.deleteCardPending', { count: unpaidCount, amount: formatCurrency(unpaidAmount) })}`
             }
 
-            msg += "\n\nEsta ação não pode ser desfeita."
+            msg += `\n\n${t('common.cannotUndo')}`
             return msg
           })()
         }
-        confirmText="Excluir"
+        confirmText={t('common.delete')}
         isDestructive
       />
 
@@ -1178,18 +1181,18 @@ export default function CardDetails() {
         isOpen={showDeleteItemsModal}
         onClose={() => setShowDeleteItemsModal(false)}
         onConfirm={confirmDeleteItems}
-        title="Excluir Itens?"
+        title={t('invoice.deleteItemsTitle')}
         icon={Trash2}
         message={(() => {
           const hasInstallment = items.some(
             (item) => selectedItems.has(item.id) && item.is_installment
           )
-          const base = `Tem certeza que deseja excluir ${selectedItems.size} item(ns)?`
+          const base = t('invoice.deleteItemsMessage', { count: selectedItems.size })
           return hasInstallment
-            ? `${base}\n\nUm ou mais itens selecionados são parcelados. Todas as parcelas (pagas ou futuras) também serão apagadas.`
+            ? `${base}\n\n${t('invoice.deleteInstallmentsWarning')}`
             : base
         })()}
-        confirmText="Excluir"
+        confirmText={t('common.delete')}
         isDestructive
       />
 
@@ -1269,13 +1272,14 @@ export default function CardDetails() {
 
 /** Resumo à esquerda (fixo ao rolar) e lançamentos à direita no desktop largo; empilhados no resto */
 function DetailsLayout({ summary, action, children }: { summary: ReactNode; action: ReactNode; children: ReactNode }) {
+  const { t } = useTranslation()
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-[max(2rem,env(safe-area-inset-bottom))] lg:pb-12">
       <div className="space-y-4 xl:space-y-0 xl:grid xl:grid-cols-[minmax(0,360px)_minmax(0,1fr)] xl:gap-6 xl:items-start">
         <div className="xl:sticky xl:top-32">{summary}</div>
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-2 px-1">
-            <h2 className="text-lg font-semibold text-foreground">Últimos Lançamentos</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t('invoice.latestEntries')}</h2>
             {action}
           </div>
           {children}

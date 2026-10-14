@@ -1,3 +1,5 @@
+import { categoryName } from '../../lib/category-name'
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Check } from 'lucide-react'
@@ -29,6 +31,7 @@ interface EditState {
 }
 
 export default function ManageCategories() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { categories, setCategories, addCategory, updateCategory, removeCategory } = useAppStore()
@@ -38,7 +41,7 @@ export default function ManageCategories() {
     if (categories.length === 0 && user?.id) {
       phpApiRequest(`categories.php?user_id=${user.id}`, { method: 'GET' })
         .then(setCategories)
-        .catch(() => showToast('Erro ao carregar categorias.', 'error'))
+        .catch(() => showToast(t('categories.loadError'), 'error'))
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -70,9 +73,9 @@ export default function ManageCategories() {
       setNewIcon('📦')
       setNewColor('#6366f1')
       setIsCreating(false)
-      showToast('Categoria criada!', 'success')
+      showToast(t('categories.created'), 'success')
     } catch {
-      showToast('Erro ao criar categoria.', 'error')
+      showToast(t('categories.createError'), 'error')
     } finally {
       setIsSavingNew(false)
     }
@@ -94,9 +97,9 @@ export default function ManageCategories() {
       })
       updateCategory(editState.id, updated)
       setEditState(null)
-      showToast('Categoria atualizada!', 'success')
+      showToast(t('categories.updated'), 'success')
     } catch {
-      showToast('Erro ao atualizar categoria.', 'error')
+      showToast(t('categories.updateError'), 'error')
     } finally {
       setIsSavingEdit(false)
     }
@@ -106,22 +109,22 @@ export default function ManageCategories() {
     try {
       await phpApiRequest(`categories.php?id=${cat.id}&user_id=${user?.id}`, { method: 'DELETE' })
       removeCategory(cat.id)
-      showToast('Categoria excluída.', 'success')
+      showToast(t('categories.deleted'), 'success')
     } catch {
-      showToast('Erro ao excluir categoria.', 'error')
+      showToast(t('categories.deleteError'), 'error')
     }
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <StackHeader title="Categorias" onBack={() => navigate('/settings')} />
+      <StackHeader title={t('screens.categories')} onBack={() => navigate('/settings')} />
 
       <StackContent className="space-y-8">
         {/* Minhas categorias */}
         <section className="space-y-3">
           <div className="flex items-center justify-between px-1 min-h-9">
-            <h2 className="text-lg font-semibold text-foreground">Minhas categorias</h2>
-            {!isCreating && <Button label="Nova" icon={Plus} size="sm" onClick={() => setIsCreating(true)} />}
+            <h2 className="text-lg font-semibold text-foreground">{t('categories.mine')}</h2>
+            {!isCreating && <Button label={t('common.new')} icon={Plus} size="sm" onClick={() => setIsCreating(true)} />}
           </div>
 
           {isCreating && (
@@ -143,7 +146,7 @@ export default function ManageCategories() {
           )}
 
           {personalCats.length === 0 && !isCreating ? (
-            <p className="text-sm text-subtle px-1">Você ainda não criou nenhuma categoria.</p>
+            <p className="text-sm text-subtle px-1">{t('categories.empty')}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {personalCats.map((cat) => (
@@ -162,9 +165,9 @@ export default function ManageCategories() {
                     <div className="flex items-center gap-3">
                       <div className="w-1.5 h-8 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
                       <span className="text-lg">{cat.icon}</span>
-                      <span className="flex-1 min-w-0 font-medium text-foreground truncate">{cat.name}</span>
-                      <IconButton icon={Pencil} label="Editar categoria" size={36} iconSize={17} tone="muted" onClick={() => setEditState({ id: cat.id, name: cat.name, color: cat.color, icon: cat.icon })} />
-                      <IconButton icon={Trash2} label="Excluir categoria" size={36} iconSize={17} tone="muted" onClick={() => setDeletingCat(cat)} />
+                      <span className="flex-1 min-w-0 font-medium text-foreground truncate">{categoryName(cat.name)}</span>
+                      <IconButton icon={Pencil} label={t('categories.edit')} size={36} iconSize={17} tone="muted" onClick={() => setEditState({ id: cat.id, name: cat.name, color: cat.color, icon: cat.icon })} />
+                      <IconButton icon={Trash2} label={t('categories.delete')} size={36} iconSize={17} tone="muted" onClick={() => setDeletingCat(cat)} />
                     </div>
                   )}
                 </Card>
@@ -176,16 +179,16 @@ export default function ManageCategories() {
         {/* Categorias padrão */}
         <section className="space-y-3">
           <div className="px-1 space-y-1">
-            <h2 className="text-lg font-semibold text-foreground">Categorias padrão</h2>
-            <p className="text-sm text-muted">Disponíveis para todos os usuários. Não podem ser editadas.</p>
+            <h2 className="text-lg font-semibold text-foreground">{t('categories.defaults')}</h2>
+            <p className="text-sm text-muted">{t('categories.defaultsHint')}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {defaultCats.map((cat) => (
               <Card key={cat.id} className="p-3 flex items-center gap-3">
                 <div className="w-1.5 h-8 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
                 <span className="text-lg">{cat.icon}</span>
-                <span className="flex-1 min-w-0 font-medium text-foreground truncate">{cat.name}</span>
-                <Badge label="Padrão" />
+                <span className="flex-1 min-w-0 font-medium text-foreground truncate">{categoryName(cat.name)}</span>
+                <Badge label={t('categories.default')} />
               </Card>
             ))}
           </div>
@@ -196,9 +199,9 @@ export default function ManageCategories() {
         isOpen={!!deletingCat}
         onClose={() => setDeletingCat(null)}
         onConfirm={() => (deletingCat ? handleDelete(deletingCat) : undefined)}
-        title="Excluir categoria?"
-        message={`Excluir a categoria "${deletingCat?.name ?? ''}"?`}
-        confirmText="Excluir"
+        title={t('categories.deleteTitle')}
+        message={t('categories.deleteMessage', { name: deletingCat?.name ?? '' })}
+        confirmText={t('common.delete')}
         icon={Trash2}
         isDestructive
       />
@@ -215,12 +218,13 @@ function CategoryEditor({ name, icon, color, onChange, saving, onCancel, onSave 
   onCancel: () => void
   onSave: () => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
         <input
           type="text"
-          placeholder="Nome da categoria"
+          placeholder={t('categories.namePlaceholder')}
           value={name}
           onChange={(e) => onChange({ name: e.target.value, icon, color })}
           onKeyDown={(e) => e.key === 'Enter' && onSave()}
@@ -231,7 +235,7 @@ function CategoryEditor({ name, icon, color, onChange, saving, onCancel, onSave 
           type="text"
           placeholder="🎯"
           value={icon}
-          aria-label="Ícone (emoji)"
+          aria-label={t('categories.icon')}
           onChange={(e) => onChange({ name, icon: e.target.value, color })}
           className="w-16 h-12 rounded-xl bg-surface-2 border border-transparent focus:border-primary outline-none text-center text-xl text-foreground"
         />
@@ -253,8 +257,8 @@ function CategoryEditor({ name, icon, color, onChange, saving, onCancel, onSave 
         ))}
       </div>
       <div className="flex justify-end gap-2">
-        <Button label="Cancelar" variant="ghost" size="sm" onClick={onCancel} />
-        <Button label={saving ? 'Salvando...' : 'Salvar'} icon={Check} size="sm" loading={saving} disabled={!name.trim()} onClick={onSave} />
+        <Button label={t('common.cancel')} variant="ghost" size="sm" onClick={onCancel} />
+        <Button label={saving ? t('common.saving') : t('common.save')} icon={Check} size="sm" loading={saving} disabled={!name.trim()} onClick={onSave} />
       </div>
     </div>
   )

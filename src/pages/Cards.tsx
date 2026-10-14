@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CreditCard, Plus, Star } from 'lucide-react'
@@ -6,6 +7,7 @@ import { useAppStore } from '../store/app.store'
 import type { CardWithBalance, MonthlyTotal } from '../types/database'
 import { phpApiRequest } from '../lib/api'
 import { HeaderAddButton, HideValuesButton, SectionTitle, TabContent, TabHeader } from '../components/app-header'
+import { NotificationsButton } from '../components/notifications/NotificationsButton'
 import { StatCard } from '../components/dashboard/d-stat-card'
 import { SummaryCard } from '../components/summary-card'
 import { Skeleton } from '../components/ui/skeleton'
@@ -16,7 +18,6 @@ import { CreditCardTile } from '../components/cards/CreditCardTile'
 import { useIsFirstVisitThisSession } from '../hooks/useFirstVisitThisSession'
 import { usePrefsStore } from '../store/prefs.store'
 import { CARD_RATIO } from '../lib/colors'
-import { plural } from '../lib/format'
 
 function getCurrentInvoiceAmount(card: CardWithBalance, monthlyTotals: MonthlyTotal[]): number {
   const cardId = card.card_id ?? card.id
@@ -44,6 +45,7 @@ function getCurrentInvoiceAmount(card: CardWithBalance, monthlyTotals: MonthlyTo
 }
 
 export default function Cards() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user, isAuthenticated } = useAuthStore()
   const { setCards, monthlyTotals, setMonthlyTotals, orderedCards, cards } = useAppStore()
@@ -94,11 +96,12 @@ export default function Cards() {
   return (
     <div className="min-h-screen bg-background">
       <TabHeader
-        title="Cartões"
+        title={t('tabs.cards')}
         right={(
           <>
             <HideValuesButton />
-            <HeaderAddButton label="Novo cartão" onClick={() => navigate('/cards/new')} />
+            <NotificationsButton />
+            <HeaderAddButton label={t('cards.new')} onClick={() => navigate('/cards/new')} />
           </>
         )}
       />
@@ -120,8 +123,8 @@ export default function Cards() {
           <Card>
             <EmptyState
               icon={CreditCard}
-              title="Você ainda não tem cartões cadastrados"
-              actionLabel="Adicionar Primeiro Cartão"
+              title={t('dashboard.noCards')}
+              actionLabel={t('dashboard.addFirstCard')}
               actionIcon={Plus}
               onAction={() => navigate('/cards/new')}
             />
@@ -131,14 +134,14 @@ export default function Cards() {
             <div className="grid gap-3 md:gap-4 md:grid-cols-[2fr_1fr]">
               <SummaryCard
                 icon={CreditCard}
-                label="Total gasto em cartões"
+                label={t('cards.totalSpent')}
                 value={<AnimatedCurrency value={totalSpent} hide={hideValues} animateOnMount={animateOnMount} />}
-                caption={`${activeCards.length} ${plural(activeCards.length, 'cartão ativo', 'cartões ativos')}`}
+                caption={t('cards.activeCount', { count: activeCards.length })}
               />
-              <StatCard label="Cartão mais usado" value={mostUsedCard?.card_name ?? '—'} icon={Star} color="var(--color-primary)" />
+              <StatCard label={t('cards.mostUsed')} value={mostUsedCard?.card_name ?? '—'} icon={Star} color="var(--color-primary)" />
             </div>
 
-            <SectionTitle title="Ativos" />
+            <SectionTitle title={t('cards.activeSection')} />
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {activeCards.map((card) => {
                 const availableLimit = Number(card.available_balance) || 0

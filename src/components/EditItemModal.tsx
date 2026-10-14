@@ -1,3 +1,5 @@
+import { formatDecimal } from "../lib/format"
+import { useTranslation } from "react-i18next"
 import { useState, useEffect } from "react"
 import { Save, FileText, DollarSign, Tag, Calendar, MessageSquare } from "lucide-react"
 import { useAppStore } from "../store/app.store"
@@ -20,16 +22,14 @@ export default function EditItemModal({
   onClose,
   onSave,
 }: EditItemModalProps) {
+  const { t } = useTranslation()
   const { categories, authors } = useAppStore()
 
   const [description, setDescription] = useState(item.description)
   const [amount, setAmount] = useState(Number(item.amount).toFixed(2))
   const [displayAmount, setDisplayAmount] = useState(() => {
     const numValue = Number(item.amount)
-    return `R$ ${numValue.toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`
+    return `R$ ${formatDecimal(numValue)}`
   })
   const [categoryId, setCategoryId] = useState(
     item.category_id ? String(item.category_id) : ""
@@ -71,10 +71,7 @@ export default function EditItemModal({
     const numValue = Number(amount)
     if (!isNaN(numValue)) {
       setDisplayAmount(
-        `R$ ${numValue.toLocaleString("pt-BR", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}`
+        `R$ ${formatDecimal(numValue)}`
       )
     } else {
       setDisplayAmount("")
@@ -91,20 +88,14 @@ export default function EditItemModal({
     const numValue = parseInt(numbers) / 100
     setAmount(numValue.toFixed(2))
     setDisplayAmount(
-      `R$ ${numValue.toLocaleString("pt-BR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}`
+      `R$ ${formatDecimal(numValue)}`
     )
   }
 
   const getSplitTotal = () => assignments.reduce((acc, curr) => acc + curr.amount, 0)
 
   const formatCurrency = (val: number) => {
-    return val.toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
+    return formatDecimal(val)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,14 +108,14 @@ export default function EditItemModal({
       // Validação do split
       if (isSplit) {
         if (assignments.length === 0) {
-            alert("Selecione pelo menos uma pessoa para dividir.")
+            alert(t('items.errors.splitEmpty'))
             setIsLoading(false)
             return
         }
         const splitTotal = getSplitTotal()
         // Margem de erro pequena para float math
         if (Math.abs(splitTotal - numericAmount) > 0.05) {
-            alert(`A soma da divisão (R$ ${formatCurrency(splitTotal)}) não bate com o valor total (R$ ${formatCurrency(numericAmount)})`)
+            alert(t('items.errors.splitMismatch', { split: `R$ ${formatCurrency(splitTotal)}`, total: `R$ ${formatCurrency(numericAmount)}` }))
             setIsLoading(false)
             return
         }
@@ -151,17 +142,17 @@ export default function EditItemModal({
       onClose()
     } catch (error) {
       console.error("Erro ao salvar:", error)
-      alert("Erro ao salvar alterações")
+      alert(t('items.errors.update'))
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <Sheet open onClose={onClose} title="Editar Item" size="lg">
+    <Sheet open onClose={onClose} title={t('items.editTitle')} size="lg">
       <form onSubmit={handleSubmit} className="space-y-4 pb-2">
         <TextField
-          label="Descrição"
+          label={t('items.description')}
           icon={FileText}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -171,18 +162,18 @@ export default function EditItemModal({
         {/* Valor e Data */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextField
-            label="Valor Total"
+            label={t('items.amount')}
             icon={DollarSign}
             inputMode="numeric"
             value={displayAmount}
             onChange={(e) => handleAmountChange(e.target.value)}
-            placeholder="R$ 0,00"
+            placeholder={`R$ ${formatDecimal(0)}`}
             required
-            hint={item.is_installment && `Parcela ${item.installment_number}/${item.total_installments}`}
+            hint={item.is_installment && t('items.installmentOf', { number: item.installment_number, total: item.total_installments })}
           />
           <TextField
             type="date"
-            label="Data da Compra"
+            label={t('items.purchaseDate')}
             icon={Calendar}
             value={purchaseDate}
             onChange={(e) => setPurchaseDate(e.target.value)}
@@ -191,18 +182,18 @@ export default function EditItemModal({
 
         {/* Categoria */}
         <div>
-          <FieldLabel label="Categoria" icon={Tag} />
+          <FieldLabel label={t('items.category')} icon={Tag} />
           <CategoryBadgeSelector categories={categories} value={categoryId} onChange={setCategoryId} />
         </div>
 
         {/* Observação */}
         <div>
-          <FieldLabel label="Observação (Opcional)" icon={MessageSquare} htmlFor="edit-notes" />
+          <FieldLabel label={t('items.notes')} icon={MessageSquare} htmlFor="edit-notes" />
           <textarea
             id="edit-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Alguma anotação sobre esse item..."
+            placeholder={t('items.notesPlaceholder')}
             rows={2}
             className={textareaClass}
           />
@@ -222,8 +213,8 @@ export default function EditItemModal({
         />
 
         <div className="flex gap-3 pt-1">
-          <Button label="Cancelar" variant="secondary" onClick={onClose} className="flex-1" />
-          <Button type="submit" label={isLoading ? "Salvando..." : "Salvar"} icon={Save} loading={isLoading} className="flex-1" />
+          <Button label={t('common.cancel')} variant="secondary" onClick={onClose} className="flex-1" />
+          <Button type="submit" label={isLoading ? t('common.saving') : t('common.save')} icon={Save} loading={isLoading} className="flex-1" />
         </div>
       </form>
     </Sheet>

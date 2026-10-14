@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { cn } from '../../lib/cn'
 
 interface ScrollIndicatorProps {
@@ -16,6 +17,7 @@ const SLOT_WIDTH = 22
  * (o ativo sempre se move a cada passo). As pontas com itens escondidos aparecem menores.
  */
 export function ScrollIndicator({ total, current, visibleCount = 3, className, onSelect }: ScrollIndicatorProps) {
+  const { t } = useTranslation()
   if (total <= 1) return null
 
   const halfWindow = Math.floor(visibleCount / 2)
@@ -40,7 +42,7 @@ export function ScrollIndicator({ total, current, visibleCount = 3, className, o
               onClick={() => onSelect?.(index)}
               style={{ width: SLOT_WIDTH }}
               className="shrink-0 h-3 flex items-center justify-center outline-none"
-              aria-label={`Ir para o item ${index + 1}`}
+              aria-label={t('common.goToItem', { number: index + 1 })}
               aria-current={isActive || undefined}
             >
               <span

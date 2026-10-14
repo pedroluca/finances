@@ -1,9 +1,11 @@
-import { useEffect } from 'react'
+import { Fragment, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/auth.store'
 import { FloatingTabBar, Sidebar } from './components/floating-tab-bar'
 import { QuickExpenseSheet } from './components/QuickExpenseSheet'
 import { ScrollToTop } from './components/ScrollToTop'
+import { useNotificationsSync } from './components/notifications/useNotificationsInbox'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -12,6 +14,7 @@ import Cards from './pages/Cards'
 import AddCard from './pages/AddCard'
 import CardDetails from './pages/CardDetails'
 import Settings from './pages/Settings'
+import Notifications from './pages/Notifications'
 import ManageAuthors from './pages/ManageAuthors'
 import ManageCardOrder from './pages/settings/ManageCardOrder'
 import ManageCategories from './pages/settings/ManageCategories'
@@ -27,101 +30,112 @@ function DownloadRedirect() {
 
 function App() {
   const { isAuthenticated, verifyAuth } = useAuthStore()
+  const { i18n } = useTranslation()
 
   useEffect(() => {
     verifyAuth()
   }, [verifyAuth])
 
+  // Contador do sino de notificações
+  useNotificationsSync(isAuthenticated)
+
   return (
     <BrowserRouter>
-      <ScrollToTop />
-      <Sidebar />
+      {/* Trocar o idioma remonta as telas (a URL fica): nada formatado no idioma antigo sobra na tela */}
+      <Fragment key={i18n.language}>
+        <ScrollToTop />
+        <Sidebar />
 
-      {/* No desktop, o conteúdo das telas logadas fica à direita da barra lateral */}
-      <div className={isAuthenticated ? 'lg:pl-64' : undefined}>
-        <Routes>
-          {/* Public Routes */}
-          <Route
-            path="/login"
-            element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
-          />
-          <Route
-            path="/register"
-            element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />}
-          />
+        {/* No desktop, o conteúdo das telas logadas fica à direita da barra lateral */}
+        <div className={isAuthenticated ? 'lg:pl-64' : undefined}>
+          <Routes>
+            {/* Public Routes */}
+            <Route
+              path="/login"
+              element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
+            />
+            <Route
+              path="/register"
+              element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />}
+            />
 
-          {/* Protected Routes */}
-          <Route
-            path="/dashboard"
-            element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/billings"
-            element={isAuthenticated ? <Billings /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/cards"
-            element={isAuthenticated ? <Cards /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/cards/new"
-            element={isAuthenticated ? <AddCard /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/cards/:cardId"
-            element={isAuthenticated ? <CardDetails /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/cards/:cardId/edit"
-            element={isAuthenticated ? <AddCard /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/settings"
-            element={isAuthenticated ? <Settings /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/settings/manage-authors"
-            element={isAuthenticated ? <ManageAuthors /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/settings/card-order"
-            element={isAuthenticated ? <ManageCardOrder /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/settings/categories"
-            element={isAuthenticated ? <ManageCategories /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/settings/subscriptions"
-            element={isAuthenticated ? <ManageSubscriptions /> : <Navigate to="/login" />}
-          />
+            {/* Protected Routes */}
+            <Route
+              path="/dashboard"
+              element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/billings"
+              element={isAuthenticated ? <Billings /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/cards"
+              element={isAuthenticated ? <Cards /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/cards/new"
+              element={isAuthenticated ? <AddCard /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/cards/:cardId"
+              element={isAuthenticated ? <CardDetails /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/cards/:cardId/edit"
+              element={isAuthenticated ? <AddCard /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/notifications"
+              element={isAuthenticated ? <Notifications /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/settings"
+              element={isAuthenticated ? <Settings /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/settings/manage-authors"
+              element={isAuthenticated ? <ManageAuthors /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/settings/card-order"
+              element={isAuthenticated ? <ManageCardOrder /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/settings/categories"
+              element={isAuthenticated ? <ManageCategories /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/settings/subscriptions"
+              element={isAuthenticated ? <ManageSubscriptions /> : <Navigate to="/login" />}
+            />
 
-          {/* Public static pages */}
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/delete-account" element={<DeleteAccount />} />
+            {/* Public static pages */}
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/delete-account" element={<DeleteAccount />} />
 
-          {/* Download APK */}
-          <Route path="/download" element={<DownloadRedirect />} />
+            {/* Download APK */}
+            <Route path="/download" element={<DownloadRedirect />} />
 
-          {/* Default redirect */}
-          <Route
-            path="/"
-            element={
-              isAuthenticated ? (
-                <Navigate to="/dashboard" />
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
+            {/* Default redirect */}
+            <Route
+              path="/"
+              element={
+                isAuthenticated ? (
+                  <Navigate to="/dashboard" />
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
+            />
 
-          {/* Catch all - 404 */}
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </div>
+            {/* Catch all - 404 */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </div>
 
-      <FloatingTabBar />
-      <QuickExpenseSheet />
+        <FloatingTabBar />
+        <QuickExpenseSheet />
+      </Fragment>
     </BrowserRouter>
   )
 }

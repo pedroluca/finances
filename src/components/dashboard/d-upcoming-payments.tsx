@@ -1,3 +1,6 @@
+import { dayMonth, monthYearLabel } from '../../lib/format'
+import { i18n } from '../../i18n'
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, CreditCard, ReceiptText } from 'lucide-react'
@@ -76,8 +79,7 @@ function buildCardPayments(
     // Vencidas sempre aparecem; futuras só se dentro do range
     if (maxDays !== null && diffDays > maxDays) return
 
-    const referenceLabel = new Date(invoice.reference_year, invoice.reference_month - 1)
-      .toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+    const referenceLabel = monthYearLabel(invoice.reference_month, invoice.reference_year)
 
     results.push({
       kind: 'card',
@@ -93,7 +95,7 @@ function buildCardPayments(
       isDueToday: diffDays === 0,
       isDueSoon: diffDays > 0 && diffDays <= 7,
       diffDays,
-      subLabel: `fatura de ${referenceLabel}`,
+      subLabel: i18n.t('upcoming.statementOf', { month: referenceLabel }),
       onClick: () => navigate(`/cards/${cardId}`),
     })
   })
@@ -139,7 +141,7 @@ function buildBillPayments(
       isDueToday: diffDays === 0,
       isDueSoon: diffDays > 0 && diffDays <= 7,
       diffDays,
-      subLabel: 'conta',
+      subLabel: i18n.t('upcoming.bill'),
       onClick: () => navigate('/billings'),
     })
   })
@@ -149,12 +151,7 @@ function buildBillPayments(
 
 type Filter = 'all' | '7' | '15' | '30'
 
-const FILTERS: { value: Filter; label: string }[] = [
-  { value: 'all', label: 'Todos' },
-  { value: '7', label: '7d' },
-  { value: '15', label: '15d' },
-  { value: '30', label: '30d' },
-]
+const FILTERS: Filter[] = ['all', '7', '15', '30']
 
 interface DashboardUpcomingPaymentsProps {
   cards: CardWithBalance[]
@@ -164,8 +161,10 @@ interface DashboardUpcomingPaymentsProps {
 }
 
 export function DashboardUpcomingPayments({ cards, monthlyTotals, bills, hideValues }: DashboardUpcomingPaymentsProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [filter, setFilter] = useState<Filter>('15')
+  const filterOptions = FILTERS.map((value) => ({ value, label: value === 'all' ? t('upcoming.all') : `${value}d` }))
   const maxDays = filter === 'all' ? null : Number(filter)
 
   const today = new Date()
@@ -184,22 +183,22 @@ export function DashboardUpcomingPayments({ cards, monthlyTotals, bills, hideVal
   return (
     <Card className="p-4 md:p-5 space-y-3">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-lg font-semibold text-foreground">Próximos Pagamentos</h2>
-        <SegmentedControl options={FILTERS} value={filter} onChange={setFilter} compact />
+        <h2 className="text-lg font-semibold text-foreground">{t('upcoming.title')}</h2>
+        <SegmentedControl options={filterOptions} value={filter} onChange={setFilter} compact />
       </div>
 
       {definedPayments.length > 0 && (
         <div className="flex gap-3">
-          <TotalBox label="Valor total" value={money(totalAll, hideValues)} />
-          {showMine && <TotalBox label="Sua parte" value={money(totalMine, hideValues)} />}
+          <TotalBox label={t('upcoming.total')} value={money(totalAll, hideValues)} />
+          {showMine && <TotalBox label={t('upcoming.yourShare')} value={money(totalMine, hideValues)} />}
         </div>
       )}
 
       {payments.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
           <CheckCircle2 className="w-10 h-10 text-success" />
-          <p className="font-semibold text-foreground">Tudo em dia!</p>
-          <p className="text-sm text-muted">Nenhum pagamento pendente no momento.</p>
+          <p className="font-semibold text-foreground">{t('upcoming.allClear')}</p>
+          <p className="text-sm text-muted">{t('upcoming.nothingPending')}</p>
         </div>
       ) : (
         <div className="grid gap-2.5 xl:grid-cols-2">
@@ -222,15 +221,16 @@ function TotalBox({ label, value }: { label: string; value: string }) {
 }
 
 function PaymentRow({ payment, hideValues }: { payment: UpcomingPayment; hideValues: boolean }) {
+  const { t } = useTranslation()
   const { diffDays } = payment
 
   const urgency = payment.isOverdue
-    ? { label: 'Vencida', className: 'text-danger' }
+    ? { label: t('upcoming.overdue'), className: 'text-danger' }
     : payment.isDueToday
-      ? { label: 'Vence hoje', className: 'text-orange' }
+      ? { label: t('upcoming.dueToday'), className: 'text-orange' }
       : payment.isDueSoon
-        ? { label: diffDays === 1 ? 'Amanhã' : `Em ${diffDays} dias`, className: 'text-warning' }
-        : { label: diffDays === 1 ? 'Em 1 dia' : `Em ${diffDays} dias`, className: 'text-subtle' }
+        ? { label: diffDays === 1 ? t('upcoming.tomorrow') : t('upcoming.inDays', { count: diffDays }), className: 'text-warning' }
+        : { label: t('upcoming.inDays', { count: diffDays }), className: 'text-subtle' }
 
   // Cartão próprio com itens de outras pessoas: mostra o total e, embaixo, a parte do usuário
   const showTotalAndPart = payment.kind === 'card' && !payment.isShared && payment.totalAmount !== undefined && payment.totalAmount > payment.unpaidAmount
@@ -254,26 +254,26 @@ function PaymentRow({ payment, hideValues }: { payment: UpcomingPayment; hideVal
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0">
           <p className="font-semibold text-foreground truncate">{payment.label}</p>
-          {payment.isShared && <Badge label="compartilhado" tone="info" />}
+          {payment.isShared && <Badge label={t('upcoming.shared')} tone="info" />}
         </div>
         <p className="text-xs text-muted mt-0.5 line-clamp-2">
-          Vence {payment.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} · {payment.subLabel}
+          {t('upcoming.due', { date: dayMonth(payment.dueDate), detail: payment.subLabel })}
         </p>
       </div>
 
       <div className="flex flex-col items-end shrink-0">
         {payment.amountPending ? (
-          <Badge label="Valor a definir" tone="warning" />
+          <Badge label={t('upcoming.amountPending')} tone="warning" />
         ) : showTotalAndPart ? (
           <>
             <p className="font-semibold text-foreground">{money(payment.totalAmount ?? 0, hideValues)}</p>
             <p className="text-[11px] text-subtle">
-              Sua parte: <span className="font-medium text-muted">{money(payment.unpaidAmount, hideValues)}</span>
+              {t('upcoming.yourShare')}: <span className="font-medium text-muted">{money(payment.unpaidAmount, hideValues)}</span>
             </p>
           </>
         ) : (
           <>
-            {payment.isShared && <p className="text-[11px] text-subtle">Sua parte</p>}
+            {payment.isShared && <p className="text-[11px] text-subtle">{t('upcoming.yourShare')}</p>}
             <p className="font-semibold text-foreground">{money(payment.unpaidAmount, hideValues)}</p>
           </>
         )}

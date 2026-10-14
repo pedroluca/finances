@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { CreditCard, LayoutDashboard, Plus, ReceiptText, Repeat, Settings } from 'lucide-react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import logoMark from '../assets/logo-mark.png'
@@ -7,16 +8,17 @@ import { useQuickExpense } from '../store/quick-expense.store'
 import { Button } from './ui/button'
 import { IconButton } from './ui/icon-button'
 
+// O texto de cada aba vem do dicionário (tabs.<labelKey>)
 const TABS = [
-  { to: '/dashboard', label: 'Início', icon: LayoutDashboard },
-  { to: '/billings', label: 'Contas', icon: ReceiptText },
-  { to: '/cards', label: 'Cartões', icon: CreditCard },
-]
+  { to: '/dashboard', labelKey: 'home', icon: LayoutDashboard },
+  { to: '/billings', labelKey: 'bills', icon: ReceiptText },
+  { to: '/cards', labelKey: 'cards', icon: CreditCard },
+] as const
 
-const TAB_ROUTES = TABS.map((tab) => tab.to)
+const TAB_ROUTES: string[] = TABS.map((tab) => tab.to)
 
 // No desktop sobra espaço, então a barra lateral ganha atalhos além das abas da cápsula
-const SIDEBAR_TABS = [...TABS, { to: '/settings/subscriptions', label: 'Assinaturas', icon: Repeat }]
+const SIDEBAR_TABS = [...TABS, { to: '/settings/subscriptions', labelKey: 'subscriptions', icon: Repeat }] as const
 const SIDEBAR_ROUTES = SIDEBAR_TABS.map((tab) => tab.to)
 
 // Vidro da tab bar: preenchimento translúcido com desfoque, borda clara e sombra suave
@@ -52,6 +54,7 @@ function GlassSheen({ rimClassName = 'left-8 right-8' }: { rimClassName?: string
  * Só no celular/tablet e só nas três abas.
  */
 export function FloatingTabBar() {
+  const { t } = useTranslation()
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const showQuickExpense = useQuickExpense((state) => state.show)
   const activeIndex = useActiveIndex()
@@ -74,7 +77,7 @@ export function FloatingTabBar() {
                 style={{ width: `calc((100% - 12px) / ${TABS.length})`, transform: `translateX(${activeIndex * 100}%)` }}
               />
             )}
-            {TABS.map(({ to, label, icon: Icon }, index) => {
+            {TABS.map(({ to, labelKey, icon: Icon }, index) => {
               const active = index === activeIndex
               return (
                 <NavLink
@@ -86,7 +89,7 @@ export function FloatingTabBar() {
                   )}
                 >
                   <Icon size={22} strokeWidth={active ? 2.4 : 2} />
-                  <span className={cn('text-[11px] leading-tight', active ? 'font-semibold' : 'font-medium')}>{label}</span>
+                  <span className={cn('text-[11px] leading-tight', active ? 'font-semibold' : 'font-medium')}>{t(`tabs.${labelKey}`)}</span>
                 </NavLink>
               )
             })}
@@ -97,8 +100,8 @@ export function FloatingTabBar() {
         <button
           type="button"
           onClick={showQuickExpense}
-          aria-label="Nova despesa"
-          title="Nova despesa"
+          aria-label={t('common.newExpense')}
+          title={t('common.newExpense')}
           className={cn('relative shrink-0 w-[84px] h-16 rounded-full flex items-center justify-center transition-transform active:scale-[0.93]', glass)}
         >
           {/* No botão o fio de luz vira só um ponto de reflexo */}
@@ -117,6 +120,7 @@ export function FloatingTabBar() {
  * mais Assinaturas, e o perfil no rodapé (como no Tractus web).
  */
 export function Sidebar() {
+  const { t } = useTranslation()
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const user = useAuthStore((state) => state.user)
   const showQuickExpense = useQuickExpense((state) => state.show)
@@ -137,10 +141,10 @@ export function Sidebar() {
         <span className="text-lg font-bold tracking-tight text-foreground">Finances</span>
       </Link>
 
-      <Button label="Nova despesa" icon={Plus} fullWidth onClick={showQuickExpense} className="mb-5" />
+      <Button label={t('common.newExpense')} icon={Plus} fullWidth onClick={showQuickExpense} className="mb-5" />
 
-      <nav aria-label="Navegação principal" className="flex flex-col gap-1">
-        {SIDEBAR_TABS.map(({ to, label, icon: Icon }, index) => {
+      <nav aria-label={t('tabs.mainNavigation')} className="flex flex-col gap-1">
+        {SIDEBAR_TABS.map(({ to, labelKey, icon: Icon }, index) => {
           const active = index === activeIndex
           return (
             <Link
@@ -153,7 +157,7 @@ export function Sidebar() {
               )}
             >
               <Icon size={20} strokeWidth={active ? 2.4 : 2} aria-hidden />
-              {label}
+              {t(`tabs.${labelKey}`)}
             </Link>
           )
         })}
@@ -170,7 +174,7 @@ export function Sidebar() {
             <span className="truncate text-xs text-muted">{user?.email}</span>
           </span>
         </Link>
-        <IconButton icon={Settings} label="Configurações" tone="muted" onClick={() => navigate('/settings')} />
+        <IconButton icon={Settings} label={t('screens.settings')} tone="muted" onClick={() => navigate('/settings')} />
       </div>
     </aside>
   )

@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import {
   ExternalLink,
   EyeOff,
   GripVertical,
+  Languages,
   LogOut,
   Moon,
   Repeat,
@@ -17,7 +19,8 @@ import {
 import { useTheme } from '../hooks/useTheme'
 import { useAuthStore } from '../store/auth.store'
 import { useAppStore } from '../store/app.store'
-import { usePrefsStore } from '../store/prefs.store'
+import { usePrefsStore, type LanguagePreference } from '../store/prefs.store'
+import { LANGUAGE_SELECTION_ENABLED } from '../i18n'
 import type { ThemeMode } from '../contexts/ThemeContext'
 import type { BillingCycle } from '../types/database'
 import { LogoMark, StackContent, StackHeader } from '../components/app-header'
@@ -27,14 +30,10 @@ import { IconTile, ListRow, ListSection, SwitchRow } from '../components/ui/list
 import { SegmentedControl } from '../components/ui/misc'
 import ConfirmModal from '../components/ConfirmModal'
 import { accents } from '../lib/colors'
-import { money, plural } from '../lib/format'
+import { money } from '../lib/format'
 import { version } from '../../package.json'
 
-const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
-  { value: 'light', label: 'Claro' },
-  { value: 'dark', label: 'Escuro' },
-  { value: 'system', label: 'Automático' },
-]
+const THEMES: ThemeMode[] = ['light', 'dark', 'system']
 
 function toMonthlyEquivalent(amount: number, cycle?: BillingCycle): number {
   if (cycle === 'annual') return amount / 12
@@ -45,12 +44,15 @@ function toMonthlyEquivalent(amount: number, cycle?: BillingCycle): number {
 const openExternal = (url: string) => window.open(url, '_blank', 'noopener,noreferrer')
 
 export default function Settings() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { theme, themeMode, setThemeMode } = useTheme()
   const { user, logout } = useAuthStore()
   const { cards, authors, categories, subscriptions } = useAppStore()
   const hideValues = usePrefsStore((state) => state.hideValues)
   const setHideValues = usePrefsStore((state) => state.setHideValues)
+  const language = usePrefsStore((state) => state.language)
+  const setLanguage = usePrefsStore((state) => state.setLanguage)
   const [confirmLogout, setConfirmLogout] = useState(false)
 
   const people = authors.filter((author) => !author.is_owner)
@@ -59,12 +61,19 @@ export default function Settings() {
   const activeSubscriptions = subscriptions.filter((sub) => sub.active && !sub.paused)
   const subscriptionsMonthly = activeSubscriptions.reduce((sum, sub) => sum + toMonthlyEquivalent(sub.amount, sub.billing_cycle), 0)
   const initial = user?.name?.trim().charAt(0).toUpperCase() || '?'
+  const themeOptions = THEMES.map((value) => ({ value, label: t(`settings.themes.${value}`) }))
+  // Cada idioma aparece com o próprio nome, que é como a pessoa o reconhece
+  const languageOptions: { value: LanguagePreference; label: string }[] = [
+    { value: 'system', label: t('language.system') },
+    { value: 'pt-BR', label: 'Português' },
+    { value: 'en', label: 'English' },
+  ]
 
   const external = <ExternalLink size={16} className="text-subtle shrink-0" />
 
   return (
     <div className="min-h-screen bg-background">
-      <StackHeader title="Configurações" onBack={() => navigate('/dashboard')} />
+      <StackHeader title={t('screens.settings')} onBack={() => navigate('/dashboard')} />
 
       <StackContent className="space-y-6">
         {/* Perfil */}
@@ -79,61 +88,73 @@ export default function Settings() {
             </div>
           </div>
           <div className="flex gap-2">
-            <ProfileStat label={plural(cards.length, 'Cartão', 'Cartões')} value={cards.length} />
-            <ProfileStat label={plural(people.length, 'Pessoa', 'Pessoas')} value={people.length} />
-            <ProfileStat label={plural(activeSubscriptions.length, 'Assinatura', 'Assinaturas')} value={activeSubscriptions.length} />
+            <ProfileStat label={t('settings.stats.cards', { count: cards.length })} value={cards.length} />
+            <ProfileStat label={t('settings.stats.people', { count: people.length })} value={people.length} />
+            <ProfileStat label={t('settings.stats.subscriptions', { count: activeSubscriptions.length })} value={activeSubscriptions.length} />
           </div>
         </Card>
 
-        <ListSection title="Gerenciar">
+        <ListSection title={t('settings.manage')}>
           <ListRow
-            title="Pessoas"
+            title={t('settings.people.title')}
             description={people.length
-              ? `${people.length} ${plural(people.length, 'pessoa', 'pessoas')}${linkedPeople ? ` · ${linkedPeople} ${plural(linkedPeople, 'vinculada', 'vinculadas')}` : ''}`
-              : 'Quem divide gastos com você'}
+              ? t('settings.people.count', { count: people.length }) + (linkedPeople ? ` · ${t('settings.people.linked', { count: linkedPeople })}` : '')
+              : t('settings.people.empty')}
             icon={Users}
             iconColor={accents.violet}
             onClick={() => navigate('/settings/manage-authors')}
           />
           <ListRow
-            title="Ordem dos cartões"
-            description="Como os cartões aparecem no Início"
+            title={t('settings.cardOrder.title')}
+            description={t('settings.cardOrder.description')}
             icon={GripVertical}
             iconColor={accents.blue}
             onClick={() => navigate('/settings/card-order')}
           />
           <ListRow
-            title="Categorias"
+            title={t('settings.categories.title')}
             description={personalCategories
-              ? `${personalCategories} ${plural(personalCategories, 'personalizada', 'personalizadas')}`
-              : 'Crie e organize suas categorias'}
+              ? t('settings.categories.count', { count: personalCategories })
+              : t('settings.categories.empty')}
             icon={Tag}
             iconColor={accents.emerald}
             onClick={() => navigate('/settings/categories')}
           />
           <ListRow
-            title="Assinaturas"
-            description={activeSubscriptions.length ? `${money(subscriptionsMonthly, hideValues)} por mês` : 'Cobranças recorrentes e renovações'}
+            title={t('settings.subscriptions.title')}
+            description={activeSubscriptions.length ? t('settings.subscriptions.perMonth', { amount: money(subscriptionsMonthly, hideValues) }) : t('settings.subscriptions.empty')}
             icon={Repeat}
             iconColor={accents.amber}
             onClick={() => navigate('/settings/subscriptions')}
           />
         </ListSection>
 
-        <ListSection title="Preferências">
+        <ListSection title={t('settings.preferences')}>
           <div className="px-4 py-3.5 space-y-3">
             <div className="flex items-center gap-3">
               <IconTile icon={theme === 'dark' ? Moon : Sun} color={accents.amber} />
               <div className="flex-1 min-w-0">
-                <p className="text-base text-foreground">Aparência</p>
-                <p className="text-xs text-muted mt-0.5">O automático segue o tema do aparelho</p>
+                <p className="text-base text-foreground">{t('settings.appearance')}</p>
+                <p className="text-xs text-muted mt-0.5">{t('settings.appearanceHint')}</p>
               </div>
             </div>
-            <SegmentedControl options={THEME_OPTIONS} value={themeMode} onChange={setThemeMode} />
+            <SegmentedControl options={themeOptions} value={themeMode} onChange={setThemeMode} />
           </div>
+          {LANGUAGE_SELECTION_ENABLED && (
+            <div className="px-4 py-3.5 space-y-3">
+              <div className="flex items-center gap-3">
+                <IconTile icon={Languages} color={accents.blue} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-base text-foreground">{t('language.title')}</p>
+                  <p className="text-xs text-muted mt-0.5">{t('language.description')}</p>
+                </div>
+              </div>
+              <SegmentedControl options={languageOptions} value={language} onChange={setLanguage} />
+            </div>
+          )}
           <SwitchRow
-            title="Ocultar valores"
-            description="Esconde os valores no Início, em Contas e em Cartões"
+            title={t('settings.hideValues')}
+            description={t('settings.hideValuesHint')}
             icon={EyeOff}
             iconColor={accents.gray}
             checked={hideValues}
@@ -141,26 +162,26 @@ export default function Settings() {
           />
         </ListSection>
 
-        <ListSection title="Sobre">
-          <ListRow title="Política de privacidade" icon={ShieldCheck} iconColor={accents.blue} onClick={() => navigate('/privacy')} />
+        <ListSection title={t('settings.about')}>
+          <ListRow title={t('settings.privacy')} icon={ShieldCheck} iconColor={accents.blue} onClick={() => navigate('/privacy')} />
           <ListRow
-            title="Desenvolvedor"
+            title={t('settings.developer')}
             description="Pedro Luca Prates"
             icon={UserRound}
             iconColor={accents.violet}
             accessory={external}
             onClick={() => openExternal('https://pedroluca.dev.br')}
           />
-          <ListRow title="Excluir minha conta" icon={Trash2} destructive onClick={() => navigate('/delete-account')} />
+          <ListRow title={t('settings.deleteAccount')} icon={Trash2} destructive onClick={() => navigate('/delete-account')} />
         </ListSection>
 
-        <Button label="Sair da conta" icon={LogOut} variant="danger-soft" fullWidth onClick={() => setConfirmLogout(true)} />
+        <Button label={t('settings.signOut')} icon={LogOut} variant="danger-soft" fullWidth onClick={() => setConfirmLogout(true)} />
 
         <div className="flex flex-col items-center gap-2 pb-2">
           <LogoMark size={36} />
           <div className="text-center">
             <p className="text-sm font-semibold text-foreground">Finances</p>
-            <p className="text-xs text-subtle">Versão {version}</p>
+            <p className="text-xs text-subtle">{t('settings.version', { version })}</p>
           </div>
         </div>
       </StackContent>
@@ -169,9 +190,9 @@ export default function Settings() {
         isOpen={confirmLogout}
         onClose={() => setConfirmLogout(false)}
         onConfirm={logout}
-        title="Sair da conta"
-        message="Você precisará entrar de novo para ver seus cartões e faturas."
-        confirmText="Sair"
+        title={t('settings.signOut')}
+        message={t('settings.signOutMessage')}
+        confirmText={t('settings.signOutConfirm')}
         icon={LogOut}
         isDestructive
       />

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { forwardRef, useState, type InputHTMLAttributes, type ReactNode } from 'react'
 import { ChevronDown, Eye, EyeOff, Minus, Plus, type LucideIcon } from 'lucide-react'
 import { cn } from '../../lib/cn'
@@ -32,6 +33,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
   { label, icon, leadingIcon: LeadingIcon, hint, error, secureToggle, type, containerClassName, className, id, ...props },
   ref,
 ) {
+  const { t } = useTranslation()
   const [hidden, setHidden] = useState(true)
   const inputType = secureToggle ? (hidden ? 'password' : 'text') : type
   const inputId = id ?? props.name
@@ -54,7 +56,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
           <button
             type="button"
             onClick={() => setHidden((value) => !value)}
-            aria-label={hidden ? 'Mostrar senha' : 'Ocultar senha'}
+            aria-label={hidden ? t('common.showPassword') : t('common.hidePassword')}
             className="absolute right-0 top-0 h-12 px-4 flex items-center text-subtle hover:text-foreground"
           >
             {hidden ? <Eye size={20} /> : <EyeOff size={20} />}
@@ -81,6 +83,7 @@ export function StepperField({ label, icon, value, onChange, min = 0, max = 9999
   step?: number
   hint?: ReactNode
 }) {
+  const { t } = useTranslation()
   // Rascunho só enquanto o campo está em foco (permite apagar tudo antes de digitar)
   const [draft, setDraft] = useState<string | null>(null)
   const clamp = (next: number) => Math.min(max, Math.max(min, next))
@@ -91,7 +94,7 @@ export function StepperField({ label, icon, value, onChange, min = 0, max = 9999
     <div>
       {label && <FieldLabel label={label} icon={icon} />}
       <div className="flex items-center gap-2">
-        <button type="button" aria-label={`Diminuir ${label ?? ''}`} disabled={value <= min} onClick={() => onChange(clamp(value - step))} className={buttonClass}>
+        <button type="button" aria-label={t('common.decrease', { label: label ?? '' })} disabled={value <= min} onClick={() => onChange(clamp(value - step))} className={buttonClass}>
           <Minus size={18} />
         </button>
         <input
@@ -111,7 +114,7 @@ export function StepperField({ label, icon, value, onChange, min = 0, max = 9999
           onBlur={() => setDraft(null)}
           className={cn(fieldClass, 'text-center font-semibold min-w-0')}
         />
-        <button type="button" aria-label={`Aumentar ${label ?? ''}`} disabled={value >= max} onClick={() => onChange(clamp(value + step))} className={buttonClass}>
+        <button type="button" aria-label={t('common.increase', { label: label ?? '' })} disabled={value >= max} onClick={() => onChange(clamp(value + step))} className={buttonClass}>
           <Plus size={18} />
         </button>
       </div>

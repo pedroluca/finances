@@ -369,3 +369,25 @@ export interface UpdateBillChargeDTO {
   notes?: string | null;
 }
 
+
+// Avisos do cron (tabela notifications), mostrados no sino
+export type NotificationType = 'closing_today' | 'due_in_7_days' | 'bill_due_today' | 'bill_due_in_7_days';
+
+export interface AppNotification {
+  id: number;
+  /** Um dos NotificationType, ou um tipo novo que esta versão ainda não conhece */
+  type: string;
+  ref_date: string;
+  data: {
+    count?: number;
+    card_ids?: number[];
+    bill_ids?: number[];
+    due_date?: string;
+  };
+  /** Texto em português gravado pelo servidor (usado quando o tipo é desconhecido) */
+  title: string;
+  body: string;
+  read: boolean;
+  /** "2026-10-13 08:00:05" no horário de Brasília */
+  created_at: string;
+}

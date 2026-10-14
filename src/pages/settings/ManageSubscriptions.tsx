@@ -7,7 +7,9 @@ import { phpApiRequest } from '../../lib/api';
 import type { Subscription, CreateSubscriptionDTO, UpdateSubscriptionDTO, BillingCycle, CardWithBalance } from '../../types/database';
 import { textareaClass } from '../../lib/formStyles';
 import { cn } from '../../lib/cn';
-import { plural } from '../../lib/format';
+import { formatCurrency as formatMoney, formatDecimal, shortDate } from '../../lib/format';
+import { i18n } from '../../i18n';
+import { useTranslation } from 'react-i18next';
 import AuthorSplitSection, { type SplitAssignment } from '../../components/AuthorSplitSection';
 import ConfirmModal from '../../components/ConfirmModal';
 import { SectionTitle, StackContent, StackHeader, TabHeader } from '../../components/app-header';
@@ -20,14 +22,17 @@ import { FieldLabel, SelectField, StepperField, TextField } from '../../componen
 import { Sheet } from '../../components/ui/sheet';
 
 // ── billing cycle helpers ─────────────────────────────────────────────────────
-const CYCLE_OPTIONS: { value: BillingCycle; label: string; shortLabel: string }[] = [
-  { value: 'monthly',    label: 'Mensal (todo mês)',         shortLabel: '/mês'       },
-  { value: 'semiannual', label: 'Semestral (a cada 6 meses)', shortLabel: '/semestre'  },
-  { value: 'annual',     label: 'Anual (uma vez por ano)',    shortLabel: '/ano'       },
-];
+const CYCLES: BillingCycle[] = ['monthly', 'semiannual', 'annual'];
+
+// Função (e não constante): o texto sai no idioma da hora
+const cycleOptions = () => CYCLES.map((value) => ({
+  value,
+  label: i18n.t(`cycles.${value}.label`),
+  shortLabel: i18n.t(`cycles.${value}.short`),
+}));
 
 function cycleShortLabel(cycle?: BillingCycle): string {
-  return CYCLE_OPTIONS.find((o) => o.value === (cycle ?? 'monthly'))?.shortLabel ?? '/mês';
+  return i18n.t(`cycles.${cycle ?? 'monthly'}.short`);
 }
 
 /** Converte o valor bruto de uma assinatura para equivalente mensal */
@@ -40,19 +45,19 @@ function toMonthlyEquivalent(amount: number, cycle?: BillingCycle): number {
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function formatAmount(value: number) {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  return formatMoney(value);
 }
 
 function parseAmountInput(raw: string): { numeric: number; display: string } {
   const numbers = raw.replace(/\D/g, '');
   if (!numbers) return { numeric: 0, display: '' };
   const numeric = parseInt(numbers) / 100;
-  const display = `R$ ${numeric.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const display = formatMoney(numeric);
   return { numeric, display };
 }
 
 function formatCurrency(val: number) {
-  return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatDecimal(val);
 }
 
 function daysUntilRenewal(nextBillingDate: string): number {
@@ -71,13 +76,12 @@ function StatusPill({ icon: Icon, label, className }: { icon: LucideIcon; label:
 }
 
 function RenewalBadge({ nextBillingDate }: { nextBillingDate: string }) {
+  const { t } = useTranslation();
   const days = daysUntilRenewal(nextBillingDate);
-  const renewal = new Date(nextBillingDate + 'T00:00:00');
-  const isNextYear = renewal.getFullYear() !== new Date().getFullYear();
-  const date = renewal.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', ...(isNextYear ? { year: 'numeric' } : {}) });
+  const date = shortDate(new Date(nextBillingDate + 'T00:00:00'));
 
-  if (days < 0) return <StatusPill icon={AlertCircle} label="Atrasada" className="bg-danger/12 text-danger" />;
-  if (days === 0) return <StatusPill icon={RefreshCw} label="Hoje" className="bg-orange/12 text-orange" />;
+  if (days < 0) return <StatusPill icon={AlertCircle} label={t('subscriptions.late')} className="bg-danger/12 text-danger" />;
+  if (days === 0) return <StatusPill icon={RefreshCw} label={t('subscriptions.today')} className="bg-orange/12 text-orange" />;
   if (days <= 3) return <StatusPill icon={RefreshCw} label={`${date} (${days}d)`} className="bg-warning/12 text-warning" />;
   return <StatusPill icon={RefreshCw} label={date} className="bg-surface-2 text-muted" />;
 }
@@ -85,6 +89,7 @@ function RenewalBadge({ nextBillingDate }: { nextBillingDate: string }) {
 // ── main component ─────────────────────────────────────────────────────────
 
 export default function ManageSubscriptions() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { cards, setCards, authors, setAuthors, categories, setCategories } = useAppStore();
@@ -138,7 +143,7 @@ export default function ManageSubscriptions() {
         if (!categories.length) setCategories(catData);
       } catch (err) {
         console.error(err);
-        setGlobalError('Erro ao carregar dados');
+        setGlobalError(t('common.loadError'));
       } finally {
         setIsLoading(false);
       }
@@ -180,7 +185,7 @@ export default function ManageSubscriptions() {
   function openEdit(sub: Subscription) {
     setFDescription(sub.description);
     setFAmount(String(sub.amount));
-    setFAmountDisplay(`R$ ${sub.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+    setFAmountDisplay(formatMoney(sub.amount));
     // card_name comes from view; id is in card_id
     setFCardId(String(sub.card_id));
     setFAuthorId(String(sub.author_id));
@@ -209,18 +214,18 @@ export default function ManageSubscriptions() {
     if (!user) return;
 
     const amountVal = parseFloat(fAmount);
-    if (!fDescription.trim()) return setFormError('Digite uma descrição');
-    if (isNaN(amountVal) || amountVal <= 0) return setFormError('Digite um valor válido');
-    if (!fCardId) return setFormError('Selecione o cartão');
+    if (!fDescription.trim()) return setFormError(t('items.errors.description'));
+    if (isNaN(amountVal) || amountVal <= 0) return setFormError(t('items.errors.amount'));
+    if (!fCardId) return setFormError(t('subscriptions.form.errors.card'));
     const billingDayVal = parseInt(fBillingDay);
-    if (isNaN(billingDayVal) || billingDayVal < 1 || billingDayVal > 28) return setFormError('Dia de cobrança deve ser entre 1 e 28');
+    if (isNaN(billingDayVal) || billingDayVal < 1 || billingDayVal > 28) return setFormError(t('subscriptions.form.errors.billingDay'));
 
     // Validar split
     const assignmentsPayload = isSplit ? assignments : [];
     if (isSplit) {
-      if (assignments.length === 0) return setFormError('Selecione pelo menos uma pessoa para dividir.');
+      if (assignments.length === 0) return setFormError(t('items.errors.splitEmpty'));
       const splitTotal = getSplitTotal();
-      if (Math.abs(splitTotal - amountVal) > 0.05) return setFormError(`A soma da divisão (R$ ${formatCurrency(splitTotal)}) não bate com o total (R$ ${formatCurrency(amountVal)})`);
+      if (Math.abs(splitTotal - amountVal) > 0.05) return setFormError(t('items.errors.splitMismatch', { split: `R$ ${formatCurrency(splitTotal)}`, total: `R$ ${formatCurrency(amountVal)}` }));
     }
 
     // Author: quando não é split, pega o select; array vazio quando é split (o cron usa assignments)
@@ -228,7 +233,7 @@ export default function ManageSubscriptions() {
       ? (assignments[0]?.author_id ?? defaultAuthor?.id)
       : (fAuthorId ? parseInt(fAuthorId) : defaultAuthor?.id);
 
-    if (!authorIdVal) return setFormError('Selecione quem paga');
+    if (!authorIdVal) return setFormError(t('subscriptions.form.errors.payer'));
 
     setIsSubmitting(true);
     try {
@@ -255,7 +260,7 @@ export default function ManageSubscriptions() {
         if (res?.success) {
           setSubscriptions((prev) => prev.map((s) => s.id === editingId ? res.data : s));
         } else {
-          setFormError(res?.message ?? 'Erro ao atualizar');
+          setFormError(res?.message ?? t('bills.form.errors.update'));
           return;
         }
       } else {
@@ -279,7 +284,7 @@ export default function ManageSubscriptions() {
         if (res?.success) {
           setSubscriptions((prev) => [res.data, ...prev]);
         } else {
-          setFormError(res?.message ?? 'Erro ao criar');
+          setFormError(res?.message ?? t('bills.form.errors.create'));
           return;
         }
       }
@@ -287,7 +292,7 @@ export default function ManageSubscriptions() {
       resetForm();
     } catch (err) {
       console.error(err);
-      setFormError('Erro de rede. Tente novamente.');
+      setFormError(t('errors.network'));
     } finally {
       setIsSubmitting(false);
     }
@@ -371,8 +376,8 @@ export default function ManageSubscriptions() {
   return (
     <div className="min-h-screen bg-background">
       {/* No desktop Assinaturas é item da barra lateral, então ganha o cabeçalho e a largura das abas */}
-      <StackHeader title="Assinaturas" onBack={() => navigate('/settings')} className="lg:hidden" />
-      <TabHeader title="Assinaturas" className="hidden lg:block" />
+      <StackHeader title={t('screens.subscriptions')} onBack={() => navigate('/settings')} className="lg:hidden" />
+      <TabHeader title={t('screens.subscriptions')} className="hidden lg:block" />
 
       <StackContent className="space-y-4 lg:max-w-6xl lg:pt-4">
         {globalError && <Callout tone="danger" icon={AlertCircle}>{globalError}</Callout>}
@@ -380,14 +385,14 @@ export default function ManageSubscriptions() {
         {/* Filtros */}
         {!isLoading && hasActive && (
           <div className="space-y-2">
-            <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.6px] text-subtle">Filtrar</h2>
+            <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.6px] text-subtle">{t('subscriptions.filter')}</h2>
             {authorOptions.length > 1 && (
               <div className="flex flex-wrap gap-2">
-                <Chip label="Todos" size="sm" selected={filterAuthor === null} onClick={() => setFilterAuthor(null)} />
+                <Chip label={t('upcoming.all')} size="sm" selected={filterAuthor === null} onClick={() => setFilterAuthor(null)} />
                 {authorOptions.map((a) => (
                   <Chip
                     key={a.id}
-                    label={`${a.name}${a.is_owner ? ' (você)' : ''}`}
+                    label={a.is_owner ? `${a.name} ${t('common.youSuffix')}` : a.name}
                     size="sm"
                     selected={filterAuthor === a.id}
                     onClick={() => setFilterAuthor(filterAuthor === a.id ? null : a.id)}
@@ -396,10 +401,10 @@ export default function ManageSubscriptions() {
               </div>
             )}
             <div className="flex flex-wrap gap-2">
-              {CYCLE_OPTIONS.map((opt) => (
+              {cycleOptions().map((opt) => (
                 <Chip
                   key={opt.value}
-                  label={opt.shortLabel.replace('/', '')}
+                  label={t(`cycles.${opt.value}.filter`)}
                   size="sm"
                   selected={filterCycle === opt.value}
                   onClick={() => setFilterCycle(filterCycle === opt.value ? null : opt.value)}
@@ -412,9 +417,9 @@ export default function ManageSubscriptions() {
         {!isLoading && activeList.length > 0 && (
           <SummaryCard
             icon={Repeat}
-            label="Equivalente mensal em assinaturas"
+            label={t('subscriptions.monthlyEquivalent')}
             value={formatAmount(monthlyTotal)}
-            caption={`${activeList.length} ${plural(activeList.length, 'assinatura ativa', 'assinaturas ativas')}`}
+            caption={t('subscriptions.activeCount', { count: activeList.length })}
           />
         )}
 
@@ -424,21 +429,21 @@ export default function ManageSubscriptions() {
           <Card>
             <EmptyState
               icon={Repeat}
-              title="Nenhuma assinatura cadastrada"
-              description="Cadastre suas assinaturas recorrentes e elas serão adicionadas automaticamente nas faturas na data certa."
-              actionLabel="Adicionar assinatura"
+              title={t('subscriptions.emptyTitle')}
+              description={t('subscriptions.emptyDescription')}
+              actionLabel={t('subscriptions.add')}
               actionIcon={Plus}
               onAction={openCreate}
             />
           </Card>
         ) : (
           <>
-            <SectionTitle title="Ativas" action={<Button label="Nova" icon={Plus} size="sm" onClick={openCreate} />} />
+            <SectionTitle title={t('subscriptions.activeSection')} action={<Button label={t('common.new')} icon={Plus} size="sm" onClick={openCreate} />} />
             {activeList.length > 0 ? (
               <div className={listClass}>{activeList.map((sub) => renderCard(sub))}</div>
             ) : (
               <p className="text-sm text-subtle px-1">
-                Nenhuma assinatura ativa{filterAuthor !== null || filterCycle !== null ? ' com esses filtros' : ''}.
+                {filterAuthor !== null || filterCycle !== null ? t('subscriptions.noneActiveFiltered') : t('subscriptions.noneActive')}
               </p>
             )}
 
@@ -452,7 +457,7 @@ export default function ManageSubscriptions() {
                 >
                   <ChevronDown className={cn('w-4 h-4 transition-transform', showPaused && 'rotate-180')} />
                   <Pause className="w-3.5 h-3.5" />
-                  {pausedList.length} {plural(pausedList.length, 'pausada', 'pausadas')}
+                  {t('subscriptions.pausedCount', { count: pausedList.length })}
                 </button>
                 {showPaused && <div className={listClass}>{pausedList.map((sub) => renderCard(sub))}</div>}
               </div>
@@ -467,7 +472,7 @@ export default function ManageSubscriptions() {
                   className="flex items-center gap-2 py-1 px-1 text-sm text-muted hover:text-foreground transition-colors"
                 >
                   <ChevronDown className={cn('w-4 h-4 transition-transform', showInactive && 'rotate-180')} />
-                  {inactiveList.length} {plural(inactiveList.length, 'assinatura inativa', 'assinaturas inativas')}
+                  {t('subscriptions.inactiveCount', { count: inactiveList.length })}
                 </button>
                 {showInactive && <div className={listClass}>{inactiveList.map((sub) => renderCard(sub, false))}</div>}
               </div>
@@ -477,53 +482,53 @@ export default function ManageSubscriptions() {
       </StackContent>
 
       {/* ── Formulário: folha no celular, diálogo no desktop ── */}
-      <Sheet open={showForm} onClose={closeForm} title={editingId !== null ? 'Editar assinatura' : 'Nova assinatura'}>
+      <Sheet open={showForm} onClose={closeForm} title={editingId !== null ? t('subscriptions.form.editTitle') : t('subscriptions.form.newTitle')}>
         <form onSubmit={handleSubmit} className="space-y-4 pb-2">
           <TextField
-            label="Nome da assinatura *"
+            label={t('subscriptions.form.name')}
             value={fDescription}
             onChange={(e) => setFDescription(e.target.value)}
-            placeholder="Ex: Netflix, Spotify, iCloud..."
+            placeholder={t('subscriptions.form.namePlaceholder')}
             autoFocus={editingId === null}
             required
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <TextField
-              label="Valor por cobrança *"
+              label={t('subscriptions.form.amount')}
               inputMode="numeric"
               value={fAmountDisplay}
               onChange={(e) => handleAmountChange(e.target.value)}
-              placeholder="R$ 0,00"
+              placeholder={formatMoney(0)}
               required
             />
             <StepperField
-              label="Dia de cobrança *"
+              label={t('subscriptions.form.billingDay')}
               value={Number(fBillingDay) || 1}
               onChange={(value) => setFBillingDay(String(value))}
               min={1}
               max={28}
-              hint="Cai na fatura mais próxima deste dia"
+              hint={t('subscriptions.form.billingDayHint')}
             />
           </div>
 
           <div>
-            <FieldLabel label="Ciclo de cobrança *" />
+            <FieldLabel label={t('subscriptions.form.cycle')} />
             <div className="flex flex-wrap gap-2">
-              {CYCLE_OPTIONS.map((opt) => (
+              {cycleOptions().map((opt) => (
                 <Chip key={opt.value} label={opt.label} selected={fBillingCycle === opt.value} onClick={() => setFBillingCycle(opt.value)} />
               ))}
             </div>
             {fBillingCycle !== 'monthly' && parseFloat(fAmount) > 0 && (
               <p className="text-xs text-primary mt-1.5">
-                ≈ {formatAmount(toMonthlyEquivalent(parseFloat(fAmount), fBillingCycle))}/mês
+                ≈ {formatAmount(toMonthlyEquivalent(parseFloat(fAmount), fBillingCycle))}{t('cycles.monthly.short')}
               </p>
             )}
           </div>
 
           {/* Cartão — usa card_id (field da view card_available_balance) */}
-          <SelectField label="Cartão *" id="sub-card" value={fCardId} onChange={setFCardId} required>
-            <option value="">Selecione o cartão...</option>
+          <SelectField label={t('subscriptions.form.card')} id="sub-card" value={fCardId} onChange={setFCardId} required>
+            <option value="">{t('subscriptions.form.cardPlaceholder')}</option>
             {cards
               .filter((c) => c.active || Number((c as CardWithBalance).active) === 1)
               .map((c) => {
@@ -552,13 +557,13 @@ export default function ManageSubscriptions() {
           <Divider />
 
           <div>
-            <FieldLabel label="Observações (opcional)" htmlFor="sub-notes" />
+            <FieldLabel label={t('bills.form.notes')} htmlFor="sub-notes" />
             <textarea
               id="sub-notes"
               value={fNotes}
               onChange={(e) => setFNotes(e.target.value)}
               rows={2}
-              placeholder="Ex: conta familiar, plano premium..."
+              placeholder={t('subscriptions.form.notesPlaceholder')}
               className={textareaClass}
             />
           </div>
@@ -566,17 +571,17 @@ export default function ManageSubscriptions() {
           {editingId !== null && (
             <>
               <Divider />
-              <SwitchField title="Assinatura ativa" checked={fActive} onChange={setFActive} />
+              <SwitchField title={t('subscriptions.form.active')} checked={fActive} onChange={setFActive} />
             </>
           )}
 
           {formError && <Callout tone="danger" icon={AlertCircle}>{formError}</Callout>}
 
           <div className="flex gap-3 pt-1">
-            <Button label="Cancelar" variant="secondary" onClick={closeForm} className="flex-1" />
+            <Button label={t('common.cancel')} variant="secondary" onClick={closeForm} className="flex-1" />
             <Button
               type="submit"
-              label={isSubmitting ? 'Salvando...' : editingId !== null ? 'Salvar' : 'Criar assinatura'}
+              label={isSubmitting ? t('common.saving') : editingId !== null ? t('common.save') : t('subscriptions.form.create')}
               loading={isSubmitting}
               className="flex-1"
             />
@@ -588,9 +593,9 @@ export default function ManageSubscriptions() {
         isOpen={!!deletingSub}
         onClose={() => setDeletingSub(null)}
         onConfirm={() => (deletingSub ? handleDelete(deletingSub.id) : undefined)}
-        title="Excluir assinatura?"
-        message={`Excluir "${deletingSub?.description ?? ''}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
+        title={t('subscriptions.deleteTitle')}
+        message={t('subscriptions.deleteMessageUndo', { name: deletingSub?.description ?? '' })}
+        confirmText={t('common.delete')}
         icon={Trash2}
         isDestructive
       />
@@ -609,8 +614,9 @@ interface SubscriptionCardProps {
 }
 
 function SubscriptionCard({ sub, onEdit, onDelete, onPause }: SubscriptionCardProps) {
+  const { t } = useTranslation();
   const tint = sub.category_color ?? '#6366f1';
-  const details = [sub.card_name, sub.author_name, sub.billing_day ? `Dia ${sub.billing_day}` : null].filter(Boolean).join(' · ');
+  const details = [sub.card_name, sub.author_name, sub.billing_day ? t('subscriptions.day', { day: sub.billing_day }) : null].filter(Boolean).join(' · ');
 
   return (
     <Card
@@ -625,12 +631,12 @@ function SubscriptionCard({ sub, onEdit, onDelete, onPause }: SubscriptionCardPr
         <div className="flex-1 min-w-0 space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-foreground truncate">{sub.description}</h3>
-            {sub.paused && <Badge label="Pausada" tone="warning" />}
+            {sub.paused && <Badge label={t('subscriptions.paused')} tone="warning" />}
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
             <p className="text-xs text-muted">{details}</p>
             {sub.billing_cycle && sub.billing_cycle !== 'monthly' && (
-              <Badge label={sub.billing_cycle === 'annual' ? 'Anual' : 'Semestral'} tone="primary" />
+              <Badge label={t(`cycles.${sub.billing_cycle}.name`)} tone="primary" />
             )}
           </div>
         </div>
@@ -643,7 +649,7 @@ function SubscriptionCard({ sub, onEdit, onDelete, onPause }: SubscriptionCardPr
 
       <div className="flex items-center justify-between gap-2">
         {sub.paused ? (
-          <StatusPill icon={Pause} label="Pausada" className="bg-warning/12 text-warning" />
+          <StatusPill icon={Pause} label={t('subscriptions.paused')} className="bg-warning/12 text-warning" />
         ) : (
           <RenewalBadge nextBillingDate={sub.next_billing_date} />
         )}
@@ -651,15 +657,15 @@ function SubscriptionCard({ sub, onEdit, onDelete, onPause }: SubscriptionCardPr
           {onPause && (
             <IconButton
               icon={sub.paused ? Play : Pause}
-              label={sub.paused ? 'Retomar' : 'Pausar'}
+              label={sub.paused ? t('subscriptions.resume') : t('subscriptions.pause')}
               size={36}
               iconSize={17}
               tone={sub.paused ? 'success' : 'muted'}
               onClick={onPause}
             />
           )}
-          <IconButton icon={Pencil} label="Editar" size={36} iconSize={17} tone="muted" onClick={onEdit} />
-          <IconButton icon={Trash2} label="Excluir" size={36} iconSize={17} tone="muted" onClick={onDelete} />
+          <IconButton icon={Pencil} label={t('common.edit')} size={36} iconSize={17} tone="muted" onClick={onEdit} />
+          <IconButton icon={Trash2} label={t('common.delete')} size={36} iconSize={17} tone="muted" onClick={onDelete} />
         </div>
       </div>
 

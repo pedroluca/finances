@@ -29,10 +29,12 @@ export type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'chi
   /** Lado do botão em px */
   size?: number
   iconSize?: number
+  /** Contador no canto (ex.: notificações não lidas) */
+  badge?: number
 }
 
 /** Botão redondo só com ícone (olho, "+", editar, excluir...) */
-export function IconButton({ icon: Icon, label, variant = 'ghost', tone = 'default', size = 40, iconSize = 20, className, type = 'button', ...props }: IconButtonProps) {
+export function IconButton({ icon: Icon, label, variant = 'ghost', tone = 'default', size = 40, iconSize = 20, badge, className, type = 'button', ...props }: IconButtonProps) {
   return (
     <button
       type={type}
@@ -40,7 +42,7 @@ export function IconButton({ icon: Icon, label, variant = 'ghost', tone = 'defau
       title={label}
       style={{ width: size, height: size }}
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-full transition-colors active:opacity-80 disabled:opacity-40 disabled:pointer-events-none',
+        'relative inline-flex shrink-0 items-center justify-center rounded-full transition-colors active:opacity-80 disabled:opacity-40 disabled:pointer-events-none',
         variantClass[variant],
         (variant === 'ghost' || variant === 'surface') && toneClass[tone],
         className,
@@ -48,6 +50,11 @@ export function IconButton({ icon: Icon, label, variant = 'ghost', tone = 'defau
       {...props}
     >
       <Icon size={iconSize} strokeWidth={2} />
+      {!!badge && badge > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] leading-none font-bold flex items-center justify-center">
+          {badge > 9 ? '9+' : badge}
+        </span>
+      )}
     </button>
   )
 }

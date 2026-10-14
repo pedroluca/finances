@@ -1,3 +1,4 @@
+import { currentLanguage, i18n } from '../i18n';
 
 export const PHP_API_URL = 'https://api-finances.pedroluca.dev.br';
 
@@ -39,6 +40,8 @@ export async function phpApiRequest(endpoint: string, options: RequestInit = {})
 
   // Adicionar token no header se existir
   const headers: Record<string, string> = {
+    // A API responde as mensagens no idioma do app
+    'Accept-Language': currentLanguage(),
     ...options.headers as Record<string, string>,
   };
   if (token) {
@@ -52,7 +55,7 @@ export async function phpApiRequest(endpoint: string, options: RequestInit = {})
   });
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.message || data.error || `Erro HTTP ${response.status}`);
+    throw new Error(data.message || data.error || i18n.t('errors.http', { status: response.status }));
   }
   return data;
 }

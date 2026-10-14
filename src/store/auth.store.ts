@@ -1,3 +1,4 @@
+import { i18n } from '../i18n';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '../types/database';
@@ -49,13 +50,13 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
           return {
             success: false,
-            message: response.message || 'Erro ao fazer login',
+            message: response.message || i18n.t('auth.loginError'),
           };
         } catch {
           set({ isLoading: false });
           return {
             success: false,
-            message: 'Erro ao fazer login',
+            message: i18n.t('auth.loginError'),
           };
         }
       },
@@ -80,13 +81,13 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
           return {
             success: false,
-            message: response.message || 'Erro ao registrar',
+            message: response.message || i18n.t('auth.registerError'),
           };
         } catch {
           set({ isLoading: false });
           return {
             success: false,
-            message: 'Erro ao registrar',
+            message: i18n.t('auth.registerError'),
           };
         }
       },

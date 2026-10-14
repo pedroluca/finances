@@ -1,3 +1,5 @@
+import { formatDecimal } from "../lib/format"
+import { useTranslation } from "react-i18next"
 import { useMemo, useState, useRef, useEffect, type ReactNode } from "react"
 import { User, Calculator, AlertCircle } from "lucide-react"
 import { AppSwitch, Chip } from "./ui/misc"
@@ -25,8 +27,8 @@ interface AuthorSplitSectionProps {
   footer?: ReactNode
 }
 
-const formatCurrency = (val: number) =>
-  val.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+// Só o número, com os separadores do idioma ("R$" vem antes em cada uso)
+const formatCurrency = formatDecimal
 
 export default function AuthorSplitSection({
   authors,
@@ -42,6 +44,7 @@ export default function AuthorSplitSection({
   lockedAuthorName,
   footer,
 }: AuthorSplitSectionProps) {
+  const { t } = useTranslation()
   const orderedAuthors = useMemo(() => {
     if (!defaultAuthorId) return authors
     const def = authors.find((a) => a.id === defaultAuthorId)
@@ -125,19 +128,19 @@ export default function AuthorSplitSection({
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted">
           <User size={14} />
-          Quem comprou?
+          {t('items.split.who')}
         </span>
         {!isLocked && (
           <label className="flex items-center gap-2 cursor-pointer select-none">
-            <span className="text-[13px] font-medium text-foreground">Gasto compartilhado</span>
-            <AppSwitch checked={isSplit} onChange={onIsSplitChange} label="Gasto compartilhado" />
+            <span className="text-[13px] font-medium text-foreground">{t('items.split.shared')}</span>
+            <AppSwitch checked={isSplit} onChange={onIsSplitChange} label={t('items.split.shared')} />
           </label>
         )}
       </div>
 
       {isLocked ? (
         <div className="inline-flex items-center h-9 px-3.5 rounded-full bg-surface-2 text-sm font-medium text-foreground">
-          {lockedAuthorName || "Carregando..."}
+          {lockedAuthorName || t('common.loading')}
         </div>
       ) : (
         <>
@@ -147,7 +150,7 @@ export default function AuthorSplitSection({
                 return (
                   <Chip
                     key={author.id}
-                    label={`${author.name}${author.is_owner ? " (Você)" : ""}`}
+                    label={author.is_owner ? `${author.name} ${t('common.youSuffix')}` : author.name}
                     selected={authorId === String(author.id)}
                     onClick={() => onAuthorIdChange(String(author.id))}
                   />
@@ -168,7 +171,7 @@ export default function AuthorSplitSection({
                     isAuto && "ring-1 ring-inset ring-white/40",
                   )}
                 >
-                  <button type="button" onClick={() => toggleAuthorInSplit(author.id)} className="text-sm font-medium" title="Remover da divisão">
+                  <button type="button" onClick={() => toggleAuthorInSplit(author.id)} className="text-sm font-medium" title={t('items.split.remove')}>
                     {author.name}
                   </button>
                   <input
@@ -176,8 +179,8 @@ export default function AuthorSplitSection({
                     inputMode="numeric"
                     value={`R$ ${formatCurrency(assignment.amount)}`}
                     onChange={(e) => updateAssignmentAmount(author.id, e.target.value)}
-                    aria-label={`Valor de ${author.name}`}
-                    title={isAuto ? "Valor calculado automaticamente com o restante" : undefined}
+                    aria-label={t('items.split.amountOf', { name: author.name })}
+                    title={isAuto ? t('items.split.auto') : undefined}
                     className={cn(
                       "w-[104px] h-8 px-3 rounded-full bg-white/15 text-right text-[13px] font-semibold outline-none focus:bg-white/25",
                       isAuto && "italic",
@@ -197,20 +200,20 @@ export default function AuthorSplitSection({
                   type="button"
                   onClick={distributeEqually}
                   className="flex items-center gap-1 text-[13px] font-medium text-primary hover:opacity-80"
-                  title="Distribuir igualmente entre selecionados"
+                  title={t('items.split.equallyHint')}
                 >
-                  <Calculator size={14} /> Distribuir igualmente
+                  <Calculator size={14} /> {t('items.split.equally')}
                 </button>
                 <span className={cn("text-[13px] font-bold", splitMismatch ? "text-danger" : "text-success")}>
-                  Total: R$ {formatCurrency(splitTotal)}
+                  {t('items.split.total', { amount: `R$ ${formatCurrency(splitTotal)}` })}
                 </span>
               </div>
               {splitMismatch && (
                 <p className="text-xs text-danger flex items-center gap-1">
                   <AlertCircle size={12} />
                   {splitDiff > 0
-                    ? `Falta distribuir R$ ${formatCurrency(splitDiff)}`
-                    : `Passou R$ ${formatCurrency(Math.abs(splitDiff))} do total`}
+                    ? t('items.split.missing', { amount: `R$ ${formatCurrency(splitDiff)}` })
+                    : t('items.split.over', { amount: `R$ ${formatCurrency(Math.abs(splitDiff))}` })}
                 </p>
               )}
             </div>

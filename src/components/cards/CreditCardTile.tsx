@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useId, type CSSProperties, type ReactNode } from 'react'
 import { Nfc, UsersRound } from 'lucide-react'
 import type { CardWithBalance } from '../../types/database'
@@ -92,6 +93,7 @@ export function CreditCardTile({
   className,
   style,
 }: CreditCardTileProps) {
+  const { t } = useTranslation()
   const ink = cardInk(card.color)
   const widthCurrent = useAnimatedNumber(percCurrent, { animateOnMount })
   const widthOther = useAnimatedNumber(percOther, { animateOnMount })
@@ -100,7 +102,7 @@ export function CreditCardTile({
     <button
       type="button"
       onClick={onClick}
-      aria-label={`Cartão ${card.card_name}`}
+      aria-label={t('cardTile.label', { name: card.card_name })}
       className={cn('block text-left transition-transform duration-200 hover:-translate-y-0.5 active:scale-[0.985]', className)}
       style={{ aspectRatio: CARD_RATIO, ...style }}
     >
@@ -120,7 +122,7 @@ export function CreditCardTile({
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5" style={{ color: withAlpha(ink, 0.75) }}>
                   <UsersRound size={12} />
-                  <span className="text-[10px] font-semibold uppercase tracking-[1px]">Compartilhado com</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[1px]">{t('cardTile.sharedBy')}</span>
                 </div>
                 <p className="text-lg font-bold truncate">{card.owner_name}</p>
               </div>
@@ -128,7 +130,7 @@ export function CreditCardTile({
               <div className="space-y-2">
                 <div className="flex items-end justify-between gap-2">
                   <span className="text-[10px] font-semibold uppercase tracking-[1px]" style={{ color: withAlpha(ink, 0.75) }}>
-                    Limite total
+                    {t('cardTile.totalLimit')}
                   </span>
                   <span className="text-[15px] font-bold">
                     <AnimatedCurrency value={totalLimit} hide={hideValues} animateOnMount={animateOnMount} />
@@ -142,9 +144,9 @@ export function CreditCardTile({
                 </div>
 
                 <div className="flex justify-between">
-                  <Legend label="Atual" ink={ink} dot={1} value={currentInvoiceAmount} hide={hideValues} animateOnMount={animateOnMount} />
-                  <Legend label="Outras" ink={ink} dot={0.5} value={otherInvoices} hide={hideValues} animateOnMount={animateOnMount} align="center" />
-                  <Legend label="Disponível" ink={ink} dot={0.2} value={availableLimit} hide={hideValues} animateOnMount={animateOnMount} align="end" />
+                  <Legend label={t('cardTile.current')} ink={ink} dot={1} value={currentInvoiceAmount} hide={hideValues} animateOnMount={animateOnMount} />
+                  <Legend label={t('cardTile.other')} ink={ink} dot={0.5} value={otherInvoices} hide={hideValues} animateOnMount={animateOnMount} align="center" />
+                  <Legend label={t('cardTile.available')} ink={ink} dot={0.2} value={availableLimit} hide={hideValues} animateOnMount={animateOnMount} align="end" />
                 </div>
               </div>
             )}

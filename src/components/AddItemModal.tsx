@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { useState, useEffect, useMemo, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "../store/auth.store"
@@ -18,7 +19,7 @@ import CategoryBadgeSelector from "./CategoryBadgeSelector"
 import AuthorSplitSection, { type SplitAssignment } from "./AuthorSplitSection"
 import { fieldClass, textareaClass } from "../lib/formStyles"
 import { cn } from "../lib/cn"
-import { plural } from "../lib/format"
+import { formatDecimal } from "../lib/format"
 import { Sheet } from "./ui/sheet"
 import { Button } from "./ui/button"
 import { Callout, LoadingState } from "./ui/misc"
@@ -49,8 +50,9 @@ interface AddItemModalProps extends Omit<AddItemFormProps, 'onCancel' | 'onSaved
 
 /** "Adicionar Item" da fatura do cartão */
 export default function AddItemModal({ open, onClose, onItemAdded, ...formProps }: AddItemModalProps) {
+  const { t } = useTranslation()
   return (
-    <Sheet open={open} onClose={onClose} title="Adicionar Item" size="lg">
+    <Sheet open={open} onClose={onClose} title={t('items.addTitle')} size="lg">
       <AddItemForm
         {...formProps}
         onCancel={onClose}
@@ -73,6 +75,7 @@ export function AddItemForm({
   onSaved,
   prepare,
 }: AddItemFormProps) {
+  const { t } = useTranslation()
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const { categories, setCategories, authors, setAuthors, addAuthor } =
@@ -159,10 +162,7 @@ export function AddItemForm({
     }
     const numValue = parseInt(numbers) / 100
     setAmount(numValue.toString())
-    const formatted = numValue.toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
+    const formatted = formatDecimal(numValue)
     setDisplayAmount(`R$ ${formatted}`)
   }
 
@@ -172,38 +172,35 @@ export function AddItemForm({
   const getSplitTotal = () => assignments.reduce((acc, curr) => acc + curr.amount, 0)
 
   const formatCurrency = (val: number) => {
-    return val.toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
+    return formatDecimal(val)
   }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError("")
     if (!user || !card) {
-      setError("Dados inválidos")
+      setError(t('items.errors.invalid'))
       return
     }
     if (!description.trim()) {
-      setError("Digite uma descrição")
+      setError(t('items.errors.description'))
       return
     }
     const amountValue = parseFloat(amount)
     if (isNaN(amountValue) || amountValue <= 0) {
-      setError("Digite um valor válido")
+      setError(t('items.errors.amount'))
       return
     }
 
     // Validação do split (cartão compartilhado não divide: o item é sempre da pessoa vinculada)
     if (isSplit && !isAuthorLocked) {
         if (assignments.length === 0) {
-            setError("Selecione pelo menos uma pessoa para dividir.")
+            setError(t('items.errors.splitEmpty'))
             return
         }
         const splitTotal = getSplitTotal()
         if (Math.abs(splitTotal - amountValue) > 0.05) {
-            setError(`A soma da divisão (R$ ${formatCurrency(splitTotal)}) não bate com o valor total (R$ ${formatCurrency(amountValue)})`)
+            setError(t('items.errors.splitMismatch', { split: `R$ ${formatCurrency(splitTotal)}`, total: `R$ ${formatCurrency(amountValue)}` }))
             return
         }
     }
@@ -240,7 +237,7 @@ export function AddItemForm({
       }
     }
     if (!selectedAuthorId) {
-      setError("Selecione quem comprou")
+      setError(t('items.errors.author'))
       return
     }
 
@@ -290,7 +287,7 @@ export function AddItemForm({
       onSaved()
     } catch (err) {
       console.log(err)
-      setError("Erro ao criar item")
+      setError(t('items.errors.create'))
     } finally {
       setIsLoading(false)
     }
@@ -311,11 +308,11 @@ export function AddItemForm({
     <form onSubmit={handleSubmit} className="space-y-4 pb-2">
       <TextField
         id="description"
-        label="Descrição"
+        label={t('items.description')}
         icon={FileText}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        placeholder="Ex: Compras no supermercado"
+        placeholder={t('items.descriptionPlaceholder')}
         autoFocus
         required
       />
@@ -324,24 +321,24 @@ export function AddItemForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <TextField
           id="amount"
-          label="Valor Total"
+          label={t('items.amount')}
           icon={DollarSign}
           inputMode="numeric"
           value={displayAmount}
           onChange={(e) => handleAmountChange(e.target.value)}
-          placeholder="R$ 0,00"
+          placeholder={`R$ ${formatDecimal(0)}`}
           required
           hint={exceedsAvailableLimit && (
-            <span className="text-warning">O limite disponível é de R$ {formatCurrency(card.available_balance)}</span>
+            <span className="text-warning">{t('items.availableLimit', { amount: `R$ ${formatCurrency(card.available_balance)}` })}</span>
           )}
         />
         <StepperField
-          label="Parcelas"
+          label={t('items.installments')}
           value={installmentsCount}
           onChange={changeInstallments}
           min={1}
           max={24}
-          hint={isInstallment && `${installmentsCount}x de R$ ${formatCurrency(parseFloat(amount || "0") / installmentsCount)}`}
+          hint={isInstallment && t('items.installmentValue', { times: installmentsCount, value: `R$ ${formatCurrency(parseFloat(amount || "0") / installmentsCount)}` })}
         />
       </div>
 
@@ -350,14 +347,14 @@ export function AddItemForm({
         <TextField
           id="date"
           type="date"
-          label="Data da Compra"
+          label={t('items.purchaseDate')}
           icon={Calendar}
           value={purchaseDate}
           onChange={(e) => setPurchaseDate(e.target.value)}
         />
         {isInstallment && (
           <StepperField
-            label="Parcela Atual"
+            label={t('items.currentInstallment')}
             value={Number(currentInstallment) || 1}
             onChange={(value) => setCurrentInstallment(String(value))}
             min={1}
@@ -367,24 +364,24 @@ export function AddItemForm({
       </div>
       {isInstallment && (
         <p className="text-xs text-subtle -mt-2">
-          Será criada a partir da parcela {currentInstallment} até a {installments} ({remainingInstallments} {plural(remainingInstallments, "parcela", "parcelas")})
+          {t('items.installmentRange', { from: currentInstallment, to: installments, count: remainingInstallments })}
         </p>
       )}
 
       {/* Categoria */}
       <div>
-        <FieldLabel label="Categoria (Opcional)" icon={Tag} />
+        <FieldLabel label={t('items.categoryOptional')} icon={Tag} />
         <CategoryBadgeSelector categories={categories} value={categoryId} onChange={setCategoryId} />
       </div>
 
       {/* Observação */}
       <div>
-        <FieldLabel label="Observação (Opcional)" icon={MessageSquare} htmlFor="notes" />
+        <FieldLabel label={t('items.notes')} icon={MessageSquare} htmlFor="notes" />
         <textarea
           id="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Alguma anotação sobre esse item..."
+          placeholder={t('items.notesPlaceholder')}
           rows={2}
           className={textareaClass}
         />
@@ -396,12 +393,12 @@ export function AddItemForm({
           <div className="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center">
             <Repeat size={20} />
           </div>
-          <p className="text-sm font-semibold text-primary">Assinaturas têm configurações especiais</p>
+          <p className="text-sm font-semibold text-primary">{t('items.subscription.title')}</p>
           <p className="text-xs text-muted">
-            Ciclo de cobrança, dia de vencimento e renovação automática só ficam disponíveis na página de Assinaturas.
+            {t('items.subscription.description')}
           </p>
-          <Button label="Ir para Assinaturas" fullWidth onClick={() => { onCancel(); navigate('/settings/subscriptions') }} />
-          <Button label="Voltar e escolher outra categoria" variant="ghost" size="sm" onClick={() => setCategoryId('')} />
+          <Button label={t('items.subscription.go')} fullWidth onClick={() => { onCancel(); navigate('/settings/subscriptions') }} />
+          <Button label={t('items.subscription.back')} variant="ghost" size="sm" onClick={() => setCategoryId('')} />
         </div>
       ) : (
         <>
@@ -426,7 +423,7 @@ export function AddItemForm({
                   className="flex items-center gap-1 text-[13px] font-medium text-primary hover:opacity-80"
                 >
                   <Plus size={14} />
-                  Adicionar nova pessoa
+                  {t('items.addPerson')}
                 </button>
               ) : (
                 <div className="flex items-center gap-2">
@@ -434,12 +431,12 @@ export function AddItemForm({
                     type="text"
                     value={newAuthorName}
                     onChange={(e) => setNewAuthorName(e.target.value)}
-                    placeholder="Nome da pessoa"
+                    placeholder={t('items.newPersonPlaceholder')}
                     className={fieldClass}
                     autoFocus
                   />
                   <Button
-                    label="Cancelar"
+                    label={t('common.cancel')}
                     variant="ghost"
                     size="sm"
                     onClick={() => {
@@ -455,8 +452,8 @@ export function AddItemForm({
           {error && <Callout tone="danger" icon={AlertCircle}>{error}</Callout>}
 
           <div className="flex gap-3 pt-1">
-            <Button label="Cancelar" variant="secondary" onClick={onCancel} className="flex-1" />
-            <Button type="submit" label={isLoading ? "Salvando..." : "Adicionar"} loading={isLoading} className="flex-1" />
+            <Button label={t('common.cancel')} variant="secondary" onClick={onCancel} className="flex-1" />
+            <Button type="submit" label={isLoading ? t('common.saving') : t('common.add')} loading={isLoading} className="flex-1" />
           </div>
         </>
       )}

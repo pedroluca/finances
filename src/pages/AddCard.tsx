@@ -1,3 +1,5 @@
+import { formatCurrency } from '../lib/format'
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuthStore } from '../store/auth.store'
@@ -19,21 +21,22 @@ const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => i + 1)
 const LIMIT_STEP = 100
 
 const CARD_COLORS = [
-  { name: 'Azul', value: '#3B82F6' },
-  { name: 'Verde', value: '#10B981' },
-  { name: 'Roxo', value: '#8B5CF6' },
-  { name: 'Rosa', value: '#EC4899' },
-  { name: 'Laranja', value: '#FF7A00' },
-  { name: 'Vermelho', value: '#EF4444' },
-  { name: 'Ciano', value: '#06B6D4' },
-  { name: 'Indigo', value: '#6366F1' },
-  { name: 'Prata', value: '#9CA3AF' },
-  { name: 'Preto', value: '#121212' },
-  { name: 'Dourado', value: '#D4AF37' },
-  { name: 'Grafite', value: '#2F2F2F' },
-]
+  { key: 'blue', value: '#3B82F6' },
+  { key: 'green', value: '#10B981' },
+  { key: 'purple', value: '#8B5CF6' },
+  { key: 'pink', value: '#EC4899' },
+  { key: 'orange', value: '#FF7A00' },
+  { key: 'red', value: '#EF4444' },
+  { key: 'cyan', value: '#06B6D4' },
+  { key: 'indigo', value: '#6366F1' },
+  { key: 'silver', value: '#9CA3AF' },
+  { key: 'black', value: '#121212' },
+  { key: 'gold', value: '#D4AF37' },
+  { key: 'graphite', value: '#2F2F2F' },
+] as const
 
 export default function AddCard() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { cardId } = useParams<{ cardId?: string }>()
   const { user } = useAuthStore()
@@ -44,7 +47,7 @@ export default function AddCard() {
   const [cardLimit, setCardLimit] = useState('')
   const [closingDay, setClosingDay] = useState('')
   const [dueDay, setDueDay] = useState('')
-  const [color, setColor] = useState(CARD_COLORS[0].value)
+  const [color, setColor] = useState<string>(CARD_COLORS[0].value)
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingCard, setIsLoadingCard] = useState(isEditMode)
   const [error, setError] = useState('')
@@ -79,20 +82,20 @@ export default function AddCard() {
               setDueDay(String(card.due_day ?? ''))
               setColor(card.color ?? CARD_COLORS[0].value)
             } else {
-              setError('Cartão não encontrado')
+              setError(t('cards.notFound'))
             }
           }
         }
       } catch (err) {
         console.error('Erro ao carregar cartão:', err)
-        setError('Erro ao carregar dados do cartão')
+        setError(t('cardForm.errors.load'))
       } finally {
         setIsLoadingCard(false)
       }
     }
 
     loadCard()
-  }, [isEditMode, cardId, cards])
+  }, [isEditMode, cardId, cards, t])
 
   const adjustLimit = (delta: number) => {
     const current = parseFloat(cardLimit) || 0
@@ -104,30 +107,30 @@ export default function AddCard() {
     setError('')
 
     if (!user) {
-      setError('Usuário não autenticado')
+      setError(t('cardForm.errors.notAuthenticated'))
       return
     }
 
     if (!name.trim()) {
-      setError('Digite o nome do cartão')
+      setError(t('cardForm.errors.name'))
       return
     }
 
     const limit = parseFloat(cardLimit)
     if (isNaN(limit) || limit <= 0) {
-      setError('Digite um limite válido')
+      setError(t('cardForm.errors.limit'))
       return
     }
 
     const closing = parseInt(closingDay)
     if (isNaN(closing) || closing < 1 || closing > 31) {
-      setError('Dia de fechamento deve ser entre 1 e 31')
+      setError(t('cardForm.errors.closingDay'))
       return
     }
 
     const due = parseInt(dueDay)
     if (isNaN(due) || due < 1 || due > 31) {
-      setError('Dia de vencimento deve ser entre 1 e 31')
+      setError(t('cardForm.errors.dueDay'))
       return
     }
 
@@ -157,7 +160,7 @@ export default function AddCard() {
           }
           navigate(`/cards/${cardId}`)
         } else {
-          setError('Erro ao atualizar cartão')
+          setError(t('cardForm.errors.update'))
         }
       } else {
         // Create new card
@@ -177,19 +180,19 @@ export default function AddCard() {
           addCard(newCard)
           navigate('/dashboard')
         } else {
-          setError('Erro ao criar cartão')
+          setError(t('cardForm.errors.create'))
         }
       }
     } catch (err) {
       console.error(`Erro ao ${isEditMode ? 'atualizar' : 'criar'} cartão:`, err)
-      setError(`Erro ao ${isEditMode ? 'atualizar' : 'criar'} cartão`)
+      setError(isEditMode ? t('cardForm.errors.update') : t('cardForm.errors.create'))
     } finally {
       setIsLoading(false)
     }
   }
 
   const goBack = () => navigate(isEditMode ? `/cards/${cardId}` : '/dashboard')
-  const title = isEditMode ? 'Editar Cartão' : 'Adicionar Cartão'
+  const title = isEditMode ? t('screens.editCard') : t('screens.addCard')
 
   if (isLoadingCard) {
     return (
@@ -200,7 +203,8 @@ export default function AddCard() {
     )
   }
 
-  const selectedColorName = CARD_COLORS.find((c) => c.value === color)?.name
+  const selectedColor = CARD_COLORS.find((c) => c.value === color)
+  const selectedColorName = selectedColor ? t(`cardForm.colors.${selectedColor.key}`) : undefined
   const ink = cardInk(color)
   const stepButton = 'w-12 h-12 shrink-0 rounded-xl bg-surface-2 hover:bg-surface-3 text-foreground flex items-center justify-center transition-colors'
 
@@ -210,7 +214,7 @@ export default function AddCard() {
 
       <StackContent className="space-y-4">
         <p className="text-muted px-1">
-          {isEditMode ? 'Atualize as informações do seu cartão' : 'Cadastre um novo cartão de crédito'}
+          {isEditMode ? t('cardForm.editIntro') : t('cardForm.newIntro')}
         </p>
 
         <Card className="p-4 md:p-6">
@@ -219,17 +223,17 @@ export default function AddCard() {
 
             <TextField
               id="name"
-              label="Nome do Cartão"
+              label={t('cardForm.name')}
               icon={CreditCard}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Nubank, Itaú, C6..."
+              placeholder={t('cardForm.namePlaceholder')}
               required
               autoFocus={!isEditMode}
             />
 
             <div>
-              <FieldLabel label="Limite do Cartão" icon={DollarSign} htmlFor="limit" />
+              <FieldLabel label={t('cardForm.limit')} icon={DollarSign} htmlFor="limit" />
               <div className="flex items-center gap-2">
                 <button type="button" aria-label="Diminuir limite" onClick={() => adjustLimit(-LIMIT_STEP)} className={stepButton}>
                   <Minus size={18} />
@@ -239,7 +243,7 @@ export default function AddCard() {
                   id="limit"
                   value={cardLimit}
                   onChange={(e) => setCardLimit(e.target.value)}
-                  placeholder="Ex: 5000.00"
+                  placeholder={t('cardForm.limitPlaceholder', { value: '5000.00' })}
                   step="0.01"
                   min="0"
                   className={cn(fieldClass, 'no-spinner text-center font-semibold min-w-0')}
@@ -252,14 +256,14 @@ export default function AddCard() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <SelectField id="closing" label="Dia de Fechamento" icon={Calendar} value={closingDay} onChange={setClosingDay} required>
-                <option value="">Selecione...</option>
+              <SelectField id="closing" label={t('cardForm.closingDay')} icon={Calendar} value={closingDay} onChange={setClosingDay} required>
+                <option value="">{t('common.select')}</option>
                 {DAY_OPTIONS.map((d) => (
                   <option key={d} value={d}>{d}</option>
                 ))}
               </SelectField>
-              <SelectField id="due" label="Dia de Vencimento" icon={Calendar} value={dueDay} onChange={setDueDay} required>
-                <option value="">Selecione...</option>
+              <SelectField id="due" label={t('cardForm.dueDay')} icon={Calendar} value={dueDay} onChange={setDueDay} required>
+                <option value="">{t('common.select')}</option>
                 {DAY_OPTIONS.map((d) => (
                   <option key={d} value={d}>{d}</option>
                 ))}
@@ -268,7 +272,7 @@ export default function AddCard() {
 
             <div>
               <FieldLabel
-                label="Cor do Cartão"
+                label={t('cardForm.color')}
                 icon={Palette}
                 right={selectedColorName && <span className="text-xs text-muted">{selectedColorName}</span>}
               />
@@ -281,8 +285,8 @@ export default function AddCard() {
                       type="button"
                       role="radio"
                       aria-checked={selected}
-                      aria-label={c.name}
-                      title={c.name}
+                      aria-label={t(`cardForm.colors.${c.key}`)}
+                      title={t(`cardForm.colors.${c.key}`)}
                       onClick={() => setColor(c.value)}
                       className={cn('w-11 h-11 rounded-full flex items-center justify-center border-2 transition-colors', selected ? 'border-primary' : 'border-transparent hover:border-border')}
                     >
@@ -296,14 +300,14 @@ export default function AddCard() {
             </div>
 
             <div>
-              <FieldLabel label="Preview" />
+              <FieldLabel label={t('cardForm.preview')} />
               <CardSurface color={color} className="max-w-[400px]" style={{ aspectRatio: CARD_RATIO }}>
                 <div className="h-full flex flex-col p-[18px]" style={{ color: ink }}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-[1px]" style={{ color: withAlpha(ink, 0.75) }}>Limite total</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[1px]" style={{ color: withAlpha(ink, 0.75) }}>{t('cardTile.totalLimit')}</p>
                       <p className="text-2xl font-bold truncate">
-                        R$ {parseFloat(cardLimit || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        {formatCurrency(parseFloat(cardLimit || '0'))}
                       </p>
                     </div>
                     <Nfc size={24} strokeWidth={1.8} className="shrink-0" style={{ color: withAlpha(ink, 0.85) }} />
@@ -312,9 +316,9 @@ export default function AddCard() {
                     <CardChip />
                   </div>
                   <div className="mt-auto space-y-0.5">
-                    <p className="text-[17px] font-bold truncate">{name.trim() || 'Nome do Cartão'}</p>
+                    <p className="text-[17px] font-bold truncate">{name.trim() || t('cardForm.name')}</p>
                     <p className="text-xs" style={{ color: withAlpha(ink, 0.8) }}>
-                      Fecha dia {closingDay || '__'} • Vence dia {dueDay || '__'}
+                      {t('cardForm.previewDays', { closing: closingDay || '__', due: dueDay || '__' })}
                     </p>
                   </div>
                 </div>
@@ -322,10 +326,10 @@ export default function AddCard() {
             </div>
 
             <div className="flex gap-3 pt-1">
-              <Button label="Cancelar" variant="secondary" onClick={goBack} className="flex-1" />
+              <Button label={t('common.cancel')} variant="secondary" onClick={goBack} className="flex-1" />
               <Button
                 type="submit"
-                label={isLoading ? 'Salvando...' : isEditMode ? 'Salvar' : 'Adicionar'}
+                label={isLoading ? t('common.saving') : isEditMode ? t('common.save') : t('common.add')}
                 icon={CreditCard}
                 loading={isLoading}
                 className="flex-1"
