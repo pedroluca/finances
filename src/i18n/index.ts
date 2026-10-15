@@ -6,15 +6,8 @@ import { ptBR } from './locales/pt-BR'
 
 export type Language = 'pt-BR' | 'en'
 
-/**
- * A troca de idioma só vale no `pnpm dev` enquanto as telas não estão todas traduzidas.
- * Em produção o site fica em português, mesmo com o navegador em outro idioma.
- */
-export const LANGUAGE_SELECTION_ENABLED = import.meta.env.DEV
-
 /** Preferência → idioma. No automático: português se o navegador estiver em português, senão inglês */
 export function resolveLanguage(preference: LanguagePreference): Language {
-  if (!LANGUAGE_SELECTION_ENABLED) return 'pt-BR'
   if (preference !== 'system') return preference
   return navigator.language?.toLowerCase().startsWith('pt') ? 'pt-BR' : 'en'
 }

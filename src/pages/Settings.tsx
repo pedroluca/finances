@@ -20,7 +20,6 @@ import { useTheme } from '../hooks/useTheme'
 import { useAuthStore } from '../store/auth.store'
 import { useAppStore } from '../store/app.store'
 import { usePrefsStore, type LanguagePreference } from '../store/prefs.store'
-import { LANGUAGE_SELECTION_ENABLED } from '../i18n'
 import type { ThemeMode } from '../contexts/ThemeContext'
 import type { BillingCycle } from '../types/database'
 import { LogoMark, StackContent, StackHeader } from '../components/app-header'
@@ -140,18 +139,16 @@ export default function Settings() {
             </div>
             <SegmentedControl options={themeOptions} value={themeMode} onChange={setThemeMode} />
           </div>
-          {LANGUAGE_SELECTION_ENABLED && (
-            <div className="px-4 py-3.5 space-y-3">
-              <div className="flex items-center gap-3">
-                <IconTile icon={Languages} color={accents.blue} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-base text-foreground">{t('language.title')}</p>
-                  <p className="text-xs text-muted mt-0.5">{t('language.description')}</p>
-                </div>
+          <div className="px-4 py-3.5 space-y-3">
+            <div className="flex items-center gap-3">
+              <IconTile icon={Languages} color={accents.blue} />
+              <div className="flex-1 min-w-0">
+                <p className="text-base text-foreground">{t('language.title')}</p>
+                <p className="text-xs text-muted mt-0.5">{t('language.description')}</p>
               </div>
-              <SegmentedControl options={languageOptions} value={language} onChange={setLanguage} />
             </div>
-          )}
+            <SegmentedControl options={languageOptions} value={language} onChange={setLanguage} />
+          </div>
           <SwitchRow
             title={t('settings.hideValues')}
             description={t('settings.hideValuesHint')}
