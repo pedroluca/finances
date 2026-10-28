@@ -624,6 +624,120 @@ export const en: Messages = {
     step3: 'Tap "Add" in the top right corner',
     gotIt: 'Got it',
   },
+  landing: {
+    signIn: 'Sign in',
+    useWeb: 'Use in the browser',
+    store: 'Get it on',
+    iphone: 'On iPhone, use it in the browser and add Finances to your Home Screen.',
+    hero: {
+      badge: 'New: suggestions from your bank purchases',
+      titleStart: 'Take control of your',
+      titleHighlight: 'credit cards',
+      subtitle: 'Track the statements of all your cards, split purchases into installments and share expenses with whoever uses the card with you.',
+      note: 'Free · Android and web · No ads',
+    },
+    screens: {
+      home: 'Finances home screen',
+      card: 'A card statement',
+      newExpense: 'New expense',
+      suggestion: 'Expense suggestion from a bank notification',
+      widgets: 'Finances widgets on the Android home screen',
+      split: 'A purchase split between people',
+    },
+    features: {
+      kicker: 'Features',
+      title: 'Everything your credit card needs',
+      subtitle: 'Made for people with more than one card, who pay in installments and share the bill with someone.',
+      cards: {
+        title: 'All your cards',
+        text: 'Available limit, current and upcoming statements, with each card’s closing and due dates.',
+      },
+      installments: {
+        title: 'Installments, no math',
+        text: 'Add the purchase once and the app spreads the installments over the next statements.',
+      },
+      split: {
+        title: 'Split with others',
+        text: 'Mark who made each purchase and see how much each person owes. You can even share the card with another account.',
+      },
+      subscriptions: {
+        title: 'Subscriptions',
+        text: 'Streaming, gym and apps are added to the statement automatically, every month or year.',
+      },
+      upcoming: {
+        title: 'No surprise due dates',
+        text: 'The statements and bills due first, with alerts on closing day and before the due date.',
+      },
+      categories: {
+        title: 'Categories',
+        text: 'Sort your spending by category, with built-in ones and your own.',
+      },
+    },
+    showcase: {
+      quick: {
+        kicker: 'New expense',
+        title: 'Add an expense in seconds',
+        text: 'From the app button, the Android quick settings, the icon shortcut or the widget. The sheet opens over your screen, with the last card you used already selected.',
+        point1: 'Quick settings',
+        point2: 'Widget',
+        point3: 'Icon shortcut',
+      },
+      suggestions: {
+        kicker: 'New',
+        title: 'Bought something? Finances reminds you',
+        text: 'When your bank reports a credit card purchase, the app suggests adding the expense, already filled in with the amount, merchant and date. It is read only on your phone, and nothing is saved until you confirm.',
+        point1: 'Nubank, Itaú, Bradesco and 6 more banks',
+        point2: 'Read only on your phone',
+        point3: 'You confirm first',
+      },
+      widgets: {
+        kicker: 'Widgets',
+        title: 'Your month on the home screen',
+        text: 'Month summary, upcoming payments, a single card or just the new expense button. With its own eye to hide the amounts.',
+        point1: 'Month summary',
+        point2: 'Upcoming payments',
+        point3: 'Card',
+      },
+      split: {
+        kicker: 'Split',
+        title: 'Shared cards without the mess',
+        text: 'Split a purchase between several people and follow each one’s share across every statement. Anyone who also uses Finances sees their own share in the app.',
+        point1: 'Split by person',
+        point2: 'Shared cards',
+        point3: 'Everyone’s share',
+      },
+    },
+    privacy: {
+      title: 'Your data is yours',
+      text: 'Finances has no ads and does not sell your data. You can delete your account, with everything in it, whenever you want.',
+      link: 'Read the privacy policy',
+      lock: {
+        title: 'Fingerprint lock',
+        text: 'Ask for your fingerprint, face or phone passcode to open the app.',
+      },
+      hide: {
+        title: 'Hidden amounts',
+        text: 'One tap on the eye hides the amounts on every screen.',
+      },
+      device: {
+        title: 'Read only on your phone',
+        text: 'Bank notifications are read on the device and never sent to the server.',
+      },
+      noAds: {
+        title: 'No ads',
+        text: 'No advertising and no selling data to third parties.',
+      },
+    },
+    cta: {
+      title: 'Start organizing your cards today',
+      text: 'It’s free. Create your account in the app or the browser and add your first card in a minute.',
+    },
+    footer: {
+      privacy: 'Privacy',
+      deleteAccount: 'Delete account',
+      developer: 'Developer',
+    },
+  },
   privacy: {
     title: 'Privacy Policy',
     updated: 'Last updated: October 2026',

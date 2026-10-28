@@ -627,6 +627,120 @@ export const ptBR = {
     step3: 'Toque em "Adicionar" no canto superior direito',
     gotIt: 'Entendi',
   },
+  landing: {
+    signIn: 'Entrar',
+    useWeb: 'Usar no navegador',
+    store: 'Disponível no',
+    iphone: 'No iPhone, use pelo navegador e adicione o Finances à Tela de Início.',
+    hero: {
+      badge: 'Novo: sugestões das compras do banco',
+      titleStart: 'Domine seus gastos',
+      titleHighlight: 'no cartão',
+      subtitle: 'Acompanhe as faturas de todos os seus cartões, parcele compras e divida as despesas com quem usa o cartão com você.',
+      note: 'Grátis · Android e navegador · Sem anúncios',
+    },
+    screens: {
+      home: 'Tela inicial do Finances',
+      card: 'Fatura de um cartão',
+      newExpense: 'Nova despesa',
+      suggestion: 'Sugestão de despesa a partir da notificação do banco',
+      widgets: 'Widgets do Finances na tela inicial do Android',
+      split: 'Compra dividida entre pessoas',
+    },
+    features: {
+      kicker: 'Recursos',
+      title: 'Tudo o que o seu cartão de crédito precisa',
+      subtitle: 'Feito para quem tem mais de um cartão, parcela compras e divide a fatura com alguém.',
+      cards: {
+        title: 'Todos os cartões',
+        text: 'Limite disponível, fatura atual e as próximas, com o fechamento e o vencimento de cada cartão.',
+      },
+      installments: {
+        title: 'Parcelas sem conta',
+        text: 'Lance a compra uma vez e o app distribui as parcelas pelas próximas faturas.',
+      },
+      split: {
+        title: 'Divida com quem usa',
+        text: 'Marque quem fez cada compra e veja quanto cada pessoa deve. Dá até para compartilhar o cartão com outra conta.',
+      },
+      subscriptions: {
+        title: 'Assinaturas',
+        text: 'Streaming, academia e apps entram sozinhos na fatura, todo mês ou todo ano.',
+      },
+      upcoming: {
+        title: 'Nada vence de surpresa',
+        text: 'As faturas e contas que vencem primeiro, com aviso no dia do fechamento e antes do vencimento.',
+      },
+      categories: {
+        title: 'Categorias',
+        text: 'Separe os gastos por categoria, com as que já vêm prontas e as suas.',
+      },
+    },
+    showcase: {
+      quick: {
+        kicker: 'Nova despesa',
+        title: 'Lance um gasto em segundos',
+        text: 'Pelo botão do app, pelo painel rápido do Android, pelo atalho do ícone ou pelo widget. A folha abre por cima da tela, com o último cartão usado já marcado.',
+        point1: 'Painel rápido',
+        point2: 'Widget',
+        point3: 'Atalho no ícone',
+      },
+      suggestions: {
+        kicker: 'Novo',
+        title: 'Comprou? O Finances lembra você',
+        text: 'Quando o seu banco avisa uma compra no crédito, o app sugere lançar a despesa, já com valor, loja e data. A leitura acontece só no celular, e nada é salvo sem você confirmar.',
+        point1: 'Nubank, Itaú, Bradesco e mais 6 bancos',
+        point2: 'Lido só no celular',
+        point3: 'Você confirma antes',
+      },
+      widgets: {
+        kicker: 'Widgets',
+        title: 'O mês na tela inicial',
+        text: 'Resumo do mês, próximos pagamentos, um cartão ou só o botão de nova despesa. Com um olho próprio para esconder os valores.',
+        point1: 'Resumo do mês',
+        point2: 'Próximos pagamentos',
+        point3: 'Cartão',
+      },
+      split: {
+        kicker: 'Dividir',
+        title: 'Cartão compartilhado sem confusão',
+        text: 'Divida uma compra entre várias pessoas e acompanhe a parte de cada uma em todas as faturas. Quem também usa o Finances vê a própria parte no app.',
+        point1: 'Divisão por pessoa',
+        point2: 'Cartão compartilhado',
+        point3: 'A parte de cada um',
+      },
+    },
+    privacy: {
+      title: 'Seus dados são seus',
+      text: 'O Finances não tem anúncios e não vende seus dados. Você pode apagar a conta, com tudo o que ela tem, quando quiser.',
+      link: 'Ler a política de privacidade',
+      lock: {
+        title: 'Bloqueio com digital',
+        text: 'Peça a digital, o rosto ou a senha do celular para abrir o app.',
+      },
+      hide: {
+        title: 'Valores escondidos',
+        text: 'Um toque no olho esconde os valores de todas as telas.',
+      },
+      device: {
+        title: 'Lido só no celular',
+        text: 'As notificações do banco são lidas no aparelho e não vão para o servidor.',
+      },
+      noAds: {
+        title: 'Sem anúncios',
+        text: 'Nada de propaganda nem venda de dados para terceiros.',
+      },
+    },
+    cta: {
+      title: 'Comece a organizar seus cartões hoje',
+      text: 'É grátis. Crie a conta no app ou no navegador e cadastre o primeiro cartão em um minuto.',
+    },
+    footer: {
+      privacy: 'Privacidade',
+      deleteAccount: 'Excluir conta',
+      developer: 'Desenvolvedor',
+    },
+  },
   privacy: {
     title: 'Política de Privacidade',
     updated: 'Última atualização: outubro de 2026',

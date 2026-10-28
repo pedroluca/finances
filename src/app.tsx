@@ -6,6 +6,7 @@ import { FloatingTabBar, Sidebar } from './components/floating-tab-bar'
 import { QuickExpenseSheet } from './components/QuickExpenseSheet'
 import { ScrollToTop } from './components/ScrollToTop'
 import { useNotificationsSync } from './components/notifications/useNotificationsInbox'
+import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -22,7 +23,12 @@ import ManageSubscriptions from './pages/settings/ManageSubscriptions'
 import Privacy from './pages/Privacy'
 import DeleteAccount from './pages/DeleteAccount'
 
-// Redirect simples para o download do APK 
+// Aberto como app (PWA na tela de início ou o app antigo em webview): a apresentação não faz sentido, vai ao login
+function isInstalledApp(): boolean {
+  return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true || typeof window.AndroidApp !== 'undefined'
+}
+
+// Redirect simples para o download do APK
 function DownloadRedirect() {
   window.location.href = 'https://pedroluca.dev.br/downloads/Finances.apk'
   return null
@@ -117,13 +123,16 @@ function App() {
             <Route path="/download" element={<DownloadRedirect />} />
 
             {/* Default redirect */}
+            {/* Logado vai para o painel; no navegador, quem não está logado vê a apresentação do app */}
             <Route
               path="/"
               element={
                 isAuthenticated ? (
                   <Navigate to="/dashboard" />
-                ) : (
+                ) : isInstalledApp() ? (
                   <Navigate to="/login" />
+                ) : (
+                  <Landing />
                 )
               }
             />
