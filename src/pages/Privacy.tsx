@@ -5,6 +5,16 @@ import { StackHeader } from '../components/app-header'
 const SECTIONS = [
   { key: 'collect', items: ['privacy.collect.item1', 'privacy.collect.item2', 'privacy.collect.item3'] },
   { key: 'use', items: ['privacy.use.item1', 'privacy.use.item2', 'privacy.use.item3', 'privacy.use.item4'] },
+  {
+    key: 'notifications',
+    items: [
+      'privacy.notifications.item1',
+      'privacy.notifications.item2',
+      'privacy.notifications.item3',
+      'privacy.notifications.item4',
+      'privacy.notifications.item5',
+    ],
+  },
   { key: 'sharing', items: [] },
   { key: 'security', items: [] },
   { key: 'rights', items: ['privacy.rights.item1', 'privacy.rights.item2', 'privacy.rights.item3'] },

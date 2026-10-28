@@ -612,6 +612,7 @@ export default function CardDetails() {
   }
 
   const openEditModal = (item: InvoiceItemWithDetails) => {
+    
     // Permite edição de itens de qualquer mês
     setEditingItem(item)
     setShowEditModal(true)

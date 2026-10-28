@@ -629,7 +629,7 @@ export const ptBR = {
   },
   privacy: {
     title: 'Política de Privacidade',
-    updated: 'Última atualização: abril de 2026',
+    updated: 'Última atualização: outubro de 2026',
     introBefore: 'Bem-vindo ao',
     introAfter: '. Esta Política de Privacidade descreve como coletamos, usamos e protegemos suas informações quando você utiliza nosso aplicativo.',
     collect: {
@@ -646,6 +646,15 @@ export const ptBR = {
       item2: 'Exibir e gerenciar seus dados financeiros dentro do app;',
       item3: 'Enviar comunicações relacionadas à sua conta quando necessário;',
       item4: 'Melhorar a experiência e as funcionalidades do aplicativo.',
+    },
+    notifications: {
+      title: 'Leitura de notificações de compra (Android)',
+      body: 'No aplicativo para Android, você pode ativar sugestões de despesas a partir das notificações do seu banco. Esse recurso é opcional, fica desligado até você ativá-lo e depende do acesso a notificações, que você concede e pode retirar a qualquer momento nas configurações do Android. Quando ativado:',
+      item1: 'O app só considera notificações dos apps de bancos e cartões compatíveis; as dos demais apps são descartadas na hora, sem que o conteúdo seja analisado ou guardado;',
+      item2: 'Das notificações de compras no crédito, extraímos apenas o valor, o nome do estabelecimento, a data e os últimos dígitos do cartão, para preencher a sugestão;',
+      item3: 'Essa leitura acontece somente no seu aparelho: o conteúdo das notificações não é enviado para nossos servidores nem para terceiros;',
+      item4: 'A ligação entre o banco e o cartão cadastrado no app também fica salva apenas no seu aparelho;',
+      item5: 'Nada é registrado automaticamente: a despesa só é salva na sua conta se você confirmar a sugestão e, a partir daí, é tratada como os demais dados financeiros que você insere.',
     },
     sharing: {
       title: 'Compartilhamento de informações',
