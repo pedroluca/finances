@@ -686,7 +686,7 @@ export const en: Messages = {
         kicker: 'New',
         title: 'Bought something? Finances reminds you',
         text: 'When your bank reports a credit card purchase, the app suggests adding the expense, already filled in with the amount, merchant and date. It is read only on your phone, and nothing is saved until you confirm.',
-        point1: 'Nubank, Itaú, Bradesco and 6 more banks',
+        point1: 'Nubank, Itaú, Bradesco and 7 more banks',
         point2: 'Read only on your phone',
         point3: 'You confirm first',
       },

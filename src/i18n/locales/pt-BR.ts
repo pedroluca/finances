@@ -689,7 +689,7 @@ export const ptBR = {
         kicker: 'Novo',
         title: 'Comprou? O Finances lembra você',
         text: 'Quando o seu banco avisa uma compra no crédito, o app sugere lançar a despesa, já com valor, loja e data. A leitura acontece só no celular, e nada é salvo sem você confirmar.',
-        point1: 'Nubank, Itaú, Bradesco e mais 6 bancos',
+        point1: 'Nubank, Itaú, Bradesco e mais 7 bancos',
         point2: 'Lido só no celular',
         point3: 'Você confirma antes',
       },
