@@ -685,7 +685,7 @@ export const en: Messages = {
       suggestions: {
         kicker: 'New',
         title: 'Bought something? Finances reminds you',
-        text: 'When your bank reports a credit card purchase, the app suggests adding the expense, already filled in with the amount, merchant and date. It is read only on your phone, and nothing is saved until you confirm.',
+        text: 'When your bank reports a credit card purchase, the app suggests adding the expense, already filled in with the amount, merchant, date and category. It is read only on your phone, and nothing is saved until you confirm.',
         point1: 'Nubank, Itaú, Bradesco and 7 more banks',
         point2: 'Read only on your phone',
         point3: 'You confirm first',
@@ -740,7 +740,7 @@ export const en: Messages = {
   },
   privacy: {
     title: 'Privacy Policy',
-    updated: 'Last updated: October 2026',
+    updated: 'Last updated: November 2026',
     introBefore: 'Welcome to',
     introAfter: '. This Privacy Policy describes how we collect, use and protect your information when you use our app.',
     collect: {
@@ -761,10 +761,10 @@ export const en: Messages = {
     notifications: {
       title: 'Purchase notification reading (Android)',
       body: 'In the Android app, you can turn on expense suggestions based on your bank notifications. This feature is optional, stays off until you turn it on and relies on notification access, which you grant and can revoke at any time in the Android settings. When it is on:',
-      item1: 'The app only considers notifications from supported bank and card apps; notifications from other apps are discarded right away, without their content being analyzed or stored;',
+      item1: 'The app only considers notifications from supported bank and card apps and, in the messaging app, text messages sent by business short codes that start with the name of a supported bank; notifications from other apps and conversations with people are discarded right away, without their content being analyzed or stored;',
       item2: 'From credit card purchase notifications, we extract only the amount, the merchant name, the date and the last digits of the card, to fill in the suggestion;',
       item3: 'This happens only on your device: notification content is not sent to our servers or to third parties;',
-      item4: 'The link between a bank and a card registered in the app is also stored only on your device;',
+      item4: 'The link between a bank and a card registered in the app, and the category you choose for each merchant, are also stored only on your device;',
       item5: 'Nothing is recorded automatically: an expense is only saved to your account if you confirm the suggestion, and from then on it is handled like the other financial data you enter.',
     },
     sharing: {

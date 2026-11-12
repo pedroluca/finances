@@ -688,7 +688,7 @@ export const ptBR = {
       suggestions: {
         kicker: 'Novo',
         title: 'Comprou? O Finances lembra você',
-        text: 'Quando o seu banco avisa uma compra no crédito, o app sugere lançar a despesa, já com valor, loja e data. A leitura acontece só no celular, e nada é salvo sem você confirmar.',
+        text: 'Quando o seu banco avisa uma compra no crédito, o app sugere lançar a despesa, já com valor, loja, data e categoria. A leitura acontece só no celular, e nada é salvo sem você confirmar.',
         point1: 'Nubank, Itaú, Bradesco e mais 7 bancos',
         point2: 'Lido só no celular',
         point3: 'Você confirma antes',
@@ -743,7 +743,7 @@ export const ptBR = {
   },
   privacy: {
     title: 'Política de Privacidade',
-    updated: 'Última atualização: outubro de 2026',
+    updated: 'Última atualização: novembro de 2026',
     introBefore: 'Bem-vindo ao',
     introAfter: '. Esta Política de Privacidade descreve como coletamos, usamos e protegemos suas informações quando você utiliza nosso aplicativo.',
     collect: {
@@ -764,10 +764,10 @@ export const ptBR = {
     notifications: {
       title: 'Leitura de notificações de compra (Android)',
       body: 'No aplicativo para Android, você pode ativar sugestões de despesas a partir das notificações do seu banco. Esse recurso é opcional, fica desligado até você ativá-lo e depende do acesso a notificações, que você concede e pode retirar a qualquer momento nas configurações do Android. Quando ativado:',
-      item1: 'O app só considera notificações dos apps de bancos e cartões compatíveis; as dos demais apps são descartadas na hora, sem que o conteúdo seja analisado ou guardado;',
+      item1: 'O app só considera notificações dos apps de bancos e cartões compatíveis e, no app de mensagens, as SMS enviadas por números curtos de empresas que começam com o nome de um banco compatível; as notificações dos demais apps e as conversas com pessoas são descartadas na hora, sem que o conteúdo seja analisado ou guardado;',
       item2: 'Das notificações de compras no crédito, extraímos apenas o valor, o nome do estabelecimento, a data e os últimos dígitos do cartão, para preencher a sugestão;',
       item3: 'Essa leitura acontece somente no seu aparelho: o conteúdo das notificações não é enviado para nossos servidores nem para terceiros;',
-      item4: 'A ligação entre o banco e o cartão cadastrado no app também fica salva apenas no seu aparelho;',
+      item4: 'A ligação entre o banco e o cartão cadastrado no app, e a categoria que você escolhe para cada estabelecimento, também ficam salvas apenas no seu aparelho;',
       item5: 'Nada é registrado automaticamente: a despesa só é salva na sua conta se você confirmar a sugestão e, a partir daí, é tratada como os demais dados financeiros que você insere.',
     },
     sharing: {
