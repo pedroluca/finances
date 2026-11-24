@@ -7,6 +7,7 @@ import type { CardWithBalance } from '../types/database'
 import { phpApiRequest } from '../lib/api'
 import { HideValuesButton, ProfileButton, TabContent, TabHeader } from '../components/app-header'
 import { NotificationsButton } from '../components/notifications/NotificationsButton'
+import { PixKeysButton } from '../components/pix/PixKeysButton'
 import { DashboardStats } from '../components/dashboard/d-stats'
 import { DashboardCardsList } from '../components/dashboard/d-cards-list'
 import { DashboardUpcomingPayments } from '../components/dashboard/d-upcoming-payments'
@@ -160,6 +161,7 @@ export default function Dashboard() {
         right={(
           <>
             <HideValuesButton />
+            <PixKeysButton />
             <NotificationsButton />
             <ProfileButton />
           </>

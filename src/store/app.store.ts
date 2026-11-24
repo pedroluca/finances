@@ -11,6 +11,7 @@ import type {
   Bill,
   Subscription,
 } from '../types/database';
+import type { PixKey } from '../lib/pix';
 
 interface AppState {
   // Data
@@ -23,6 +24,7 @@ interface AppState {
   monthlyTotals: MonthlyTotal[];
   bills: Bill[];
   subscriptions: Subscription[];
+  pixKeys: PixKey[];
   selectedItems: number[];
   cardOrder: number[]; // card_ids na ordem definida pelo usuário
 
@@ -73,6 +75,7 @@ interface AppState {
   // Actions - Bills & Subscriptions
   setBills: (bills: Bill[]) => void;
   setSubscriptions: (subscriptions: Subscription[]) => void;
+  setPixKeys: (pixKeys: PixKey[]) => void;
 
   // Actions - Selected Items
   toggleItemSelection: (itemId: number) => void;
@@ -106,6 +109,7 @@ export const useAppStore = create<AppState>()(
       monthlyTotals: [],
       bills: [],
       subscriptions: [],
+      pixKeys: [],
       selectedItems: [],
       cardOrder: [],
       isLoading: false,
@@ -213,6 +217,7 @@ export const useAppStore = create<AppState>()(
       // Bills & Subscriptions
       setBills: (bills) => set({ bills }),
       setSubscriptions: (subscriptions) => set({ subscriptions }),
+      setPixKeys: (pixKeys) => set({ pixKeys }),
 
       // Selected Items
       toggleItemSelection: (itemId) =>
@@ -250,6 +255,7 @@ export const useAppStore = create<AppState>()(
           monthlyTotals: [],
           bills: [],
           subscriptions: [],
+          pixKeys: [],
           selectedItems: [],
           cardOrder: [],
           selectedCardId: null,
@@ -264,6 +270,7 @@ export const useAppStore = create<AppState>()(
         monthlyTotals: state.monthlyTotals,
         bills: state.bills,
         subscriptions: state.subscriptions,
+        pixKeys: state.pixKeys,
         cardOrder: state.cardOrder,
       }),
     }

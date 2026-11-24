@@ -5,6 +5,7 @@ import {
   ExternalLink,
   EyeOff,
   GripVertical,
+  KeyRound,
   Languages,
   LogOut,
   Moon,
@@ -47,7 +48,8 @@ export default function Settings() {
   const navigate = useNavigate()
   const { theme, themeMode, setThemeMode } = useTheme()
   const { user, logout } = useAuthStore()
-  const { cards, authors, categories, subscriptions } = useAppStore()
+  const { cards, authors, categories, subscriptions, pixKeys } = useAppStore()
+  const pixBanks = new Set(pixKeys.map((key) => (key.bank === 'other' ? 'other:' + (key.bank_name ?? '').toLowerCase() : key.bank))).size
   const hideValues = usePrefsStore((state) => state.hideValues)
   const setHideValues = usePrefsStore((state) => state.setHideValues)
   const language = usePrefsStore((state) => state.language)
@@ -125,6 +127,15 @@ export default function Settings() {
             icon={Repeat}
             iconColor={accents.amber}
             onClick={() => navigate('/settings/subscriptions')}
+          />
+          <ListRow
+            title={t('settings.pixKeys.title')}
+            description={pixKeys.length
+              ? `${t('settings.pixKeys.count', { count: pixKeys.length })} · ${t('settings.pixKeys.banks', { count: pixBanks })}`
+              : t('settings.pixKeys.empty')}
+            icon={KeyRound}
+            iconColor={accents.teal}
+            onClick={() => navigate('/settings/pix-keys')}
           />
         </ListSection>
 

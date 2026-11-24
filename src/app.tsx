@@ -20,6 +20,7 @@ import ManageAuthors from './pages/ManageAuthors'
 import ManageCardOrder from './pages/settings/ManageCardOrder'
 import ManageCategories from './pages/settings/ManageCategories'
 import ManageSubscriptions from './pages/settings/ManageSubscriptions'
+import ManagePixKeys from './pages/settings/ManagePixKeys'
 import Privacy from './pages/Privacy'
 import DeleteAccount from './pages/DeleteAccount'
 
@@ -113,6 +114,10 @@ function App() {
             <Route
               path="/settings/subscriptions"
               element={isAuthenticated ? <ManageSubscriptions /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/settings/pix-keys"
+              element={isAuthenticated ? <ManagePixKeys /> : <Navigate to="/login" />}
             />
 
             {/* Public static pages */}

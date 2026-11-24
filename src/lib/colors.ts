@@ -8,6 +8,7 @@ export const accents = {
   blue: '#3b82f6',
   amber: '#f59e0b',
   emerald: '#10b981',
+  teal: '#32bcad',
   gray: '#6b7280',
 }
 
